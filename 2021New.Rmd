@@ -1,0 +1,2831 @@
+---
+title: "Interoception Study IAPS"
+author: "Helio"
+date: "27/05/2021"
+output: html_document
+---
+
+
+Arousal concordance
+does alexithymia changes the influence of objective arousal on subjective arousal ratings
+
+based on pupil
+
+
+
+
+Last thing I did
+- created new arousal and valence self report ctageories which are the average ratings of each stomuli for this sample
+- and I am also running plots and formal anakyses fir SCR, last SCR measure whereI stoped on was CDA amp SUM or the one before that, I neeed to to
+1 - is scr yracking arousal (basd on sample, self report, sample self report)
+2 - what about the valence effect (do we have a arousal effcet liek we do for pupil)
+3 - what about the stability of self repirt and objectie arousal macth, do we also see a bias towards more concordance for postive expressions?
+- links to alexithymia (alexithymia related to reduced SCR)+
+- formal lmer
+
+
+What to use fo the presentation
+- is alexithymia related to concordance - pupil and arousal better concordance -
+- pupil atenuated relation for alexithymic 9 both aggregated plot, and the the lmer plot
+
+- SCR relicateded LMMS
+- additional low SCR effect
+
+
+```{r}
+
+# check for outliers
+
+unique(db_full4new_stim$screencontent.y)
+unique(db_full4new_stim_pupil$screencontent)
+
+
+db_full4new_stim_pupil
+
+"stim" 
+
+db_full4new_stim_screen_pupil<- subset(db_full4new_stim_pupil, screencontent == "stim")
+# this incldues pratice and other things so cut those things
+
+unique(db_full4new_stim_screen_pupil$screencontent)
+
+
+library(tidyverse)
+db_full4new_stim_screen_pupil%>%
+ggplot(aes(x = pup_basCor))+
+  geom_histogram()
+
+
+db_full4new_stim_screen_pupil%>%
+ggplot(aes(x = arousal))+
+  geom_histogram()
+
+db_full4new_stim_screen_pupil%>%
+ggplot(aes(x = TASc))+
+  geom_histogram()
+
+# outliers in arousal response
+
+# this would exclude responses where the participants resp[onse on that triall is an outlier in comaprison to all the responses given to the same trial
+
+unique(db_full4new_stim_screen_pupil$Condition)
+
+
+
+# check arousal 
+
+range(db_full4new_stim_screen_pupil$ArousalMean)
+range(db_full4new_stim_screen_pupil$ValenceMean)
+
+
+range(db_full4new_stim_screen_pupil$ArousalMean)
+db_full4new_stim_screen_pupil %>%
+  group_by(stimIAPS)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ArousalMean))+
+  geom_histogram()+
+  xlim(1,9)
+
+
+# create categories
+db_full4new_stim_screen_pupil$ground_valence <- cut(db_full4new_stim_screen_pupil$ValenceMean,3)
+db_full4new_stim_screen_pupil%>%
+  group_by(stimIAPS,ground_valence)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence, ValenceMean))+
+  geom_point()
+
+
+db_full4new_stim_screen_pupil$ground_arousal <- cut(db_full4new_stim_screen_pupil$ArousalMean,3)
+
+
+# db_full4new_stim_screen_pupil$ground_arousal <- cut(db_full4new_stim_screen_pupil$ArousalMean, c("Low", "Mid", "High"))
+db_full4new_stim_screen_pupil%>%
+  group_by(stimIAPS,ground_arousal)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal, ArousalMean))+
+  geom_point()+
+  geom_hline(yintercept = 4.16)
+
+
+
+db_full4new_stim_screen_pupil%>%
+  group_by(stimIAPS,ground_arousal,ground_valence)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal, ArousalMean))+
+  geom_point()+
+  geom_hline(yintercept = 4.16)+
+  facet_grid(~ground_valence)
+
+
+
+# create the word
+unique(db_full4new_stim_screen_pupil$ground_arousal) 
+typeof(db_full4new_stim_screen_pupil$ground_arousal)
+
+db_full4new_stim_screen_pupil$ground_arousal<- as.character(db_full4new_stim_screen_pupil$ground_arousal)
+
+db_full4new_stim_screen_pupil$ground_arousal_lab<- if_else(db_full4new_stim_screen_pupil$ground_arousal == 
+                                                             "(2.63,4.16]", "Low",
+if_else(db_full4new_stim_screen_pupil$ground_arousal == "(4.16,5.68]", "Mid",
+if_else(db_full4new_stim_screen_pupil$ground_arousal == "(5.68,7.21]", "High", NULL))) 
+
+
+# valence labels
+unique(db_full4new_stim_screen_pupil$ground_valence)
+db_full4new_stim_screen_pupil$ground_valence<- as.character(db_full4new_stim_screen_pupil$ground_valence)
+
+db_full4new_stim_screen_pupil$ground_valence_lab<- if_else(db_full4new_stim_screen_pupil$ground_valence == 
+                                                             "(1.45,3.7]", "More negative",
+if_else(db_full4new_stim_screen_pupil$ground_valence == "(3.7,5.95]", "Mild",
+if_else(db_full4new_stim_screen_pupil$ground_valence == "(5.95,8.2]", "More positive", NULL))) 
+  
+
+db_full4new_stim_screen_pupil%>%
+    subset(Condition != "Pratice")%>%
+  group_by(stimIAPS,ground_arousal_lab,ground_valence_lab)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, ArousalMean))+
+  geom_point()+
+  geom_hline(yintercept = 4.16)+
+  facet_grid(~ground_valence_lab)
+
+
+db_full4new_stim_screen_pupil%>%
+  subset(Condition != "Pratice")%>%
+  group_by(stimIAPS,ground_arousal_lab,ground_valence_lab)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, ValenceMean))+
+  geom_point()+
+  facet_grid(~ground_valence_lab)
+
+
+```
+
+pupil analyses
+```{r}
+unique(db_full4new_stim_screen_pupil$screencontent)
+
+# db_full4new_stim_screen_pupil_nopract <- subset(db_full4new_stim_screen_pupil, Condition != "Practice")
+# assigne to no pratice just to not to have to requite the whole code beloe but keep pratice
+
+db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil
+unique(db_full4new_stim_screen_pupil_nopract$Condition)
+
+db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil_nopract %>%
+  group_by(stimIAPS) %>%
+  mutate(arousal_outler = if_else(arousal > (median(arousal, na.rm = TRUE) + 
+                                               (4*mad(arousal, na.rm = TRUE))), TRUE,
+         if_else(arousal < (median(arousal, na.rm = TRUE) - 
+                              (4*mad(arousal, na.rm = TRUE))), TRUE, FALSE)))%>%
+  group_by(ssid)%>%
+   mutate(pupil_outlier = if_else(pup_basCor > (median(pup_basCor, na.rm = TRUE) 
+                                                + (3*mad(pup_basCor, na.rm = TRUE))), TRUE,
+         if_else(pup_basCor < (median(pup_basCor, na.rm = TRUE) - 
+                                 (3*mad(pup_basCor, na.rm = TRUE))), TRUE, FALSE)))
+  
+
+unique(db_full4new_stim_screen_pupil_nopract$arousal_outler)
+unique(db_full4new_stim_screen_pupil_nopract$pupil_outlier)
+
+# plot outliers
+db_full4new_stim_screen_pupil_nopract%>%
+  # subset(arousal_outler == TRUE)%>%
+ggplot(aes(x = arousal, color = arousal_outler))+
+  geom_histogram()
+
+db_full4new_stim_screen_pupil_nopract%>%
+  # subset(pupil_outlier == TRUE)%>%
+ggplot(aes(x = pup_basCor, color = pupil_outlier))+
+  geom_histogram()
+
+
+```
+
+# check relationships
+
+```{r}
+db_full4new_stim_screen_pupil_nopract$arousal
+
+subset(db_full4new_stim_screen_pupil_nopract, ssid == 300)
+
+mean(db_full4new_stim_screen_pupil_nopract$ValenceMean)
+range(db_full4new_stim_screen_pupil_nopract$ValenceMean)
+
+# split "ground truth valence"
+db_full4new_stim_screen_pupil_nopract%>%
+  ggplot(aes(ValenceMean))+
+  geom_histogram()
+
+# Create median split valence categories
+
+db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil_nopract%>%
+  ungroup()%>%
+  mutate(mediansplit_ground_valence = if_else(ValenceMean> median(ValenceMean, na.rm = TRUE), "More positive",
+                                              "More negative"),
+         mediansplit_ground_arousal = if_else(ArousalMean> median(ArousalMean, na.rm = TRUE), "Higher arousal",
+                                              "Lower arousal"))
+
+
+
+db_full4new_stim_screen_pupil_nopract%>%
+  subset(Condition != "Pratice")%>%
+  group_by(stimIAPS,mediansplit_ground_arousal,mediansplit_ground_valence)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(mediansplit_ground_arousal, ValenceMean))+
+  geom_jitter(width = .1)+
+  facet_grid(~mediansplit_ground_valence)
+
+```
+
+# db_full4new_stim_screen_pupil_nopract$is_valence_high<- if_else(db_full4new_stim_screen_pupil_nopract$ValenceMean > mean(db_full4new_stim_screen_pupil_nopract$ValenceMean, na.rm = TRUE), "Positive", "Negative")
+# 
+# unique(db_full4new_stim_screen_pupil_nopract$is_valence_high)
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE) %>%
+  group_by(ssid, Alexithymia) %>%
+  mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate) %>%
+  ggplot(aes( pup_basCor, arousal, color = Alexithymia))+
+  geom_point()+
+  stat_summary(fun.data= mean_cl_normal) +
+  facet_grid(~Alexithymia)+
+  geom_smooth(method = 'lm', se = F)+
+  
+  geom_text(aes(label = ssid))
+  facet_grid(~is_valence_high)
+
+
+
+  
+  # 610 is an aypical responder, rated all as low arousing
+  # is the range of arousal responses different for positive vs negative 
+
+  
+# How well pupil tracks arousal self report
+
+
+ one subject 
+```{r}
+ db_full4new_stim_screen_pupil_nopract %>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    subset(ssid == 300)%>%
+  # group_by(ssid, Alexithymia) %>%
+  # mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate) %>%
+  # subset(ssid!= 343)%>%
+  # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes( pup_basCor, arousal))+
+   geom_point()+
+   stat_summary(fun.data= mean_cl_normal) +
+   geom_smooth(method = 'lm', se = F)
+
+
+
+mediansplit_ground_arousal
+ db_full4new_stim_screen_pupil_nopract%>%
+   subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   ggplot(aes(pup_basCor, arousal, color = Alexithymia))+
+   geom_point()+
+   stat_summary(fun.data= mean_cl_normal)+
+   geom_smooth(method = 'lm', se = F)+
+  facet_grid(~ ground_valence_lab)
+ 
+ 
+ 
+ mediansplit_ground_arousal
+ 
+ 
+ db_full4new_stim_screen_pupil_nopract$mediansplit_self_valence<- if_else(db_full4new_stim_screen_pupil_nopract$valence > median(db_full4new_stim_screen_pupil_nopract$valence, na.rm = TRUE), "More positive", "More negative")
+ 
+  db_full4new_stim_screen_pupil_nopract$mediansplit_self_valence_thissample<- if_else(db_full4new_stim_screen_pupil_nopract$valence > median(db_full4new_stim_screen_pupil_nopract$ValenceMeanThisSample, na.rm = TRUE), "More positive", "More negative")
+ 
+ 
+ db_full4new_stim_screen_pupil_nopract %>%
+   subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid,mediansplit_ground_valence,Alexithymia)%>%
+   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+   ggplot(aes(pup_basCor, arousal))+
+   geom_point()+
+   stat_summary(fun.data= mean_cl_normal)+
+   geom_smooth(method = 'lm', se = F)+
+  facet_grid(Alexithymia~ mediansplit_ground_valence)+
+   ggpubr::stat_cor()
+ 
+ 
+```
+ 
+ # yes pupil tracks arousal
+ 
+ # 
+ 
+```{r}
+    db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, mediansplit_ground_arousal, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(mediansplit_ground_arousal, pup_basCor))+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line')
+      # facet_grid(~ Alexithymia)
+    # lowe arousal causes more costruiction
+    
+    db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, mediansplit_ground_valence, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(mediansplit_ground_valence, pup_basCor))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line') 
+    
+    
+        db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, pup_basCor, color = ground_valence_lab))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_jitter(width = .1, alpha = .1)+
+    stat_summary(aes(group = ssid), geom = 'line') 
+        
+        
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, pup_basCor))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line') 
+    
+    # poitive cause stronger constriction
+
+```   
+    
+
+ 
+```{r}
+ # unique(db_full4new_stim_screen_pupil_nopract )
+ # check valence changes arousal ratings
+   db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, mediansplit_ground_valence, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(mediansplit_ground_valence, arousal))+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line')+
+      facet_grid(~ Alexithymia)
+   
+   # no bias in ratings by alexithymia
+
+      db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia,mediansplit_ground_valence)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, arousal))+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line')+
+      facet_grid(~ mediansplit_ground_valence)
+      
+      
+      
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, self_arousal_lab, Alexithymia,mediansplit_self_valence)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal_lab, arousal))+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line')+
+      facet_grid(~ mediansplit_self_valence)
+
+
+
+db_full4new_stim_screen_pupil_nopract$BRIGHTNESS_mediansplit<- if_else(db_full4new_stim_screen_pupil_nopract$BRIGHTNESS> median(db_full4new_stim_screen_pupil_nopract$BRIGHTNESS), "High", "Low")
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  group_by(ssid)%>%
+  mutate(pup_basCor_z = scale(pup_basCor, center = TRUE))%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, self_arousal_lab, BRIGHTNESS_mediansplit, Alexithymia,mediansplit_self_valence)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal_lab, pup_basCor_z))+
+  # geom_half_violin()+
+     # geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary( geom = 'pointrange')+
+      facet_grid(mediansplit_self_valence~BRIGHTNESS_mediansplit )
+  
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  group_by(ssid)%>%
+  mutate(pup_basCor_z = scale(pup_basCor, center = TRUE))%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, self_arousal_lab, Alexithymia,mediansplit_self_valence,BRIGHTNESS_mediansplit)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal_lab, BRIGHTNESS))+
+  # geom_half_violin()+
+     # geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary( geom = 'pointrange')+
+       facet_grid(mediansplit_self_valence~BRIGHTNESS_mediansplit)
+      
+      
+      
+      
+      db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia,mediansplit_ground_valence)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, arousal))+
+     geom_bar(stat="summary", fun.y = "mean")+
+      geom_point()+
+    stat_summary(aes(group = ssid), geom = 'line')+
+      facet_grid(~ mediansplit_ground_valence)
+      
+      
+
+
+```
+compare brighteness we sued and brighteness that i got from imageJ
+```{r}
+library(readr)
+imageJ_IAPS <- read_csv("~/OneDrive - Nexus365/InteroStudy2020/InageJtest/IAPS_MeanGray.csv")
+View(imageJ_IAPS)
+
+brighteness$Label <- substr(brighteness$stimIAPS, 1,8)
+
+
+left_join(brighteness,imageJ_IAPS, by = "Label")%>%
+  ggplot(aes(BRIGHTNESS, Mean))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_text(aes(label = Label))
+```
+
+  
+There is clearly something going on with valence
+- responses to negative are more variable
+- compared to response to positive
+_ what is the correlation between arousal from participants and population ratings
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == "NT")%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid != 610)%>%
+  group_by(ssid, Alexithymia)%>%
+  mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS,psych::fisherz2r(cor_arousal_self_pup)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+
+
+# split by alexithymi and valence
+# unique(db_full4new_stim_screen_pupil_nopract$ssid)
+table(db_full4new_stim_screen_pupil_nopract$ssid)
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == "NT")%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid != 610)%>%
+  group_by(ssid, Alexithymia,mediansplit_ground_valence)%>%
+  mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc,psych::fisherz2r(cor_arousal_self_pup)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()+
+facet_grid(~mediansplit_ground_valence)
+  xlim(60,110)
+
+# IAS has the same effects
+
+
+# db_full4new_stim_screen_pupil_nopract %>%
+#   # subset(Group == "NT")%>%
+#   subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid != 610)%>%
+#   group_by(ssid, Alexithymia,mediansplit_ground_valence)%>%
+#   # mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate)%>%
+#   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   ggplot(aes(TAS,pup_basCor))+
+#   geom_point()+
+#   geom_smooth(method = 'lm', se = F)+
+#   ggpubr::stat_cor()
+# facet_grid(~mediansplit_ground_valence)
+```
+
+db_full4new_stim_screen_pupil_nopract%>%
+  # subset(Group == "NT")%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid != 610)%>%
+  group_by(ssid, Alexithymia)%>%
+  mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Age,psych::fisherz2r(cor_arousal_self_pup)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+# color = Alexithymia)
+
+# concordance now
+
+```{r}
+# split by valence levels
+
+ db_full4new_stim_screen_pupil_nopract$ground_valence_lab<- as_factor( db_full4new_stim_screen_pupil_nopract$ground_valence_lab)
+ 
+ 
+  db_full4new_stim_screen_pupil_nopract$ground_valence_lab<- factor(db_full4new_stim_screen_pupil_nopract$ground_valence_lab, levels = c("More negative", "Mild", "More positive"))
+ 
+ db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    # group_by(ssid,Alexithymia, is_valence_high)%>%
+   group_by(ssid,Alexithymia, ground_valence_lab)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, cortest, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+    ylab("R pupil vs self report arousal")+
+   # ggpubr::stat_compare_means(paired = TRUE)+
+  ggpubr::stat_compare_means(comparisons = my_comparisons, paired = TRUE)
+      facet_grid(~Alexithymia)
+        
+my_comparisons <- c("Mild", "More positive")
+
+# Add pairwise comparisons p-value
+
+
+
+ db_full4new_stim_screen_pupil_nopract %>%
+    # subset(Group == "NT")%>% remians the same with or without
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   subset(pupil_outlier == FALSE) %>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610 & ground_valence_lab!= "More Positive" & ArousalMean>4)%>%
+    ungroup()%>%
+   # subset(ground_valence_lab!= "More Negative" & ArousalMean<7.1)%>%
+   group_by(ssid,ground_valence_lab)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, cortest, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_point()+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+   # ggpubr::stat_compare_means(paired = TRUE)+
+  ggpubr::stat_compare_means(comparisons = my_comparisons, paired = TRUE)
+
+
+```
+
+
+Analyse formally
+```{r}
+
+pupil_models$pupil_from_arousal<- lmer(pup_basCor ~ arousal_c+ (1 +arousal_c| stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & ssid!= 610& 
+                                      arousal_outler == FALSE))
+
+summary(pupil_models$pupil_from_arousal)
+
+# very small holds with slope
+
+
+pupil_models$pupil_from_ars_val<- lmer(pup_basCor ~ arousal_c + valence_c + (1+arousal_c| stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & ssid!= 610& 
+                                      arousal_outler == FALSE))
+
+# interaction of valence is not needed as we controled for these experumentally
+
+summary(pupil_models$pupil_from_ars_val)
+
+
+# concordance
+
+ db_2021_pupil_summ <-  db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+   group_by(ssid,Alexithymia, mediansplit_ground_valence)%>%
+    mutate(R_self_arosual_pupil = cor.test(arousal_c, pup_basCor)$estimate)%>%
+   mutate(R_self_arosual_pupil_fisher = psych::fisherz2r(R_self_arosual_pupil))%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+
+ db_2021_pupil_summ
+
+# let's do an anova first for repeated
+ afex::aov_ez(id = "ssid",
+              dv = "R_self_arosual_pupil_fisher",
+              within = c("mediansplit_ground_valence"),
+              covariate = "TASc",
+              between = NULL,
+              data = db_2021_pupil_summ)
+ 
+ 
+ 
+pupil_models$arousal_from_pup<- lmer(arousal ~  pup_basCor * valence_c + (1| stimIAPS)+(1 | ssid),
+                                     REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & ssid!= 610 &
+                                      arousal_outler == FALSE))
+summary(pupil_models$arousal_from_pup)
+
+
+interactions::interact_plot(pupil_models$arousal_from_pup)
+
+
+pupil_models$valence_from_pup<- lmer(pup_basCor ~   valence_c + (1 +valence_c| ssid),
+                                     REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & ssid!= 610 &
+                                      arousal_outler == FALSE))
+summary(pupil_models$valence_from_pup)
+anova(pupil_models$valence_from_pup)
+
+
+# pupil_models$arousal_from_pup<- lmer(pup_basCor~   valence_c + (1| stimIAPS)+(1 | ssid),
+#                                      REML = FALSE,
+#                       data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & ssid!= 610 &
+#                                       arousal_outler == FALSE))
+# summary(pupil_models$arousal_from_pup)
+```
+
+
+
+SCR
+```{r}
+db_full4new_stim_screen_pupil_nopract%>%
+   subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+    group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+    # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+   ggplot(aes(BIO_TTP.AmpSum_z, arousal))+
+   geom_point()+
+   stat_summary(fun.data= mean_cl_normal)+
+   geom_smooth(method = 'lm', se = F)+
+  xlim(.1,7.5)
+  facet_grid(mediansplit_ground_arousal~ mediansplit_ground_valence)
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+
+# self arousal cut in 3 buckets
+
+db_full4new_stim_screen_pupil_nopract$self_arousal <- cut(db_full4new_stim_screen_pupil_nopract$arousal, 3) 
+unique(db_full4new_stim_screen_pupil_nopract$self_arousal_lab)
+
+db_full4new_stim_screen_pupil_nopract$self_arousal_lab <- as.character(db_full4new_stim_screen_pupil_nopract$self_arousal)
+
+# we need to ciompute arousal mean for this sample
+db_full4new_stim_screen_pupil_nopract%>%
+  group_by(stimIAPS)%>%
+    mutate(ArousalMeanThisSample = mean(arousal, na.rm = TRUE),
+         ArousalSDThisSample  = sd(arousal, na.rm = TRUE),
+         ValenceMeanThisSample = mean(valence, na.rm = TRUE), 
+         ValenceSDThisSample  = sd(valence, na.rm = TRUE))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ArousalMeanThisSample, ArousalMean))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Condition!= "Practice")%>%
+  group_by(stimIAPS)%>%
+  mutate(ArousalMeanThisSample = mean(arousal, na.rm = TRUE),
+         ArousalSDThisSample  = sd(arousal, na.rm = TRUE),
+         ValenceMeanThisSample = mean(valence, na.rm = TRUE), 
+         ValenceSDThisSample  = sd(valence, na.rm = TRUE))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ValenceMeanThisSample, ValenceMean))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+
+db_full4new_stim_screen_pupil_nopract<-
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Condition!= "Practice")%>%
+  group_by(stimIAPS)%>%
+  mutate(ArousalMeanThisSample = mean(arousal, na.rm = TRUE),
+         ArousalSDThisSample  = sd(arousal, na.rm = TRUE),
+         ValenceMeanThisSample = mean(valence, na.rm = TRUE), 
+         ValenceSDThisSample  = sd(valence, na.rm = TRUE))
+
+
+db_full4new_stim_screen_pupil_nopract$self_arousal_lab
+
+range(db_full4new_stim_screen_pupil_nopract$ArousalMeanThisSample)
+range(db_full4new_stim_screen_pupil_nopract$ValenceMeanThisSample)
+db_full4new_stim_screen_pupil_nopract$arousal_sample_cut <- cut(db_full4new_stim_screen_pupil_nopract$ArousalMeanThisSample, 3)
+
+db_full4new_stim_screen_pupil_nopract$valence_sample_cut <- cut(db_full4new_stim_screen_pupil_nopract$ValenceMeanThisSample, 2)
+
+unique(db_full4new_stim_screen_pupil_nopract$arousal_sample_cut)
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, arousal_sample_cut, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(arousal_sample_cut, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_jitter(width = .2, alpha = .3)
+
+
+```
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, self_arousal, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+      
+      
+      
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+      geom_point()
+      
+      
+      
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+      geom_point()
+      
+      
+      
+ # db_full4new_stim_screen_pupil_nopract2 %>%
+ db_full4new_stim_screen_pupil_nopract %>%
+   # subset(Group == "NT")%>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+  #  subset(ssid !=610)%>%
+  # subset(arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   ungroup()%>%
+    group_by(ssid,ground_valence_lab)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_CDA.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, psych::fisherz2r(R_SCR_arousal), color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    # geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')
+ 
+ # correlation between concordance and tas
+  db_full4new_stim_screen_pupil_nopract %>%
+   subset(ssid !=610)%>%
+  subset(arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   ungroup()%>%
+    group_by(ssid)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_CDA.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(TAS, psych::fisherz2r(R_SCR_arousal)))+
+    geom_point()+
+    geom_smooth(method = 'lm', se = F)+
+    ggpubr::stat_cor()
+    facet_grid(~ ground_valence_lab)
+ 
+ 
+ 
+ 
+```
+      
+```{r}      
+# alex
+      db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+      geom_point()
+      
+
+```
+
+TTP
+```{r}
+      
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_TTP.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_point()
+      
+      # scr is tracking arousal
+      
+      
+      
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, self_arousal, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal, BIO_TTP.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+      geom_point()
+      
+      
+      # ttp is tracking aroual both based on self report or "ground" arousal
+      
+      
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_TTP.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+# so TTP is not sensitive to valence but trackign the aerousal that increased with negative or positive valence
+
+# what about concordance
+
+ db_full4new_stim_screen_pupil_nopract %>%
+     # subset(Group == "NT")%>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+   subset(!is.na(BIO_TTP.AmpSum_z))%>%
+    group_by(ssid,ground_valence_lab)%>%
+    mutate(R_TTP_SCR_arousal = cor.test(arousal_c, BIO_TTP.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, R_TTP_SCR_arousal, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+   geom_hline(yintercept = .1)
+ 
+ # In trend terms we see the same pattern as for pupil
+ 
+   db_full4new_stim_screen_pupil_nopract %>%
+   subset(ssid !=610)%>%
+  subset(arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+   subset(!is.na(BIO_TTP.AmpSum_z))%>%
+   ungroup()%>%
+    group_by(ssid)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_TTP.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(TAS, psych::fisherz2r(R_SCR_arousal)))+
+    geom_point()+
+    geom_smooth(method = 'lm', se = F)+
+    ggpubr::stat_cor()
+
+    
+```
+      
+
+```{r}    
+    db_full4new_stim_screen_pupil_nopract %>%
+    subset(ssid !=610)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia, BIO_TTP.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_point()
+      
+      
+```
+      
+      
+      
+# ICR
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+     subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.SCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+     
+# CDA SCR is tracking arousall
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+     subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, self_arousal, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal, BIO_CDA.SCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+     
+     
+  # CDA arousal tracks arousal whether self report or ground but ground is more robust
+
+  # the valence effects?
+     
+     db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_CDA.SCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+     
+     
+#  not a clear cut for valence
+
+
+
+# concordance with CDA SCR
+     
+     # what about concordance
+
+ db_full4new_stim_screen_pupil_nopract %>%
+   # subset(Group == "NT")%>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+   subset(!is.na(BIO_CDA.SCR_z))%>%
+    group_by(ssid,ground_valence_lab)%>%
+    mutate(R_TTP_SCR_arousal = cor.test(arousal_c, BIO_CDA.SCR_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, R_TTP_SCR_arousal, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+   geom_hline(yintercept = .1)
+     
+     
+     
+     
+db_full4new_stim_screen_pupil_nopract %>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+  subset(!is.na(BIO_CDA.SCR_z))%>%
+  group_by(ssid)%>%
+  mutate(cor_arousal_self_scr = cor.test(arousal, BIO_CDA.SCR_z, use = 'complete.obs')$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc,psych::fisherz2r(cor_arousal_self_scr)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+
+
+
+
+
+
+
+
+```
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+     subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia, BIO_CDA.SCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_point()
+
+#  this is odd as all otehr measures show reduced arousal on TAS
+# notre that this measure doesn't tarck aorusal that well when we use sel reported arousal
+
+
+```
+
+# ICR
+
+```{r}
+db_full4new_stim_screen_pupil_nopract$ground_arousal_lab<- factor(db_full4new_stim_screen_pupil_nopract$ground_arousal_lab, levels = c("Low", "Mid", "High"))
+
+db_full4new_stim_screen_pupil_nopract %>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.ISCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+     
+     # seems to be tracking arousal generally
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, self_arousal, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal, BIO_CDA.ISCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+     # facet_grid(~Alexithymia)+
+       # geom_jitter(width = .2, alpha = .2)+
+  ylim(-.55,.8)
+     # same but not so robust basd on self report
+
+
+
+
+     
+   # find participnat outliers  # 
+  db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil_nopract%>%
+    # subset(ssid !=610)%>%
+  # subset( arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid)%>%
+    mutate(pp_arousal = mean(arousal, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(pp_arousal_outler = if_else(pp_arousal > (median(pp_arousal, na.rm = TRUE) +
+                                               (3*mad(pp_arousal, na.rm = TRUE))), TRUE,
+         if_else(pp_arousal < (median(pp_arousal, na.rm = TRUE) -
+                              (3*mad(pp_arousal, na.rm = TRUE))), TRUE, FALSE)))
+
+  db_full4new_stim_screen_pupil_nopract$pp_arousal_outler
+  
+  # table(  db_full4new_stim_screen_pupil_nopract$pp_arousal_outler) approx 3 people
+  arrange(arousal)
+
+# db_full4new_stim_screen_pupil_nopract %>%
+#     # subset(ssid !=610)%>%
+#   subset(pp_arousal_outler == FALSE & pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+#    group_by(ssid)%>%
+#   mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+#   ungroup()%>%
+#     group_by(ssid, ground_valence_lab, Alexithymia)%>%
+#     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   ggplot(aes( BIO_CDA.ISCR_z))+
+#       geom_histogram()
+       
+       
+# 322 (mean arousal of about 7) and 608 mean of 4, 606 is only detected if we use st of 3. 610 also appears as outlier in this case
+       
+  
+  
+  
+    # the valence effects?
+     
+     db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_CDA.ISCR_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+     
+     
+     
+     
+     # What abouit concordance
+     
+ db_full4new_stim_screen_pupil_nopract %>%
+   subset(Group == "NT")%>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+   subset(!is.na(BIO_CDA.ISCR_z))%>%
+    group_by(ssid,ground_valence_lab, Alexithymia)%>%
+    mutate(R_TTP_SCR_arousal = cor.test(arousal_c, BIO_CDA.ISCR_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, R_TTP_SCR_arousal, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+   geom_hline(yintercept = .1)
+   facet_grid(~Alexithymia)
+ 
+ # same trebds the more positive the more consistent report is compared to negative
+ # - is this related to one of the signals/precision (magnitude) - e.f. a self report bias (restricted range ion genetive ratings)
+ # - is this related to the precisio or magnitude of the arousal signals (negative and positive here have the same degree of actiovation, but negative sligtly stronger ())
+     
+```
+       
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+    # subset(ssid !=610)%>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+  
+   group_by(ssid)%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(arousal, BIO_CDA.ISCR_z))+
+            geom_point()+
+            geom_smooth(method = 'lm', se = F)+
+        ggpubr::stat_cor()
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+     facet_grid(~Alexithymia)
+
+
+
+
+
+
+```
+
+
+# Phasic
+
+```{r}
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.PhasicMax_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_jitter(width = .1)+
+   geom_boxplot(alpha=.1)
+
+```
+     facet_grid(~Alexithymia)
+
+# Valence effect
+     db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_CDA.PhasicMax_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+        geom_boxplot()
+     facet_grid(~Alexithymia)
+
+```{r}
+# Alexithymia effects is clearer here
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+  ungroup()%>%
+   # group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia, BIO_CDA.PhasicMax_z))+
+ 
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+   # geom_boxplot()+
+  geom_jitter(width = .2, alpha = .2)
+
+# does the same effect hold in a scatterplot
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+  ungroup()%>%
+   # group_by(ssid)%>%
+  # mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS, BIO_CDA.PhasicMax))+
+     #  stat_summary(geom = 'pointrange')+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_point()+
+  # xlim(10,73)+
+  ggpubr::stat_cor()+
+  geom_smooth(method = 'lm', se = F)
+
+
+```
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS, BIO_CDA.PhasicMax_z))+
+     #  stat_summary(geom = 'pointrange')+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_point()+
+    geom_smooth(aes(group = ssid),method = 'lm', se = F)+
+  xlim(10,73)+
+  ggpubr::stat_cor()
+
+```
+
+
+```{r}
+ db_full4new_stim_screen_pupil_nopract %>%
+   # subset(Group == "NT")%>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+   subset(!is.na(BIO_CDA.ISCR_z))%>%
+    group_by(ssid,ground_valence_lab, Alexithymia)%>%
+    mutate(R_TTP_SCR_arousal = cor.test(arousal_c, BIO_CDA.PhasicMax_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, R_TTP_SCR_arousal, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+   geom_hline(yintercept = .1)
+   facet_grid(~Alexithymia)
+```
+
+
+BIOGLOBAL
+```{r}
+# global
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(log(BIO_Global.Mean+.1), center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia,ground_arousal_lab)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_Global.Mean_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_jitter(width = .2, alpha = .2)
+
+
+# db_full4new_stim_screen_pupil_nopract %>%
+#     subset(pp_arousal_outler == FALSE)%>%
+#   subset( arousal_outler == FALSE )%>%
+#        subset(!is.na(Alexithymia))%>%
+#    group_by(ssid)%>%
+#   mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+#   ungroup()%>%
+#     group_by(ssid, Alexithymia,ground_arousal_lab)%>%
+#     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   ggplot(aes(ground_arousal_lab, BIO_Global.Mean_z))+
+#       stat_summary(geom = 'pointrange')+
+#      geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+#   geom_jitter(width = .2, alpha = .2)
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia,self_arousal_lab)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal_lab, BIO_Global.Mean_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_jitter(width = .2, alpha = .2)
+
+# its also tracking on a partiicpnat basis but less rpbustly
+
+
+# this is tracking arousal
+
+# valeence effect
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia,ground_valence_lab)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_Global.Mean_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_jitter(width = .2, alpha = .2)
+
+# negatiove has more arousal here
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+  
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ungroup()%>%
+  mutate(ppBIO_Global.Mean_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,
+if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,FALSE)))%>%
+  subset(ppBIO_Global.Mean_outlier == FALSE)%>%
+  
+  ggplot(aes(Alexithymia, BIO_Global.Mean_z))+
+      stat_summary(geom = 'pointrange')+
+  geom_jitter(aes(color = ppBIO_Global.Mean_outlier),widht = .2, alpha = .2)+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_boxplot(alpha = .2)
+
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == 'NT')%>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+   ungroup()%>%
+  mutate(ppBIO_Global.Mean_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,
+if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,FALSE)))%>%
+  subset(ppBIO_Global.Mean_outlier == FALSE)%>%
+  # subset(ssid!= 343)%>%
+   # subset(ssid!= 306)%>%
+  ggplot(aes(TAS, BIO_Global.Mean_z))+
+     #  stat_summary(geom = 'pointrange')+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = 'lm', se = F)+
+  geom_text(aes(label = ssid))
+
+```
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == 'NT')%>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+   ungroup()%>%
+  mutate(ppBIO_Global.Mean_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,
+if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-
+                                                                    (4*mad(BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,FALSE)))%>%
+  ggplot(aes(BIO_Global.Mean_z, fill = ppBIO_Global.Mean_outlier))+
+  geom_histogram()
+
+# yep clear outliers, is this caused by some trials or all of their data
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+  subset(!is.na(Alexithymia))%>%
+  group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+  ungroup()%>%
+  mutate(ppBIO_Global.Mean_outlier = if_else(pp_BIO_Global.Mean_z > (median(pp_BIO_Global.Mean_z, na.rm = TRUE)+
+                                                                    (5*mad(pp_BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,
+if_else(pp_BIO_Global.Mean_z < (median(pp_BIO_Global.Mean_z, na.rm = TRUE)-
+                                                                    (5*mad(pp_BIO_Global.Mean_z, na.rm = TRUE))), 
+                                             TRUE,FALSE)))%>%
+  # subset(ssid!= 900)%>%
+  # subset(ssid!= 312)%>%
+  group_by(ssid,ppBIO_Global.Mean_outlier)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(BIO_Global.Mean_z, fill =ppBIO_Global.Mean_outlier))+
+  geom_histogram()
+  ylim(0,10)
+
+
+  
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+  subset(ssid == 312)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  mutate(BIO_Global.Mean_z_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+(3*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE,
+if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-(3*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE, FALSE)))%>%
+  # mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+    ggplot(aes(BIO_Global.Mean_z, fill = BIO_Global.Mean_z_outlier))+
+  geom_histogram()
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+  subset(ssid == 900)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  mutate(BIO_Global.Mean_z_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+(3*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE,
+if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-(3*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE, FALSE)))%>%
+  # mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+    ggplot(aes(BIO_Global.Mean_z, fill = BIO_Global.Mean_z_outlier))+
+  geom_histogram()
+
+# db_full4new_stim_screen_pupil_nopract %>%
+#   subset(pp_arousal_outler == FALSE)%>%
+#   subset( arousal_outler == FALSE )%>%
+#   # subset(ssid == 311)%>%
+#   ungroup()%>%
+#   mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+#   mutate(BIO_Global.Mean_z_outlier = if_else(BIO_Global.Mean_z > (median(BIO_Global.Mean_z, na.rm = TRUE)+(4*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE,
+# if_else(BIO_Global.Mean_z < (median(BIO_Global.Mean_z, na.rm = TRUE)-(4*mad(BIO_Global.Mean_z, na.rm = TRUE))), TRUE, FALSE)))%>%
+#   # subset(ssid != 900)%>%
+#   # subset(ssid!= 312)%>%
+#   group_by(ssid,BIO_Global.Mean_z_outlier)%>%
+#   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   # mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+#     ggplot(aes(BIO_Global.Mean_z, fill = BIO_Global.Mean_z_outlier))+
+#   geom_histogram()
+  
+```
+# plot their own distribuition compard to otehr people
+
+
+
+# lett's plot them on a histogram
+# thre are outliers here, once outliers are fixed patterns become normal - that is TAS = les aroual
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+  subset(ssid == 900)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+  summarise_at(c("BIO_Global.Mean_z"), mean, na.rm = TRUE)
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+  subset(ssid == 306)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  mutate(pp_BIO_Global.Mean_z = mean(BIO_Global.Mean_z, na.rm= TRUE))%>%
+  summarise_at(c("BIO_Global.Mean_z"), mean, na.rm = TRUE)
+
+# the reason why these are outleirs is because they have a relativelly large mean even though its pverall small
+```
+
+# concordance - we need to remove those people from concordance
+
+
+
+```{r}
+
+db_full4new_stim_screen_pupil_nopract %>%
+   # subset(Group == "NT")%>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+  # subset(ssid!= 900)%>% #outlier SCR mean
+  # subset(ssid!= 312)%>%
+   group_by(ssid)%>%
+  mutate(BIO_Global.Mean_z = scale(BIO_Global.Mean, center = TRUE)[,1])%>%
+  ungroup()%>%
+   subset(!is.na(BIO_CDA.ISCR_z))%>%
+    group_by(ssid,ground_valence_lab, Alexithymia)%>%
+    mutate(R_TTP_SCR_arousal = cor.test(arousal_c, BIO_Global.Mean_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, R_TTP_SCR_arousal, color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+  geom_boxplot(alpha = .2)
+   geom_hline(yintercept = .1)
+   # facet_grid(~Alexithymia)
+
+```
+
+
+      
+```{r}
+# so this is tracking arousal
+# now lets check the arousal valence thing
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+    # subset(ssid !=610)%>%
+
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_jitter(width = .2)
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+    # subset(ssid !=610)%>%
+
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS, BIO_CDA.AmpSum_z))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_jitter(width = .2)
+# it is tracking arousal
+
+# sellf arousal calculation  ight be worn, we need to comoute and average arousal for this sample and use that otehrwise we are assuming patticipants rtaings are correct
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+    # subset(ssid !=610)%>%
+
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, self_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(self_arousal_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_jitter(width = .2)+
+  geom_boxplot(alpha = .2)+
+  ylim(-.8,1) #potential outliers]
+  
+  
+```
+
+
+# valence
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+    # subset(ssid !=610)%>%
+ 
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, BIO_CDA.AmpSum_z))+
+      stat_summary(geom = 'pointrange')+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      geom_jitter(width = .2)
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+   subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(arousal_c, BIO_CDA.AmpSum_z))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+      # stat_summary(geom = 'pointrange')+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      # geom_jitter(width = .2)+
+  facet_grid(~ground_valence_lab)
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+   subset(pp_arousal_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(!is.na(Alexithymia)) %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax_collapsed, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(arousal_c, BIO_CDA.PhasicMax_z))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+      # stat_summary(geom = 'pointrange')+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .2)+
+      # geom_jitter(width = .2)+
+  facet_grid(~ground_valence_lab)
+
+
+
+```
+
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  ggplot(aes(ground_valence_lab, gaze_valid_prop))+
+  stat_summary(aes(group = ssid),geom = 'point', alpha = .2)+
+  stat_summary(geom = 'pointrange')
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  ggplot(aes(ground_valence_lab, sdevgaze_parsed))+
+  # stat_summary(aes(group = ssid),geom = 'point', alpha = .2)+
+  stat_summary(geom = 'pointrange')
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+  ggplot(aes(ground_valence_lab, GTE))+
+  # stat_summary(aes(group = ssid),geom = 'point', alpha = .2)+
+  stat_summary(geom = 'pointrange')
+
+```
+```
+      
+      
+      
+      
+  #     db_full4new_stim_screen_pupil_nopract %>%
+  #   subset(ssid !=610)%>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+  #  group_by(ssid)%>%
+  # mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  # ungroup()%>%
+  #   group_by(ssid, ground_valence_lab, Alexithymia)%>%
+  #   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  # ggplot(aes(ground_valence_lab, ValenceMean))+
+  #     stat_summary(geom = 'pointrange')+
+  #    geom_bar(stat="summary", fun.y = "mean", alpha = .2)
+  #     geom_point()   
+  #     
+
+ as.numeric(as.character(db_full4new_stim_screen_pupil_nopract$ssid))
+ 
+ db_full4new_stim_screen_pupil_nopract2<- db_full4new_stim_screen_pupil_nopract
+ 
+ db_full4new_stim_screen_pupil_nopract2<-  db_full4new_stim_screen_pupil_nopract2 %>%
+   subset(ssid !=610 &  as.numeric(as.character(ssid))>303)%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])
+   
+  
+ 
+  db_full4new_stim_screen_pupil_nopract2 %>%
+    subset(ground_valence_lab == "Mild")
+  
+   db_full4new_stim_screen_pupil_nopract2$ssid<- as.factor( db_full4new_stim_screen_pupil_nopract2$ssid)
+   
+  table(is.na(db_full4new_stim_screen_pupil_nopract2$BIO_CDA.AmpSum_z))
+    table(is.na(db_full4new_stim_screen_pupil_nopract2$arousal_c))
+    
+    
+
+```
+
+
+```{r}
+ db_full4new_stim_screen_pupil_nopract2 %>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   ungroup()%>%
+    group_by(ssid,ground_valence_lab)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_CDA.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, psych::fisherz2r(R_SCR_arousal), color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')
+
+
+
+ db_full4new_stim_screen_pupil_nopract2 %>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   ungroup()%>%
+    group_by(ssid,ground_valence_lab)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_CDA.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_lab, psych::fisherz2r(R_SCR_arousal), color = ground_valence_lab))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')
+
+ 
+```
+
+
+```{r}
+  db_full4new_stim_screen_pupil_nopract2 %>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   group_by(ssid)%>%
+    mutate(BIO_TTP.AmpSum_z = scale(BIO_TTP.AmpSum, center = TRUE)[,1])%>%
+    
+    
+    group_by(ssid,mediansplit_ground_valence)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_TTP.AmpSum_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(mediansplit_ground_valence, psych::fisherz2r(R_SCR_arousal), color = mediansplit_ground_valence))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')
+          # stat_summary(aes(group = ssid), geom = 'line')+
+  
+  
+  
+```
+
+
+```{r}
+
+
+db_full4new_stim_screen_pupil_nopract2 %>%
+   subset(!is.na(BIO_CDA.AmpSum_z))%>%
+   group_by(ssid)%>%
+    mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+    
+    
+    group_by(ssid,mediansplit_ground_valence)%>%
+    mutate(R_SCR_arousal = cor.test(arousal_c, BIO_CDA.PhasicMax_z, use = "complete")$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(mediansplit_ground_valence, psych::fisherz2r(R_SCR_arousal), color = mediansplit_ground_valence))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')
+
+```
+
+
+
+about hear rate
+
+```{r}
+
+
+db_full6new_stim_hr1$is_valence_high<- if_else(db_full6new_stim_hr1$ValenceMean>= mean(db_full6new_stim_hr1$ValenceMean, na.rm = TRUE), "Positive","Negative")
+
+unique(  db_full6new_stim_hr1$screencontent)
+ db_full6new_stim_hr1 %>%
+    subset(ssid ==332)%>%
+  subset(!is.na(Alexithymia))%>%
+  ggplot(aes(Bio_Mean_HR, arousal, color = Alexithymia))+
+  geom_point()+
+  stat_summary(fun.data= mean_cl_normal) +
+  geom_smooth(method = 'lm', se = F)+
+  facet_grid(~is_valence_high)
+
+
+
+```
+
+ How well do our participants ratings correlate with norms
+ 
+ 
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  group_by(ssid)%>%
+  mutate(sample_vs_pop_arousal_cor = cor.test(arousal,ArousalMean)$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  # ggplot(aes(psych::fisherz2r(sample_vs_pop_arousal_cor)))+
+  # geom_histogram()
+ggplot(aes(sample_vs_pop_arousal_cor, Age))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  xlim(.2,.9)+
+  ggpubr::stat_cor()
+ 
+ 
+```
+   
+# LMM version
+
+```{r}
+
+# lmm pupil
+
+pupil_models$pupil_to_arousal<- lmer(arousal ~ pup_basCor + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, pupil_outlier == FALSE & arousal_outler == FALSE))
+
+summary(pupil_models$pupil_to_arousal)
+
+
+pupil_models$pupil_tas_to_arousal <- lmer(arousal ~ TASc * pup_basCor + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & Age<60 & ssid!=610))
+ # pupil_outlier == FALSE & Group == "NT"
+
+summary(pupil_models$pupil_tas_to_arousal)
+anova(pupil_models$pupil_tas_to_arousal)
+
+
+plot(pupil_models$pupil_tas_to_arousal)
+qqnorm(resid(pupil_models$pupil_tas_to_arousal))
+
+interactions::interact_plot(pupil_models$pupil_tas_to_arousal, pred = pup_basCor, modx = TASc, plot.points = TRUE)
+
+
+```
+
+subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & pupil_outlier == FALSE)%>%
+  ggplot(aes(pup_basCor, arousal, color = Alexithymiasd, group = Alexithymiasd))+
+  geom_smooth(method = 'lm', se = F)
+  stat_summary(fun= 'mean', geom = 'pointrange')
+  
+  
+# AQ
+  
+pupil_models$pupil_aq_to_arousal <- lmer(arousal ~ AQc * pup_basCor + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & Age<60 & ssid!= 610))
+ # pupil_outlier == FALSE & Group == "NT"
+
+summary(pupil_models$pupil_aq_to_arousal)
+anova(pupil_models$pupil_aq_to_arousal)
+
+
+# BVAQ
+pupil_models$pupil_bvaq_to_arousal <- lmer(arousal ~ BVAQc * pup_basCor + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & Age< 60 & ssid!= 610))
+ # pupil_outlier == FALSE & Group == "NT"
+summary(pupil_models$pupil_bvaq_to_arousal)
+anova(pupil_models$pupil_bvaq_to_arousal)
+
+# IAS
+db_full4new_stim_screen_pupil_nopract$IASc<- scale(db_full4new_stim_screen_pupil_nopract$IAS, center = TRUE, scale = TRUE)[,1]
+pupil_models$pupil_ias_to_arousal <- lmer(arousal ~ IASc * pup_basCor + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & Age< 60 & ssid!=610))
+ # pupil_outlier == FALSE & Group == "NT"
+summary(pupil_models$pupil_ias_to_arousal)
+anova(pupil_models$pupil_ias_to_arousal)
+
+# DASS
+range(db_full4new_stim_screen_pupil_nopract$Age, na.rm = TRUE)
+
+# include valence
+
+db_full4new_stim_screen_pupil_nopract$ValenceMeanc<- scale(db_full4new_stim_screen_pupil_nopract$ValenceMean, center = TRUE, scale = TRUE)[,1]
+pupil_models$pupil_tas_to_arousal_val <- lmer(arousal ~ TASc*pup_basCor * valence_c + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & Age<60 & ssid!= 610))
+
+
+summary(pupil_models$pupil_tas_to_arousal_val)
+
+
+```
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract$is_valencer_positive_pp <- if_else(db_full4new_stim_screen_pupil_nopract$valence> median(db_full4new_stim_screen_pupil_nopract$valence), "More Positive", "More Negative")
+
+db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+  ggplot(aes(pup_basCor, arousal_c, color = Alexithymia))+
+  geom_point()+
+    stat_summary(fun.data= mean_cl_normal) +
+   geom_smooth(method = 'lm', se = F)
+
+  
+ db_full4new_stim_screen_pupil_nopract$is_valence_high<- if_else(db_full4new_stim_screen_pupil_nopract$ValenceMean> median(db_full4new_stim_screen_pupil_nopract$ValenceMean, na.rm = TRUE), "More Positive", "More Negative")
+  
+ 
+# split by valence levels
+ db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    # group_by(ssid,Alexithymia, is_valence_high)%>%
+   group_by(ssid,Alexithymia, ground_valence_cat)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_cat, cortest, color = ground_valence_cat))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+    ylab("R pupil vs self report arousal")
+      facet_grid(~Alexithymia)
+      
+      
+      
+ db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    # group_by(ssid,Alexithymia, is_valence_high)%>%
+   group_by(ssid,stim, ground_valence_cat)%>%
+    # mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(arousal_c, pup_basCor))+
+   geom_point()+
+   geom_smooth(method = 'lm',se = F)+
+           # geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        # stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+    # ylab("R pupil vs self report arousal")+
+      facet_grid(~ ground_valence_cat)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ db_full4new_stim_screen_pupil_nopract %>%
+   group_by(ssid, ground_valence_cat)%>%
+   mutate(sd_self_arousal = sd(arousal, na.rm = TRUE))%>%
+   mutate(sd_self_pupil = sd(pup_basCor, na.rm = TRUE))%>%
+   summarise_if(is.numeric, mean,na.rm = TRUE)%>%
+   ggplot(aes(ground_valence_cat, sd_self_arousal))+
+   geom_point()+
+   geom_boxplot()+
+   stat_summary(geom = 'pointrange')
+ 
+ 
+ 
+  db_full4new_stim_screen_pupil_nopract %>%
+   group_by(ssid, ground_arousal_cat, ground_valence_cat)%>%
+   mutate(sd_self_arousal = sd(arousal, na.rm = TRUE))%>%
+   mutate(sd_self_pupil = sd(pup_basCor, na.rm = TRUE))%>%
+   summarise_if(is.numeric, mean,na.rm = TRUE)%>%
+   ggplot(aes(ground_arousal_cat, pup_basCor))+
+   geom_point()+
+   geom_boxplot()+
+   stat_summary(geom = 'pointrange')+
+   facet_grid(~ ground_valence_cat)
+   
+  
+  unique(db_full4new_stim_screen_pupil$Condition)
+     db_full4new_stim_screen_pupil %>%
+       subset(Condition != "Practice")%>%
+       group_by(stimIAPS,stimDescription)%>%
+    summarise_at(c("ValenceMean", "ArousalMean"), mean, na.rm = TRUE)%>%
+         subset(stimDescription == "Mutilation")
+       
+
+as.factor(as.character(unique(db_full4new_stim_screen_pupil $stimIAPS)))
+  db_full4new_stim_screen_pupil %>%
+    group_by(stimIAPS)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(ArousalMean))+
+    geom_histogram(alpha = .3)+
+    # geom_histogram(aes(x = ValenceMean), fill = 'green', alpha = .1)+
+    theme_bw()+
+      xlim(1,9)
+   
+ 
+    
+      db_full4new_stim_screen_pupil %>%
+    group_by(stimIAPS)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(ValenceMean))+
+    geom_histogram(alpha = .3)+
+    # geom_histogram(aes(x = ValenceMean), fill = 'green', alpha = .1)+
+    theme_bw()+
+      xlim(1,9)
+      
+      
+```
+
+```{r}
+ 
+ 
+  db_full4new_stim_screen_pupil_nopract %>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    # group_by(ssid,Alexithymia, is_valence_high)%>%
+   group_by(ssid,Alexithymia, ground_arousal_cat)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_arousal_cat, cortest, color = ground_arousal_cat))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+    ylab("R pupil vs self report arousal")+
+      facet_grid(~Alexithymia)
+  
+  
+db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid,Alexithymia, ground_valence_cat)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_valence_cat, pup_basCor, color = ground_valence_cat))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+    # ylab("R pupil vs self report arousal")+
+      facet_grid(~Alexithymia)
+
+
+
+db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid,Alexithymia, ground_arousal_cat)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(ground_arousal_cat, pup_basCor, color = ground_arousal_cat))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')
+    # ylab("R pupil vs self report arousal")+
+      facet_grid(~Alexithymia)
+  
+  
+    db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, ground_valence_cat)%>%
+      summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+      ggplot(aes(ground_valence_cat,SacAmp))+
+      # geom_point()+
+      stat_summary(geom = 'pointrange')
+      
+      summarise_at(c("valence", "ValenceMean"), mean, na.rm = TRUE)
+      
+      
+      
+      
+    db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid,stimIAPS)%>%
+    # mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(arousal_c, pup_basCor, color = ssid))+
+           # geom_point()+
+      geom_smooth(method = 'lm', se = F)
+      ggpubr::stat_cor()
+  
+    db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, ground_valence_cat)%>%
+      summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+      ggplot(aes(ground_valence_cat,SacAmp))+
+      # geom_point()+
+      stat_summary(geom = 'pointrange')
+      
+      summarise_at(c("valence", "ValenceMean"), mean, na.rm = TRUE)
+  
+```
+  
+  
+```{r}
+    
+    # using participants positivs
+
+      db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid, is_valencer_positive_pp)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(is_valencer_positive_pp, cortest, color = is_valencer_positive_pp))+
+    stat_summary(geom = 'pointrange')
+    geom_point()
+    
+    
+    
+    test_pup<- db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid,Alexithymia, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+    
+    
+    testpup2<- db_full4new_stim_screen_pupil_nopract%>%
+  subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610)%>%
+    group_by(ssid, is_valencer_positive_pp)%>%
+    mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+    
+    
+    
+    
+      afex::aov_ez(id = "ssid",
+             dv = "cortest",
+             within = "is_valence_high",
+             between = NULL,
+             covariate = "TAS",
+             fun_aggregate = NULL,
+             data = test_pup)
+      
+      
+         afex::aov_ez(id = "ssid",
+             dv = "cortest",
+             within = "is_valencer_positive_pp",
+             between = NULL,
+             covariate = "TAS",
+             fun_aggregate = NULL,
+             data = testpup2)
+         
+         
+```
+
+    
+    
+
+
+```{r}
+  # scr_models
+unique(db_full6new_304_up$screencontent)
+summary(lmer(BIO_CDA.AmpSum ~ TASc + (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(db_full6new_304_up$TASc)  & Group == "NT")))
+
+
+summary(lmer(BIO_CDA.ISCR ~ TASc + (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(db_full6new_304_up$TASc) & Group == "NT")))
+
+
+summary(lmer(log1p(BIO_CDA.ISCR+.1) ~ TASc + (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+
+
+
+summary(lmer(log1p(BIO_CDA.AmpSum+.1) ~ TASc + (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+
+
+summary(lmer(log1p(BIO_CDA.SCR+.1) ~ TASc + (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+
+summary(lmer(log1p(BIO_CDA.PhasicMax+.1) ~ TASc+ (1 | stimIAPS) + (1 | ssid),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+
+summary(lmer(log1p(BIO_TTP.AmpSum+.1) ~ TASc+ (1 | ssid) + (1+TASc | stimIAPS),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+summary(scr_models$a5)
+
+db_full6new_304_up%>%
+  subset(!is.na(TASc) & Group == "NT")%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc, log1p(BIO_TTP.AmpSum+1)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+db_full6new_304_up%>%
+  subset(!is.na(TASc) & Group == "NT")%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc, log1p(BIO_CDA.ISCR +1)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+
+
+db_full6new_304_up%>%
+  subset(!is.na(TASc) & Group == "NT")%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  mutate()
+  ggplot(aes(TASc, log1p(BIO_CDA.ISCR +1)))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()
+  
+  
+  
+  
+  
+summary(lmer(log1p(BIO_TTP.AmpSum+.1) ~ valence + (1 | ssid) + (1+TASc | stimIAPS),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+  
+
+summary(lmer(arousal ~ BIO_CDA.ISCR  + (1 | ssid) + (1+TASc | stimIAPS),
+             REML = FALSE, data = subset(db_full6new_304_up, !is.na(TASc) & Group == "NT")))
+  
+
+db_full6new_304_up%>%
+  subset(!is.na(TASc) & Group == "NT")%>%
+  group_by(ssid, is_valence_high)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(sqrt(BIO_CDA.AmpSum_collapsed+1), arousal))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  ggpubr::stat_cor()+
+  facet_grid(~is_valence_high)
+  
+  
+```
+
+  unique(db_full6new_304_up$screencontent)
+  
+  db_full6new_304_up$is_valence_high <- if_else(db_full6new_304_up$ValenceMean > mean(db_full6new_304_up$ValenceMean, na.rm = TRUE), "Positive", "Negative")
+  
+  
+  
+  
+  db_full4new_stim_screen_pupil_nopract$ground_valence_cat<-
+  if_else(db_full4new_stim_screen_pupil_nopract$ValenceMean<4, "negative",
+        if_else(db_full4new_stim_screen_pupil_nopract$ValenceMean>6, "positive", "neutral"))
+
+    
+  unique(db_full4new_stim_screen_pupil_nopract$is_valence_high)
+  db_full4new_stim_screen_pupil_nopract%>%
+  subset(!is.na(Alexithymia) & ssid!= 610 & ssid>303& !is.na(is_valence_high))%>%
+    group_by(ssid, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, BIO_CDA.ISCR)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(is_valence_high, cortest, color = is_valence_high))+
+    stat_summary(geom = 'pointrange')
+    geom_point()
+  
+  
+    db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, ground_valence_cat,Alexithymia)%>%
+  # subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high))%>%
+    subset(!is.na(Alexithymia) & ssid >303 & !is.na(ground_valence_cat))%>%
+    mutate(cortest = cor.test(arousal_c, BIO_CDA.AmpSum_collapsed)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    ggplot(aes(ground_valence_cat, cortest, color = ground_valence_cat))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+      # facet_grid(~Alexithymia)+
+        ylab("R - SCR vs arousal self")
+    
+    
+      db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, ground_arousal_cat,Alexithymia)%>%
+  # subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high))%>%
+    subset(!is.na(Alexithymia) & ssid >303 & !is.na(ground_arousal_cat))%>%
+    mutate(cortest = cor.test(arousal_c, BIO_CDA.AmpSum_collapsed)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    ggplot(aes(ground_arousal_cat, cortest, color = ground_arousal_cat))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+      facet_grid(~Alexithymia)+
+        ylab("R - SCR vs arousal self")
+    
+    
+    
+    # SCR
+        db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, ground_valence_cat,Alexithymia)%>%
+    subset(!is.na(Alexithymia) & ssid >303 & !is.na(ground_valence_cat))%>%
+    mutate(cortest = cor.test(arousal_c, BIO_CDA.ISCR)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    ggplot(aes(ground_valence_cat, BIO_CDA.ISCR, color = ground_valence_cat))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+      # facet_grid(~Alexithymia)+
+        ylab("SCR")
+        
+        
+ db_full4new_stim_screen_pupil_nopract$is_arousal_high    <- if_else(db_full4new_stim_screen_pupil_nopract$ArousalMean>= median(db_full4new_stim_screen_pupil_nopract$ArousalMean, na.rm=TRUE), "High", "Low") 
+ 
+ 
+ 
+  db_full4new_stim_screen_pupil_nopract$is_arousal_high_self    <- if_else(db_full4new_stim_screen_pupil_nopract$arousal>= median(db_full4new_stim_screen_pupil_nopract$arousal, na.rm=TRUE), "High", "Low") 
+ 
+ db_full4new_stim_screen_pupil_nopract%>%
+   subset(ssid>303)%>%
+   group_by(ssid)%>%
+   mutate(BIO_CDA.ISCR_z = (BIO_TTP.AmpSum - mean(BIO_TTP.AmpSum, na.rm = TRUE))/sd(BIO_TTP.AmpSum, na.rm =TRUE))%>%
+   # db_full4new_stim_screen_pupil_nopract %>%
+    group_by(ssid, ground_valence_cat,Alexithymia)%>%
+    subset(!is.na(Alexithymia) & ssid >303 & !is.na(ground_arousal_cat))%>%
+    # mutate(cortest = cor.test(arousal_c, CDA.PhasicMax)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    ggplot(aes(ground_valence_cat,BIO_CDA.ISCR_z, color = ground_valence_cat))+
+           # geom_bar(stat="summary", fun.y = "mean") +
+  
+    # geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+      # facet_grid(~Alexithymia)+
+        ylab("SCR")
+ db_full4new_stim_screen_pupil_nopract%>%
+   group_by(stimIAPS, ground_valence_cat, stimDescription)%>%
+   summarise_at(c("TAS"),mean, na.rm = TRUE)%>%
+   arrange(ground_valence_cat)
+ 
+```
+
+ 
+ 
+ 
+ 
+ 
+       db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil_nopract %>%
+   subset(ssid>303 & !is.na(BIO_TTP.AmpSum))%>%
+   group_by(ssid)%>%
+   mutate(BIO_TTP.AmpSum_z = (BIO_TTP.AmpSum - mean(BIO_TTP.AmpSum, na.rm = TRUE))/sd(BIO_TTP.AmpSum, na.rm =TRUE))
+         
+       
+    test_cor<-   db_full4new_stim_screen_pupil_nopract%>%
+      group_by(ssid, ground_valence_cat)%>%
+
+    mutate(cortest = cor.test(arousal, BIO_TTP.AmpSum, use = "complete.obs")$estimate)
+       
+   unique(test_cor$cortest)    
+       
+  test_cor1<-   test_cor%>%
+      group_by(ssid, ground_valence_cat, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+      test_cor1%>%
+        subset(ground_valence_cat!= "neutral")%>%
+  ggplot(aes(ground_valence_cat, cortest, color = ground_valence_cat))+
+           geom_bar(stat="summary", fun.y = "mean") +
+  
+    geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          stat_summary(aes(group = ssid), geom = 'line')+
+      # facet_grid(~Alexithymia)+
+        ylab("R - SCR vs arousal self")+
+        ylim(-.5,.7)
+ 
+ 
+ 
+
+
+```
+
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+      group_by(ssid, is_arousal_high_self,Alexithymia)%>%
+    subset(!is.na(Alexithymia) & ssid >303 & !is.na(is_arousal_high_self))%>%
+    # mutate(cortest = cor.test(arousal_c, CDA.PhasicMax)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    ggplot(aes(is_arousal_high_self, BIO_CDA.PhasicMax, color = is_arousal_high_self))+
+           # geom_bar(stat="summary", fun.y = "mean") +
+  
+    # geom_jitter(width = .1, alpha = .3)+
+        stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+      # facet_grid(~Alexithymia)+
+        ylab("SCR")
+
+
+
+ db_full4new_stim_screen_pupil_nopract %>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid!= 610 & BIO_CDA.ISCR>.5)%>%
+    # group_by(ssid,Alexithymia, is_valence_high)%>%
+   group_by(ssid,stim, ground_valence_cat)%>%
+    # mutate(cortest = cor.test(arousal_c, pup_basCor)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+        ggplot(aes(arousal_c, BIO_CDA.PhasicMax, color = ssid))+
+   # geom_point()+
+   geom_smooth(method = 'lm',se = F)+
+           # geom_bar(stat="summary", fun.y = "mean")+
+  
+    # geom_jitter(width = .1, alpha = .1)+
+        # stat_summary( geom = 'pointrange')+
+          # stat_summary(aes(group = ssid), geom = 'line')+
+    # ylab("R pupil vs self report arousal")+
+      facet_grid(~ ground_valence_cat)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ db_full4new_stim_screen_pupil_nopract %>%
+   group_by(ssid, ground_arousal_cat)%>%
+   mutate(sd_self_arousal = sd(arousal, na.rm = TRUE))%>%
+   mutate(sd_self_scr = sd(log1p(BIO_CDA.AmpSum+.1), na.rm = TRUE))%>%
+   summarise_if(is.numeric, mean,na.rm = TRUE)%>%
+   ggplot(aes(ground_arousal_cat, sd_self_scr))+
+   geom_point()+
+   geom_boxplot()+
+   stat_summary(geom = 'pointrange')
+```
+
+
+```{r}
+      test_scr<- db_full6new_304_up %>%
+  subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high))%>%
+    group_by(ssid,Alexithymia, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, BIO_CDA.ISCR_collapsed)$estimate)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+    
+    
+      summary(lm(psych::fisherz2r(cortest) ~ is_valence_high * AQ, data=test_scr ))
+      afex::aov_ez(id = "ssid",
+             dv = "cortest",
+             within = "is_valence_high",
+             between = "TAS",
+             # covariate = "TAS",
+             fun_aggregate = NULL,
+             data = test_scr)
+      
+  justone_test<- subset(db_full6new_304_up, as.numeric(as.character(ssid))  <305)  
+      rmcorr::rmcorr(participant = "ssid",
+                     measure1 = "arousal_c",
+                     measure2 = "BIO_CDA.ISCR_collapsed",
+                     dataset = justone_test)
+      
+      
+  ?rmcorr::rmcorr 
+      
+      
+      db_full6new_304_up$valence_c
+      
+      
+      
+db_full6new_304_up$BIO_CDA.PhasicMax_z<- scale(db_full6new_304_up$BIO_CDA.PhasicMax, center = TRUE, scale = TRUE)[,1]
+      
+test<- lmer(arousal ~ Bio_Mean_HR *is_valence_high* TASc + (1| ssid) + (1|stimIAPS), data = db_full6new_304_up)
+summary(test)
+interactions::interact_plot(test, pred = Bio_Mean_HR, modx =TASc)
+
+
+
+```
+
+```{r}
+    
+    
+      # heart rarte
+    
+  db_full6new_304_up %>%
+  subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high) & !is.na(Bio_Mean_HR))%>%
+    group_by(ssid,Alexithymia, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, Bio_Mean_HR)$estimate)%>%
+  
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(is_valence_high, psych::fisherz2r(cortest), color = is_valence_high))+
+      # ggplot(aes(is_valence_high, cortest, color = is_valence_high))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+  stat_summary( geom = 'pointrange')+
+  stat_summary(aes(group = ssid), geom = 'line')+
+ylab("HR vs Self arousal")
+      facet_grid(~Alexithymia)
+
+
+
+  db_full6new_304_up %>%
+  subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high) & !is.na(Bio_Mean_HR))%>%
+    group_by(ssid,Alexithymia, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, Bio_Mean_HR)$estimate)%>%
+  
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(is_valence_high, Bio_Mean_HR, color = is_valence_high))+
+      # ggplot(aes(is_valence_high, cortest, color = is_valence_high))+
+           geom_bar(stat="summary", fun.y = "mean")+
+  
+    geom_jitter(width = .1, alpha = .1)+
+  stat_summary( geom = 'pointrange')+
+  stat_summary(aes(group = ssid), geom = 'line')+
+ylab("HR vs Self arousal")+
+      facet_grid(~Alexithymia)
+  
+    # geom_point()+
+        stat_summary(geom = 'pointrange')
+      # geom_point()+
+      facet_grid(~Alexithymia)
+    
+  
+test_hr<-   db_full6new_304_up %>%
+  subset(!is.na(Alexithymia) & ssid!= 610 & !is.na(is_valence_high) & !is.na(Bio_Mean_HR))%>%
+    group_by(ssid,Alexithymia, is_valence_high)%>%
+    mutate(cortest = cor.test(arousal_c, Bio_Mean_HR)$estimate)%>%
+  
+    summarise_if(is.numeric, mean, na.rm = TRUE)
+  
+# regular lm treats these as independent so don't do that
+summary(lm(cortest ~ is_valence_high, data=test_hr ))
+
+install.packages("afex")
+?afex::aov_ez
+afex::aov_ez(id = "ssid",
+             dv = "cortest",
+             within = "is_valence_high",
+             between = NULL,
+             covariate = "TAS",
+             fun_aggregate = NULL,
+             data = test_hr)
+
+
+     afex::aov_ez(id = "ssid",
+             dv = "cortest",
+             within = "is_valence_high",
+             between = "Alexithymia",
+             # covariate = "TAS",
+             fun_aggregate = NULL,
+             data = test_hr)
+
+```
+
+
+
+  
+
+# clinical variables
+#nd the opposite
+
+db_full4new_stim_screen_pupil_nopract$Alexithymiasd <- 
+  if_else(db_full4new_stim_screen_pupil_nopract$TASc > (mean(db_full4new_stim_screen_pupil_nopract$TASc, na.rm = TRUE)+sd(db_full4new_stim_screen_pupil_nopract$TASc, na.rm = TRUE)), "+1sd",
+          if_else(db_full4new_stim_screen_pupil_nopract$TASc < (mean(db_full4new_stim_screen_pupil_nopract$TASc, na.rm = TRUE)-sd(db_full4new_stim_screen_pupil_nopract$TASc, na.rm = TRUE)), "-1sd", "Mean"))
+
+db_full4new_stim_screen_pupil_nopract$Alexithymiasd
+
+interactions::interact_plot(pupil_models$pupil_tas_to_arousal, pred = pup_basCor, modx = TASc, plot.points = TRUE)+
+  xlim(-8,6)
+
+subset(db_full4new_stim_screen_pupil_nopract, arousal_outler == FALSE & !is.na(Alexithymiasd))%>%
+  group_by(Alexithymiasd)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(pup_basCor, arousal, color = Alexithymiasd, group = Alexithymiasd))+
+  # geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  stat_summary(fun= 'mean', geom = 'pointrange')
+          
+
+
+# pupil_models$pupil_tas_to_arousal, pred = pup_basCor, modx = TASc
+interaction.plot(dose, supp, len, fixed = TRUE
+
+# emmeans::emmip(pupil_models$pupil_tas_to_arousal, ~pup_basCor*  TASc,  cov.reduce = TRUE)
+
+
+# aq
+
+```
+
+
+# 
+
+
+
+pupil_models$a.2<- lmer(arousal ~  TASc* pup_basCor_c+ BRIGHTNESSc +(1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+
+
+
+db_full4new_stim_pupil$arousal_p<- db_full4new_stim_pupil$arousal+10
+pupil_models$tas_model <- lmer(arousal ~  TASc* pup_basCor_c + (1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+anova(pupil_models$tas_model)
+
+plot(pupil_models$tas_model)
+qqnorm(resid(pupil_models$tas_model))
+qqline(resid(pupil_models$tas_model))
+
+library(ggplot2)
+
+ggplot()+
+  geom_histogram(aes(x = resid(pupil_models$tas_model)))
+
+
+db_full4new_stim_pupil %>%
+  subset()
+  group_by(ssid, arousal_outler)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  
+  # subset(arousal_outler == TRUE)%>%
+ggplot(aes(x = TASc, arousal))+
+  geom_point()
+
+
+
+
+```
+
+
+
+pupil_models$brightness<- lmer(arousal ~  pup_basCor_c+ BRIGHTNESSc +(1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+pupil_models$brightness2<- lmer(arousal ~  BRIGHTNESSc +(1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+pupil_models$pupilonly<- lmer(arousal ~  pup_basCor_c +(1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+
+r.squaredGLMM(pupil_models$tas_model)
+r.squaredGLMM(pupil_models$brightness)
+r.squaredGLMM(pupil_models$brightness2)
+r.squaredGLMM(pupil_models$pupilonly)
+
+install.packages("sjstats")
+library(sjstats)
+r2(pupil_models$tas_model)
+
+pupil_models$alex_pup<- lmer(arousal ~  TASc* pup_basCor_c +(1 | stimIAPS)  +(1 | ssid), REML = FALSE,
+                      data = subset(db_full4new_stim_pupil, !is.na(db_full4new_stim_pupil$TASc)))
+
+summary(pupil_models$a.2)
+
+# get confidence interval for all terms
+boot::boot.ci(pupil_models$a.2_boot, type = "perc", index = 3)
+
+library(MuMIn)
+
+
+
+
+```
+
+
+
+
+
+
+
+

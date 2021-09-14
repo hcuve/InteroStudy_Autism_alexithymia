@@ -1,0 +1,367 @@
+---
+title: "ESCAN"
+author: "Helio"
+date: "02/06/2021"
+output: html_document
+---
+What to sue fo the presentation
+- is alexithymia related to concordance - pupil and arousal better concordance -
+- pupil atenuated relation for alexithymic 9 both aggregated plot, and the the lmer plot
+
+- SCR relicateded LMMS
+- additional low SCR effect
+
+```{r}
+library(gghalves)
+
+# pupil tracks arousal
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler== FALSE)%>%
+  subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, pup_basCor, color = ground_arousal_lab,fill = ground_arousal_lab))+
+      
+  
+ geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     # geom_bar(stat="summary", fun.y = "mean", width = .2)+
+      geom_jitter(width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = 1, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("Baseline corrected pupil")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")
+
+
+install.packages("ggside")
+library(ggExtra)
+library(ggside)
+
+pupil_arousal<- db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler== FALSE)%>%
+  subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, ground_arousal_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_arousal_lab, pup_basCor,fill = ground_arousal_lab))+
+ # geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .3, width = .5)+
+      geom_jitter(aes(color = ground_arousal_lab),width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = .4, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+    geom_ysidedensity(aes(x=stat(density),color = ground_arousal_lab), alpha = .4)+
+  # geom_xsidedensity(aes(y=stat(density)), color = FALSE, alpha = .5)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("Baseline corrected pupil")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")
+
+pupil_arousal
+
+ggsave("pupil_arousal.png", pupil_arousal, device = "png", width = 10, height = 7, dpi = 800)
+  
+
+
+
+```
+
+
+Pupil tracks valence
+
+```{r}
+
+db_full4new_stim_screen_pupil_nopract %>%
+    subset(pp_arousal_outler== FALSE)%>%
+  subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, ground_valence_lab, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(ground_valence_lab, pup_basCor,fill = ground_valence_lab))+
+ # geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .3, width = .5)+
+      geom_jitter(aes(color = ground_valence_lab),width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = .4, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+    geom_ysidedensity(aes(x=stat(density),color = ground_valence_lab), alpha = .4)+
+  # geom_xsidedensity(aes(y=stat(density)), color = FALSE, alpha = .5)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("Baseline corrected pupil")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")
+
+
+```
+
+Pupil tracks alexithymia effeccts
+```{r}
+ground_valence_lab
+
+library(ggside)
+library(ggExtra)
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == "NT")%>%
+   subset(pp_arousal_outler== FALSE)%>%
+  subset(pupil_outlier == FALSE)%>%
+  # subset(!is.na(Alexithymia))%>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia) & ssid != 610)%>%
+  group_by(ssid, Alexithymia)%>%
+  mutate(cor_arousal_self_pup = cor.test(arousal, pup_basCor, use = 'complete.obs')$estimate)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc,psych::fisherz2r(cor_arousal_self_pup)))+
+  geom_point(size =2)+
+  geom_ysidedensity(aes(x=stat(density), alpha = .4))+
+   geom_xsidedensity(aes(y=stat(density), alpha = .4))+
+  # geom_xsidedensity(aes(x=stat(density), alpha = .4))+
+  # geom_xsidedensity(aes(x=stat(density),color = ground_arousal_lab), alpha = .4)+
+  # geom_smooth(method = 'lm', se = F)+
+  geom_smooth(method=lm, se=FALSE, linetype="dashed",
+             color="darkred")+
+  ggpubr::stat_cor()+
+  xlab("Alexithymia (Z)")+
+  ylab("Subjective/Objective arousal matching")+
+p$graphstyle
+  
+
+
+```
+
+
+
+
+```{r}
+interactions::interact_plot(pupil_models$pupil_tas_to_arousal, pred = pup_basCor, modx = TASc)+
+  xlab("Baseline corrected pupil")+
+  ylab("Self reported arousal")+
+  theme_bw()
+  p$graphstyle
+
+
+```
+
+
+SCR
+```{r}
+db_full4new_stim_screen_pupil_nopract <- db_full4new_stim_screen_pupil_nopract %>%
+    # subset(pp_arousal_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  # subset(pupil_outlier == FALSE & arousal_outler == FALSE & !is.na(Alexithymia))%>%
+   group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  mutate(BIO_CDA.AmpSum_z = scale(BIO_CDA.AmpSum, center = TRUE)[,1])%>%
+  mutate(BIO_CDA.ISCR_z = scale(BIO_CDA.ISCR, center = TRUE)[,1])%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR, center = TRUE)[,1])%>%
+  ungroup()%>%
+  mutate(BIO_CDA.PhasicMax_z_acrossall = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])
+  
+
+
+
+scr_models$escan1<- lmer(BIO_CDA.SCR_z ~ arousal_c+ (1|ssid) + (1|stimIAPS),
+                        REML = FALSE,
+                        data = subset(db_full4new_stim_screen_pupil_nopract, !is.na(Alexithymia)))
+
+summary(scr_models$escan1)
+
+# the 
+scr_models$escan<- lmer(log1p(BIO_CDA.PhasicMax+.1) ~ TASc*arousal_c * valence_c+(1|ssid) + (1|stimIAPS),
+                        REML = FALSE,
+                        data = subset(db_full4new_stim_screen_pupil_nopract, Group == "NT" &!is.na(Alexithymia)))
+
+
+scr_models$escan<- lmer(arousal_c ~ TASc*BIO_CDA.PhasicMax_z  + (1|ssid) + (1|stimIAPS),
+                        REML = FALSE,
+                        data = subset(db_full4new_stim_screen_pupil_nopract, !is.na(Alexithymia)))
+
+
+summary(scr_models$escan)
+
+db_full4new_stim_screen_pupil_nopract %>%
+  # subset(Group == "NT")%>%
+   # subset(pp_arousal_outler== FALSE)%>%
+  subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+  mutate(logBIO_CDA.PhasicMax = log1p(BIO_CDA.PhasicMax+.1))%>%
+  group_by(ssid,Alexithymia)%>%
+  mutate(logBIO_CDA.PhasicMax_mean = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  group_by(ssid,stimIAPS)%>%
+  mutate(logBIO_CDA.PhasicMax_mean_stim = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc,logBIO_CDA.PhasicMax))+
+  # stat_summary(geom = 'pointrange')+
+  
+  geom_smooth(aes(group = stimIAPS, y =logBIO_CDA.PhasicMax_mean_stim), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  stat_summary(geom = 'pointrange', pch = 1)+
+   # geom_ysidedensity(aes(x=stat(density), alpha = .4))+
+   # geom_xsidedensity(aes(y=stat(density), alpha = .4))+
+    # geom_point(aes(color = ssid),size =2, pch  = 1)+
+  
+  
+  # ggpubr::stat_cor()+
+  xlab("Alexithymia (Z)")+
+  ylab("SCR")+
+p$graphstyle
+
+
+```
+
+
+
+
+```{r}
+db_full4new_stim_screen_pupil_nopract %>%
+  subset(pp_arousal_outler == FALSE)%>%
+  subset( arousal_outler == FALSE )%>%
+       subset(!is.na(Alexithymia))%>%
+  ungroup()%>%
+   # group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax, center = TRUE)[,1])%>%
+  ungroup()%>%
+    group_by(ssid, Alexithymia)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia, y = BIO_CDA.PhasicMax_z, fill = Alexithymia))+
+
+  stat_summary(geom = 'pointrange')+
+  geom_bar(stat="summary", fun.y = "mean", alpha = .2, width = .5)+
+   # geom_boxplot(alpha = .1)+
+  geom_jitter(width = .15, alpha = .2)+
+   geom_ysidedensity(aes(x=stat(density)), alpha = .4)+
+  ylim(-.7,2)+
+    xlab("Alexithymia (Z)")+
+  ylab("SCR")+
+  p$graphstyle+
+  scale_color_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")
+  
+
+
+
+summary(lmer(BIO_CDA.PhasicMax ~  TASc *arousal_c*valence_c+ (1|ssid) + (1|stimIAPS),
+     REML = FALSE,
+     data = db_full4new_stim_screen_pupil_nopract))
+
+
+```
+
+
+
+
+```{r}
+
+
+mutate(logBIO_CDA.PhasicMax = log1p(BIO_CDA.PhasicMax+.1))%>%
+  group_by(ssid,Alexithymia)%>%
+  mutate(logBIO_CDA.PhasicMax_mean = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  group_by(ssid,stimIAPS)
+  
+  library
+db_full4new_stim_screen_pupil_nopract %>%
+    # subset(pp_arousal_outler== FALSE)%>%
+  # subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, mediansplit_sample_arousal2, Alexithymia, mediansplit_sample_valence2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(mediansplit_sample_arousal2, BIO_CDA.PhasicMax_z,fill = mediansplit_sample_arousal2))+
+ # geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .3, width = .5)+
+  # geom_boxplot()+
+      geom_jitter(aes(color = mediansplit_sample_arousal2),width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = .4, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+    # geom_ysidedensity(aes(x=stat(density),color = ground_arousal_lab), alpha = .4)+
+  # geom_xsidedensity(aes(y=stat(density)), color = FALSE, alpha = .5)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("SCR (z)")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  facet_grid(~mediansplit_sample_valence2)+
+  ggpubr::stat_compare_means()
+
+
+
+
+db_full4new_stim_screen_pupil_nopract %>%
+    # subset(pp_arousal_outler== FALSE)%>%
+  # subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, Alexithymia, mediansplit_sample_valence2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  mutate(BIO_CDA.PhasicMax_z_f_diff = BIO_CDA.PhasicMax_z[mediansplit_sample_valence2 == "More positive"]-
+           BIO_CDA.PhasicMax_z[mediansplit_sample_valence2 == "More negative"])%>%
+  subset(BIO_CDA.PhasicMax_z_f_diff<0)%>%
+  ggplot(aes(mediansplit_sample_valence2, BIO_CDA.PhasicMax_z,fill = mediansplit_sample_valence2))+
+ # geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     geom_bar(stat="summary", fun.y = "mean", alpha = .3, width = .5)+
+  # geom_boxplot()+
+      geom_jitter(aes(color = mediansplit_sample_valence2),width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = .4, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+    # geom_ysidedensity(aes(x=stat(density),color = ground_arousal_lab), alpha = .4)+
+  # geom_xsidedensity(aes(y=stat(density)), color = FALSE, alpha = .5)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("SCR (z)")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  # facet_grid(~mediansplit_sample_valence2)+
+  ggpubr::stat_compare_means()
+
+
+
+db_full4new_stim_screen_pupil_nopract_nt %>%
+  subset(!is.na(mediansplit_sample_valence2))%>%
+  subset(!is.na(BIO_CDA.PhasicMax_z))%>%
+    # subset(pp_arousal_outler== FALSE)%>%
+  # subset(pupil_outlier == FALSE)%>%
+  subset(!is.na(Alexithymia))%>%
+    group_by(ssid, Alexithymia, mediansplit_sample_valence2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  mutate(BIO_CDA.PhasicMax_z_f_diff = BIO_CDA.PhasicMax_z[mediansplit_sample_valence2 == "More positive"]-
+           BIO_CDA.PhasicMax_z[mediansplit_sample_valence2 == "More negative"])%>%
+  # subset(BIO_CDA.PhasicMax_z_f_diff<0)%>%
+  mutate(bowtie = if_else(BIO_CDA.PhasicMax_z_f_diff>0, "pos", "neg"))%>%
+  # group_by(ssid, bowtie)%>%
+    # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  
+  ggplot(aes(AQ,BIO_CDA.PhasicMax_z))+
+  geom_point()+
+  geom_smooth(method = 'lm',se = F)+
+  facet_grid(~bowtie)
+
+
+  geom_point()
+  geom_jitter(alpha = .1, width =.1)+
+  stat_summary(geom = 'pointrange', width =1)
+  # geom_smooth(method = 'lm')
+ # geom_half_violin(colour = FALSE, alpha = .3, size = 5)+
+     # geom_bar(stat="summary", fun.y = "mean", alpha = .3, width = .5)
+
+```
+
+  # geom_boxplot()+
+      geom_jitter(aes(color = mediansplit_sample_valence2),width = .1, alpha=.2)+
+    stat_summary(aes(group = ssid), geom = 'line', alpha = .1, size = .4, colour = "Black") +
+  stat_summary(geom = 'pointrange', width =1)+
+    # geom_ysidedensity(aes(x=stat(density),color = ground_arousal_lab), alpha = .4)+
+  # geom_xsidedensity(aes(y=stat(density)), color = FALSE, alpha = .5)+
+  p$graphstyle+
+  xlab("Arousal")+
+  ylab("SCR (z)")+
+  scale_color_brewer(palette = "Dark2")+
+   scale_fill_brewer(palette = "Dark2")+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  # facet_grid(~mediansplit_sample_valence2)+
+  ggpubr::stat_compare_means()
+
+
+```

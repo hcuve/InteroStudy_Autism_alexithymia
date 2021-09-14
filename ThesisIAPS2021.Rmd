@@ -1,0 +1,1012 @@
+---
+title: "ThesisIAPS2021"
+author: "Helio"
+date: "13/09/2021"
+output: html_document
+---
+
+
+Related scripts
+- Paper_analyses_subj_Obje_arousal
+
+Related datasets
+db_full4new_stim_screen_pupil_nopract
+
+#######################################
+PUPIL
+######################################
+```{r}
+unique(db_full4new_stim_screen_pupil_nopract$ssid)
+# missing data
+
+356
+# 357 = 312_2021 (missing pratice behavioural data)
+611-617
+
+312 = 357
+
+311/357 = 611
+
+# Pupil
+
+```
+
+
+Importing new datasets
+
+```{r}
+library(readr)
+library(tidyverse)
+# currendatasets::
+db_full4new_stim_screen_pupil_nopract
+
+# importinng subjects 356, 357 and 611 to 616, note that gaze data for 616 is invalid
+# participant 615 is obese so the physio data might be compromised due to heavy breathing during the session
+db_356_357_611_616 <- read_csv("tmp.df4_sum_full_bio_hr_self_parsed_356_357_611_616.csv")
+
+
+# rename a few columns to match current dataset
+
+db_356_357_611_616<- db_356_357_611_616 %>%
+  rename(Gender = gender)%>%
+  rename(menalHealth = `mental_health-text`)
+
+# subset stim to match current dataset
+
+db_356_357_611_616_stim<- subset(db_356_357_611_616, db_356_357_611_616$screencontent == "stim")
+
+# a few more columns need renaming
+
+# db_356_357_611_616_stim<- db_356_357_611_616_stim %>% 
+#   rename(Age = Age)%>%
+#   rename(Gender = gender_response)
+
+
+# NOW bind rows
+db_full4new_stim_screen_pupil_nopract_backup_befoe356_611_616<- db_full4new_stim_screen_pupil_nopract
+db_full4new_stim_screen_pupil_nopract<- db_full4new_stim_screen_pupil_nopract_backup_befoe356_611_616
+
+colnames(db_356_357_611_616_stim)
+colnames(db_full4new_stim_screen_pupil_nopract)
+
+
+
+
+
+db_full4new_stim_screen_pupil_select <- db_full4new_stim_screen_pupil_nopract %>%
+  select(c(ssid,subject, Condition,screencontent, screencontent_no, text, tNo,trialUnq,
+           stimIAPS,stimDescription, arousal, valence,
+           ArousalMean, ValenceMean, pup_basCor, gaze_loss_prop,gaze_valid_prop,
+           completion_code, Gender:BVAQ, WASIM, BIO_CDA.AmpSum:BIO_Global.Mean,
+           fix_count:RMS, POGsd:SacAmp))
+
+pupil_select_cols<- names(db_full4new_stim_screen_pupil_select)
+
+colnames(db_full4new_stim_screen_pupil_select)
+
+# select similar columns in the new data and make them if they don't exist
+
+db_356_357_611_616_stim$correction <- db_356_357_611_616_stim$`EyesightResponse-text`
+db_356_357_611_616_stim$mentalHealth<- db_356_357_611_616_stim$menalHealth
+db_356_357_611_616_stim$eyeColor<- db_356_357_611_616_stim$`eye_colour-text`
+db_356_357_611_616_stim$FirstLanguage<- NA
+
+db_356_357_611_616_stim$IAS<- NA
+db_356_357_611_616_stim$STAIIT<- NA
+db_356_357_611_616_stim$STAIIS<- NA
+db_356_357_611_616_stim$sdevgaze_parsed<- NULL
+
+db_356_357_611_616_stim$Group <- if_else(db_356_357_611_616_stim$ssid> 400, "ASD", "NT")
+
+# select
+db_356_357_611_616_stim_select<- select(db_356_357_611_616_stim, 
+                                        c(pupil_select_cols))
+
+
+
+# now merge current and new
+db_full4new_stim_screen_pupil_select_priortomerge<- db_full4new_stim_screen_pupil_select
+db_356_357_611_616_stim_select$ssid<- as.character(db_356_357_611_616_stim_select$ssid)
+db_full4new_stim_screen_pupil_select$ssid<- as.character(db_full4new_stim_screen_pupil_select$ssid)
+db_356_357_611_616_stim_select$tNo<- as.character(db_356_357_611_616_stim_select$tNo)
+db_full4new_stim_screen_pupil_select$tNo <- as.character(db_full4new_stim_screen_pupil_select$tNo)
+
+db_full4new_stim_screen_pupil_select<- 
+  bind_rows(db_full4new_stim_screen_pupil_select, db_356_357_611_616_stim_select)
+
+
+save(db_356_357_611_616,db_356_357_611_616_stim, db_full4new_stim_screen_pupil_nopract, db_full4new_stim_screen_pupil_select, "InteroStudy21Thesis.Rdata")
+
+
+```
+demographics
+
+```{r}
+db_full4new_stim_screen_pupil_select$Group<- if_else(as.numeric(db_full4new_stim_screen_pupil_select$ssid)>
+                                                       500 & as.numeric(db_full4new_stim_screen_pupil_select$ssid) < 700, "ASD", "NT")
+
+unique(db_full4new_stim_screen_pupil_select$Gender)
+table(is.na(db_full4new_stim_screen_pupil_select$Gender))
+
+demog_summ<- db_full4new_stim_screen_pupil_select%>%
+  group_by(ssid, Group, Gender)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+write_csv(demog_summ, "demog_summ.csv")
+
+save(db_356_357_611_616,db_356_357_611_616_stim, db_full4new_stim_screen_pupil_nopract, db_full4new_stim_screen_pupil_select,demog_summ, "InteroStudy21Thesis.Rdata")
+                                                     
+
+```
+
+
+Merge brightness data
+
+```{r}
+db_full4new_stim_screen_pupil_select$stimIAPS[db_full4new_stim_screen_pupil_select$stimIAPS== "2900.1.jpg"]<- "2900.jpg1.jpg"
+
+db_full4new_stim_screen_pupil_select$stimIAPS[db_full4new_stim_screen_pupil_select$stimIAPS== "2345.1.jpg"]<- "2345.jpg1.jpg"
+
+db_full4new_stim_screen_pupil_select$Label<- substr(db_full4new_stim_screen_pupil_select$stimIAPS, 1,8)
+
+db_full4new_stim_screen_pupil_select$stimIAPS2<- substr(db_full4new_stim_screen_pupil_select$stimIAPS, 1,4)
+imageJ_IAPS
+imageJ_IAPS$stimIAPS2<- imageJ_IAPS$Label2
+
+imageJ_IAPS$Label2<- NULL
+
+db_full4new_stim_screen_pupil_select1 <- dplyr::left_join(db_full4new_stim_screen_pupil_select, imageJ_IAPS, by = "stimIAPS2")
+
+
+save(db_356_357_611_616,db_356_357_611_616_stim, 
+     db_full4new_stim_screen_pupil_nopract, db_full4new_stim_screen_pupil_select,
+     demog_summ,db_full4new_stim_screen_pupil_select1,
+     imageJ_IAPS, file = "test.Rdata")
+```
+
+
+Pupil models
+
+```{r}
+
+# flag outliers
+# pupil  - flad outliers based on range of responses of each participant
+# for arousal - and valence flag it based on average responses across participants
+
+db_full4new_stim_screen_pupil_select1
+
+
+ db_full4new_stim_screen_pupil_select1<- db_full4new_stim_screen_pupil_select1 %>%
+  group_by(stimIAPS) %>%
+  mutate(arousal_outler = if_else(arousal > (median(arousal, na.rm = TRUE) + 
+                                               (4*mad(arousal, na.rm = TRUE))), TRUE,
+         if_else(arousal < (median(arousal, na.rm = TRUE) - 
+                              (4*mad(arousal, na.rm = TRUE))), TRUE, FALSE)))%>%
+   mutate(valence_outler = if_else(valence > (median(valence, na.rm = TRUE) + 
+                                               (4*mad(valence, na.rm = TRUE))), TRUE,
+         if_else(valence < (median(valence, na.rm = TRUE) - 
+                              (4*mad(valence, na.rm = TRUE))), TRUE, FALSE)))%>%
+  group_by(ssid)%>%
+   mutate(pupil_outlier = if_else(pup_basCor > (median(pup_basCor, na.rm = TRUE) 
+                                                + (3*mad(pup_basCor, na.rm = TRUE))), TRUE,
+         if_else(pup_basCor < (median(pup_basCor, na.rm = TRUE) - 
+                                 (3*mad(pup_basCor, na.rm = TRUE))), TRUE, FALSE)))
+ 
+ 
+ # quick check
+ db_full4new_stim_screen_pupil_select1%>%
+   subset(ssid == 339)%>%
+   # subset(pupil_outlier == FALSE)%>%
+   
+   ggplot(aes(pup_basCor))+
+   geom_histogram()+
+   facet_grid(~pupil_outlier)
+
+ db_full4new_stim_screen_pupil_select1%>%
+   subset(ssid == 339)%>%
+   # subset(pupil_outlier == FALSE)%>%
+   
+   ggplot(aes(arousal))+
+   geom_histogram()+
+   facet_grid(~arousal_outler)
+
+
+
+```
+
+center and scale predictors
+```{r}
+table(is.na(db_full4new_stim_screen_pupil_select1$Group))
+db_full4new_stim_screen_pupil_select1<- db_full4new_stim_screen_pupil_select1 %>%
+    ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1],
+         BPQc = scale(BPQ)[,1],
+         WASIM_c =scale(WASIM)[,1],
+         DASSTotalc = scale(DASSTotal)[,1])
+
+
+db_full4new_stim_screen_pupil_select1$Group_NT_pos<- if_else(db_full4new_stim_screen_pupil_select1$Group == "NT", +.5, -.5)
+
+```
+
+Formal models
+
+```{r}
+options(contrasts = c("contr.sum","contr.poly"))
+options(scipen = 999)
+
+# first concordance
+
+# across all participants
+db_full4new_stim_screen_pupil_select1%>%
+  subset(Group == "NT")%>%
+  subset(pupil_outlier == FALSE)%>%
+   # subset(valence_outler == FALSE)%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(ssid!= 356)%>% #clear pupil outlier
+  subset(ssid!= 351)%>%
+  subset(ssid!= 344)%>% #anthony
+  group_by(ssid, Group)%>%
+  mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS,cor_ar_pup, color = Group))+
+  geom_point()+
+  geom_text(aes(label = ssid))+
+    geom_smooth(method = lm, se = F)+
+    ggpubr::stat_cor()
+
+# aq
+
+db_full4new_stim_screen_pupil_select1%>%
+  subset(Group == "ASD")%>%
+  subset(pupil_outlier == FALSE)%>%
+   subset(gaze_valid_tresh == "include")%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(ssid!= 356)%>% #clear pupil outlier
+  subset(ssid!= 351)%>%
+  subset(ssid!= 344)%>% #anthony
+  group_by(ssid, Group)%>%
+  mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS,cor_ar_pup, color = Group))+
+  geom_point()+
+  geom_text(aes(label = ssid))+
+    geom_smooth(method = lm, se = F)+
+    ggpubr::stat_cor()
+
+table(is.na(db_full4new_stim_screen_pupil_select1$TAS))
+
+test<- subset(db_full4new_stim_screen_pupil_select1, is.na(TAS))
+test$ssid
+
+unique(test$ssid)
+ # 344 601 352 355 614
+
+db_full4new_stim_screen_pupil_select1$TAS[db_full4new_stim_screen_pupil_select1$ssid == 355]<- 67
+db_full4new_stim_screen_pupil_select1$AQ[db_full4new_stim_screen_pupil_select1$ssid == 355]<- 19
+# db_full4new_stim_screen_pupil_select1$AQ[db_full4new_stim_screen_pupil_select1$ssid == 355]<- 19
+
+db_full4new_stim_screen_pupil_select1$TAS[db_full4new_stim_screen_pupil_select1$ssid == 352]<- 46
+db_full4new_stim_screen_pupil_select1$AQ[db_full4new_stim_screen_pupil_select1$ssid == 352]<- 19
+
+# 601
+db_full4new_stim_screen_pupil_select1$TAS[db_full4new_stim_screen_pupil_select1$ssid == 601]
+db_full4new_stim_screen_pupil_select1$AQ[db_full4new_stim_screen_pupil_select1$ssid == 601]
+
+
+# 614
+db_full4new_stim_screen_pupil_select1$TAS[db_full4new_stim_screen_pupil_select1$ssid == 601]
+db_full4new_stim_screen_pupil_select1$AQ[db_full4new_stim_screen_pupil_select1$ssid == 601]
+
+db_full4new_stim_screen_pupil_select1$Alexithymia_cutoff<- if_else(db_full4new_stim_screen_pupil_select1$TAS>60, "High", "Low")
+
+db_full4new_stim_screen_pupil_select1%>%
+  subset(!is.na(TAS))%>%
+  subset(pupil_outlier == FALSE)%>%
+   subset(gaze_valid_tresh == "include")%>%
+  subset(arousal_outler == FALSE)%>%
+  subset(ssid!= 356)%>% #clear pupil outlier
+  subset(ssid!= 351)%>%
+  subset(ssid!= 344)%>% #anthony
+  group_by(ssid, Group,Alexithymia_cutoff)%>%
+  mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Group,cor_ar_pup, color = Alexithymia_cutoff))+
+  geom_point()+
+  stat_summary(geom = 'pointrange')+
+  # geom_text(aes(label = ssid))+
+    geom_smooth(method = lm, se = F)+
+    ggpubr::stat_compare_means()
+
+```
+
+mixed models
+
+```{r}
+options(contrasts = c("contr.sum","contr.poly"))
+options(scipen = 999)
+library(lmerTest)
+
+# compute average pupil validity
+db_full4new_stim_screen_pupil_select1<- db_full4new_stim_screen_pupil_select1 %>%
+  group_by(ssid)%>%
+  mutate(avg_gaze_valid = mean(gaze_valid_prop, na.rm = TRUE))%>%
+  ungroup()%>%
+  mutate(gaze_valid_tresh = if_else(avg_gaze_valid> .8, "include", "exclude"))
+
+db_full4new_stim_screen_pupil_select1%>%
+  ggplot(aes(avg_gaze_valid))+
+  geom_histogram()+
+  facet_grid(~gaze_valid_tresh)
+
+db_full4new_stim_screen_pupil_select1%>%
+  subset(gaze_valid_tresh == "exclude")
+
+
+```
+```{r}
+lmer_intero_pupil<- list()
+
+# factor random effects
+
+db_full4new_stim_screen_pupil_select1<- db_full4new_stim_screen_pupil_select1%>%
+  mutate(stimIAPS2 = factor(stimIAPS2),
+         ssid = factor(ssid))
+
+# pupil against subjective ratings and alexithymia
+pupil_arousal_findings$pup_self_tas <- lmer(pup_basCor ~ (arousal_c)* 
+                                                    TASc  *Group_NT_pos+
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(ssid!= 356)%>%
+         subset(gaze_valid_tresh == "include")%>%
+   subset(ssid!= 351))
+
+
+summary(pupil_arousal_findings$pup_self_tas )
+print(pupil_arousal_findings$pup_self_tas, correlation =TRUE)  
+
+# db_full4new_stim_screen_pupil_select1%>%
+#   group_by(stimIAPS2)%>%
+#   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   ggplot(aes(Mean_gray_z, valence))+
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   ggpubr::stat_cor()
+
+
+# same as above but no outliers
+pupil_arousal_findings$pup_self_tas_no_outl <- lmer(pup_basCor ~ (arousal)* 
+                                                    TASc  +
+                                                    # *Group_NT_pos+
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(pupil_outlier == FALSE)%>%
+     subset(arousal_outler == FALSE)%>%
+    subset(ssid!= 356)%>%
+      subset(gaze_valid_tresh == "include")%>%
+         # subset(as.numeric(ssid) < 500))
+   subset(ssid!= 351))
+
+summary(pupil_arousal_findings$pup_self_tas_no_outl)
+
+# just NT
+
+pupil_arousal_findings$pup_self_tas_no_outl_NT <- lmer(pup_basCor ~ (arousal_c)* 
+                                                    TASc  +
+                                                    # *Group_NT_pos+
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(pupil_outlier == FALSE)%>%
+     subset(arousal_outler == FALSE)%>%
+    subset(Group ==  "NT")%>%
+    subset(ssid!= 356)%>%
+      # subset(ssid!= 357)%>%
+      subset(gaze_valid_tresh == "include")%>%
+         # subset(as.numeric(ssid) < 500))
+   subset(ssid!= 351))
+
+
+  # subset(ssid!= 356)%>% #clear pupil outlier
+  # subset(ssid!= 351)%>%
+  # subset(ssid!= 344)%>%
+summary(pupil_arousal_findings$pup_self_tas_no_outl_NT)
+
+# just ASD
+
+pupil_arousal_findings$pup_self_tas_no_outl_ASD <- lmer(pup_basCor ~ (arousal)* 
+                                                    TASc  +
+                                                    # *Group_NT_pos+
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(pupil_outlier == FALSE)%>%
+     subset(arousal_outler == FALSE)%>%
+    subset(Group ==  "ASD")%>%
+      subset(gaze_valid_tresh == "include"))
+
+
+  # subset(ssid!= 356)%>% #clear pupil outlier
+  # subset(ssid!= 351)%>%
+  # subset(ssid!= 344)%>%
+summary(pupil_arousal_findings$pup_self_tas_no_outl_ASD)
+
+
+summary(pupil_arousal_findings$pup_self_tas_no_outl_NT)
+
+
+interactions::interact_plot(pupil_arousal_findings$pup_self_tas_no_outl_NT, 
+                            pred = arousal_c, modx = TASc)
+
+```
+
+#predict arousal now
+
+```{r}
+db_full4new_stim_screen_pupil_select1
+
+pupil_arousal_findings$pupil_from_brightness_lm <- lm(pup_basCor ~ 
+                                                    Mean,
+                                                    
+                      data = db_full4new_stim_screen_pupil_select1, na.action=na.exclude) 
+
+
+summary(pupil_arousal_findings$pupil_from_brightness)
+
+plot(pupil_arousal_findings$pupil_from_brightness)
+
+# store residuals
+
+db_full4new_stim_screen_pupil_select1$pup_resid_lm <- resid(pupil_arousal_findings$pupil_from_brightness_lm,
+                                                            na.action=na.exclude)
+
+
+
+pupil_arousal_findings$arous_pup_tas_no_outl_NT <- lmer(arousal ~ pup_basCor* 
+                                                    TASc  +
+                                                    # *Group_NT_pos+
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(pupil_outlier == FALSE)%>%
+     subset(arousal_outler == FALSE)%>%
+    subset(Group ==  "NT")%>%
+    subset(ssid!= 356)%>%
+      # subset(ssid!= 357)%>%
+      subset(gaze_valid_tresh == "include")%>%
+         # subset(as.numeric(ssid) < 500))
+   subset(ssid!= 351))
+
+
+
+summary(pupil_arousal_findings$arous_pup_tas_no_outl_NT)
+
+```
+
+
+
+Group, ignoring TAS
+
+```{r}
+pupil_arousal_findings$arous_pup_GR_no_outl <- lmer(pup_basCor ~ arousal_c* 
+                                                    Group_NT_pos  +
+  Mean_gray_z +
+                                                      (1|stimIAPS2)+
+                                                    (1  | ssid),
+                                                  REML = FALSE,
+                      data = db_full4new_stim_screen_pupil_select1%>%
+    subset(pupil_outlier == FALSE)%>%
+     subset(arousal_outler == FALSE)%>%
+    # subset(Group ==  "NT")%>%
+    subset(ssid!= 356)%>%
+      # subset(ssid!= 357)%>%
+      subset(gaze_valid_tresh == "include")%>%
+         # subset(as.numeric(ssid) < 500))
+   subset(ssid!= 351))
+
+anova(pupil_arousal_findings$arous_pup_GR_no_outl)
+
+summary(pupil_arousal_findings$arous_pup_GR_no_outl)
+
+MuMIn::r.squaredGLMM(pupil_arousal_findings$arous_pup_GR_no_outl)
+
+MuMIn::r.squaredGLMM(pupil_arousal_findings$pup_self_tas_no_outl_NT)
+
+interactions::interact_plot(pupil_arousal_findings$arous_pup_GR_no_outl,
+                            pred = arousal_c, modx = Group_NT_pos)
+
+```
+
+SCR
+
+```{r}
+
+db_full4new_stim_screen_pupil_select1
+
+db_full4new_stim_screen_pupil_select1_scr<- db_full4new_stim_screen_pupil_select1
+
+db_full4new_stim_screen_pupil_select1_scr<- 
+  subset(db_full4new_stim_screen_pupil_select1_scr, as.numeric(as.character(ssid))>303)
+
+unique(db_full4new_stim_screen_pupil_select1_scr$ssid)
+
+db_full4new_stim_screen_pupil_select1_scr$ssid<- as.character(db_full4new_stim_screen_pupil_select1_scr$ssid)
+
+db_full4new_stim_screen_pupil_select1_scr$ssid
+ 
+
+db_full4new_stim_screen_pupil_select1_scr<- db_full4new_stim_screen_pupil_select1_scr%>%
+       ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1],
+         BPQc = scale(BPQ)[,1],
+         WASIM_c =scale(WASIM)[,1],
+         DASSTotalc = scale(DASSTotal)[,1])
+ 
+  # ungroup%>%
+  # mutate(valence_c = scale(valence, center = TRUE, scale = TRUE)[,1])%>%
+  # mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1])%>%
+  # mutate(TASc = scale(TAS, center = TRUE, scale = TRUE)[,1])
+ 
+ # flag non responders
+ 
+ 
+# db_full4new_stim_screen_pupil_select1_scr$bio
+ 
+ # flag outliers
+
+```
+
+model
+
+PHASI MAX
+TTP
+
+AMp SUm
+SCR
+
+```{r}
+lmer_scr_intero_thesis<- list()
+
+db_full4new_stim_screen_pupil_select1_scr<- db_full4new_stim_screen_pupil_select1_scr%>%
+  group_by(ssid)%>%
+  mutate(BIO_CDA.SCR_z = scale(BIO_CDA.SCR))%>%
+  # mutate(BIO_CDA.SCR_outl = if_else(log1p(BIO_CDA.SCR+.1)> (median(log1p(BIO_CDA.SCR+.1), na.rm = TRUE)+ 
+  #                                     (20*(mad(log1p(BIO_CDA.SCR+.1), na.rm = TRUE)))), TRUE, FALSE))
+  mutate(BIO_CDA.SCR_outl = if_else(abs(BIO_CDA.SCR_z)> 3, TRUE, FALSE))
+
+table(db_full4new_stim_screen_pupil_select1_scr$ssid, db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.SCR_outl)
+
+
+lmer_scr_intero_thesis$SCR_ar_TAS <- lmer(log(BIO_CDA.SCR+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE)%>%
+  subset(BIO_CDA.SCR!= 0)) # exlude non responding trials
+
+anova(lmer_scr_intero_thesis$SCR_ar_TAS)
+
+summary(lmer_scr_intero_thesis$SCR_ar_TAS)
+
+range(db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.ISCR, na.rm = TRUE)
+range(db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.SCR, na.rm = TRUE)
+range(db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.PhasicMax, na.rm = TRUE)
+range(db_full4new_stim_screen_pupil_select1_scr$BIO_TTP.AmpSum, na.rm = TRUE)
+table(is.na(db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.ISCR))
+
+flag_non_resp <- table(db_full4new_stim_screen_pupil_select1_scr$ssid, db_full4new_stim_screen_pupil_select1_scr$BIO_TTP.AmpSum == 0)
+
+
+
+# just NT
+
+lmer_scr_intero_thesis$SCR_ar_TAS_NT <- lmer(log(BIO_CDA.SCR+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(Group == "NT")%>%
+         # subset(BIO_CDA.SCR!= 0)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE))
+
+
+summary(lmer_scr_intero_thesis$SCR_ar_TAS_NT )
+
+# just ASD
+
+lmer_scr_intero_thesis$SCR_ar_TAS_ASD <- lmer(log(BIO_CDA.SCR+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(Group == "ASD")%>%
+         # subset(BIO_CDA.SCR!= 0)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE))
+
+
+summary(lmer_scr_intero_thesis$SCR_ar_TAS_ASD)
+# same trend non significant
+
+# group instead of TAS
+
+lmer_scr_intero_thesis$SCR_ar_TAS_gr <- lmer(log(BIO_CDA.SCR+.1) ~ arousal_c *
+                                            Group_NT_pos+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       # subset(Group == "ASD")%>%
+         # subset(BIO_CDA.SCR!= 0)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE))
+
+summary(lmer_scr_intero_thesis$SCR_ar_TAS_gr )
+
+anova(lmer_scr_intero_thesis$SCR_ar_TAS_gr )
+
+
+summary(lmer(log(BIO_CDA.SCR+.1) ~ arousal_c *
+                                            AQc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       # subset(Group == "NT")%>%
+         # subset(BIO_CDA.SCR!= 0)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE))) # does not preddict shit
+
+
+```
+
+PhasiMax
+
+
+```{r}
+lmer_scr_intero_thesis<- list()
+
+db_full4new_stim_screen_pupil_select1_scr<- db_full4new_stim_screen_pupil_select1_scr%>%
+  group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  # mutate(BIO_CDA.SCR_outl = if_else(log1p(BIO_CDA.SCR+.1)> (median(log1p(BIO_CDA.SCR+.1), na.rm = TRUE)+ 
+  #                                     (20*(mad(log1p(BIO_CDA.SCR+.1), na.rm = TRUE)))), TRUE, FALSE))
+  mutate(BIO_CDA.PhasicMax_z_outl = if_else(abs(BIO_CDA.PhasicMax_z)> 3, TRUE, FALSE))
+
+table(db_full4new_stim_screen_pupil_select1_scr$ssid, db_full4new_stim_screen_pupil_select1_scr$BIO_CDA.PhasicMax_z_outl)
+
+
+lmer_scr_intero_thesis$PhasMax_ar_TAS <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE))
+  # subset(BIO_CDA.SCR!= 0)) # exlude non responding trials
+
+anova(lmer_scr_intero_thesis$PhasMax_ar_TAS)
+
+summary(lmer_scr_intero_thesis$PhasMax_ar_TAS)
+
+
+
+# just NT
+
+lmer_scr_intero_thesis$phasmax_ar_TAS_NT <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE)%>%
+       subset(Group == "NT"))
+
+
+summary(lmer_scr_intero_thesis$phasmax_ar_TAS_NT )
+
+# just ASD
+
+lmer_scr_intero_thesis$phasmax_ar_TAS_ASD <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            TASc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE)%>%
+       subset(Group == "ASD"))
+
+
+summary(lmer_scr_intero_thesis$phasmax_ar_TAS_ASD)
+
+MuMIn::r.squaredGLMM(lmer_scr_intero_thesis$phasmax_ar_TAS_ASD)
+# same trend non significant
+
+# group instead of TAS
+
+lmer_scr_intero_thesis$phasmax_ar_TAS_gr <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            Group_NT_pos+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE))
+       # subset(Group == "ASD"))
+
+summary(lmer_scr_intero_thesis$SCR_ar_TAS_gr )
+#  the effect is tas not group
+
+anova(lmer_scr_intero_thesis$SCR_ar_TAS_gr )
+
+
+summary(lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            AQc+
+                                             (1|ssid) + 
+                                            (1|stimIAPS),
+                        REML = FALSE,
+                        data = db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       subset(Group == "ASD")%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE))) # does not preddict shit
+
+unique(db_full4new_stim_screen_pupil_select1_scr$ssid)
+```
+heart rate
+
+
+
+Heart rate
+
+```{r}
+
+# keep stim and and fixation
+unique(db_356_357_611_616$ssid)
+library(readr)
+library(readr)
+ # read_csv("tmp.df4_sum_full_bio_hr_self_parsed_345_356.csv")
+View(tmp_df4_sum_full_bio_hr_self_parsed_345_356)
+unique(db_356_357_611_616$screen_content)
+
+# db_356_357_611_616  equivalent to db_HR_bio_final_346_355_withfix
+
+db_356_357_611_616$screencontent
+db_356_357_611_616$screen_content
+db_356_357_611_616$screencontent_no
+range(db_356_357_611_616$tNo)
+
+# db_HR_bio_final_346_355_withfix$screencontent<- db_HR_bio_final_346_355_withfix$screen_content
+# db_HR_bio_final_346_355_withfix<- subset(db_HR_bio_final_346_355_withfix, tNo > -7)
+
+# db_HR_bio_final_346_355_withfix$screencontent_no<- if_else(db_HR_bio_final_346_355_withfix$screen_content == "fixation", 1,
+#                                                            if_else(db_HR_bio_final_346_355_withfix$screen_content == "stim", 2,
+#                                                                    if_else(db_HR_bio_final_346_355_withfix$screen_content == "valence", 3, 4)))
+
+# db_HR_bio_final_346_355_withfix_stim <- subset(db_HR_bio_final_346_355_withfix, screencontent_no<3)
+db_356_357_611_616_withfix_stim <- subset(db_356_357_611_616, screencontent_no<3)
+unique(db_356_357_611_616$ssid)
+
+colnames(db_HR_bio_final_346_355_withfix_stim)
+colnames(db_356_357_611_616_withfix_stim)
+db_356_357_611_616_withfix_stim$tNo2<-NULL
+db_356_357_611_616_withfix_stim$tNo3<- NULL
+
+unique(db_356_357_611_616_withfix_stim$screencontent)
+
+unique(db_full6new_hr_fix_stim$screencontent)
+
+colnames(db_full6new)
+
+# 
+db_full6new_hr_fix_stim <- subset(db_full6new, screencontent_no <3)
+
+View(db_full6new_hr_fix_stim)
+
+
+colnames(db_full6new_hr_fix_stim)
+
+colnames(db_356_357_611_616_withfix_stim)
+
+
+# create a similar heart rate column
+db_356_357_611_616_withfix_stim$Bio_Mean_HR<- db_356_357_611_616_withfix_stim$Mean_HR
+
+table(is.na(db_356_357_611_616_withfix_stim$Bio_Mean_HR))
+
+db_356_357_611_616_withfix_stim$ssid_num<- as.numeric(db_356_357_611_616_withfix_stim$ssid)
+unique(db_356_357_611_616_withfix_stim$ssid)
+# keep controls
+unique(db_full6new_hr_fix_stim$ssid)
+db_full6new_hr_fix_stim$ssid_num <- as.numeric(as.character(db_full6new_hr_fix_stim$ssid))
+
+
+table(is.na(db_full6new_hr_fix_stim))
+
+db_full6new_hr_fix_stim$Group<- if_else(db_full6new_hr_fix_stim$ssid_num< 500, "NT",
+                                        if_else(db_full6new_hr_fix_stim$ssid_num>700, "NT",
+                                                "ASD"))
+
+table(is.na(db_full6new_hr_fix_stim$Group))
+unique(db_full6new_hr_fix_stim$Group)
+
+
+# db_full6new_hr_fix_stim_nt<- subset(db_full6new_hr_fix_stim, Group == "NT")
+unique(db_full6new_hr_fix_stim$ssid_num)
+
+# attention - keep the oens that ahve bio data
+
+db_full6new_hr_fix_stim_backup<- db_full6new_hr_fix_stim
+
+db_full6new_hr_fix_stim<- subset(db_full6new_hr_fix_stim, ssid_num> 303)
+unique(db_full6new_hr_fix_stim$ssid)
+colnames(db_full6new_hr_fix_stim)
+
+# HR differences
+db_full6new_hr_fix_stim$Bio_Mean_HR_fix<- if_else(db_full6new_hr_fix_stim$screencontent_no ==1, db_full6new_hr_fix_stim$Bio_Mean_HR, NULL)
+
+
+
+# 346_355
+unique(db_HR_bio_final_346_355_withfix_stim$ssid)
+
+db_HR_bio_final_346_355_withfix_stim$Bio_Mean_HR_fix<- if_else(db_HR_bio_final_346_355_withfix_stim$screencontent_no ==1, db_HR_bio_final_346_355_withfix_stim$Bio_Mean_HR, NULL)
+
+View(db_full6new_hr_fix_stim)
+View(db_HR_bio_final_346_355_withfix_stim)
+
+db_HR_bio_final_346_355_withfix_stim$Mean_HR<- NULL
+
+db_HR_bio_final_346_355_withfix_stim$ssid<- as.character(db_HR_bio_final_346_355_withfix_stim$ssid)
+
+
+db_HR_bio_final_346_355_withfix_stim$tNo <- db_HR_bio_final_346_355_withfix_stim$tNo3.x
+unique(db_HR_bio_final_346_355_withfix_stim$tNo)
+
+db_HR_bio_final_346_355_withfix_stim$tNo <- as.character(db_HR_bio_final_346_355_withfix_stim$tNo)
+db_HR_bio_final_346_355_withfix_stim$trigger <- as.character(db_HR_bio_final_346_355_withfix_stim$trigger)
+
+
+# 356_611
+db_356_357_611_616_withfix_stim
+
+db_356_357_611_616_withfix_stim$Bio_Mean_HR_fix<- if_else(db_356_357_611_616_withfix_stim$screencontent_no ==1, db_356_357_611_616_withfix_stim$Bio_Mean_HR, NULL)
+
+db_356_357_611_616_withfix_stim$Bio_Mean_HR
+
+# View(db_full6new_hr_fix_stim)
+# View(db_356_357_611_616_withfix_stim)
+
+db_356_357_611_616_withfix_stim$Mean_HR<- NULL
+
+db_356_357_611_616_withfix_stim$ssid<- as.character(db_356_357_611_616_withfix_stim$ssid)
+
+
+db_356_357_611_616_withfix_stim$tNo <- db_356_357_611_616_withfix_stim$tNo3.x
+unique(db_356_357_611_616_withfix_stim$tNo)
+
+db_356_357_611_616_withfix_stim$tNo <- as.character(db_356_357_611_616_withfix_stim$tNo)
+db_356_357_611_616_withfix_stim$trigger <- as.character(db_356_357_611_616_withfix_stim$trigger)
+
+
+# current
+db_full6new_hr_fix_stim$trigger<- as.character(db_full6new_hr_fix_stim$trigger)
+db_full6new_hr_fix_stim$trigger.x<- NULL
+
+# db_HR_bio_final_346_355_withfix_stim$trig <- as.character(db_HR_bio_final_346_355_withfix_stim$tNo)
+
+# db_HR_bio_final_346_355_withfix_stim$triger<- NULL
+db_HR_bio_final_346_355_withfix_stim$trigger.x<- NULL
+db_HR_bio_final_346_355_withfix_stim$trigger.y<- NULL
+db_HR_bio_final_346_355_withfix_stim$trigger2<- NULL
+db_HR_bio_final_346_355_withfix_stim$trigger_200<- NULL
+# 356_616
+db_356_357_611_616_withfix_stim$trigger.x<- NULL
+db_356_357_611_616_withfix_stim$trigger.y<- NULL
+db_356_357_611_616_withfix_stim$trigger2<- NULL
+db_356_357_611_616_withfix_stim$trigger_200<- NULL
+
+nrow(db_full6new_hr_fix_stim)+ nrow(db_HR_bio_final_346_355_withfix_stim)
+# 6895
+
+
+# nrow(bind_rows(db_full6new_hr_fix_stim_nt, db_HR_bio_final_346_355_withfix_stim))
+db_HR_bio_final_346_355_withfix_stim$Bio_Mean_HR_fix
+
+colnames(db_HR_bio_final_346_355_withfix_stim)
+colnames(db_356_357_611_616_withfix_stim)
+db_356_357_611_616_withfix_stim
+
+db_HR_bio_final_346_355_withfix_stim
+
+as.factor(db_HR_bio_final_346_355_withfix_stim$stim.x)
+as.factor(db_HR_bio_final_346_355_withfix_stim$stim.y)
+db_HR_bio_final_346_355_withfix_stim$stim.y<- NULL
+db_356_357_611_616_withfix_stim$stim.y<- NULL
+
+# unique(db_HR_bio_final_346_355_withfix_stim$screencontent)
+# unique(db_full6new_hr_fix_stim_nt$screencontent)
+# unique(db_full6new_hr_fix_stim_nt$screencontent.y)
+
+db_full6new_hr_fix_stim$screencontent.x<- NULL
+db_full6new_hr_fix_stim$screencontent.y<- NULL
+
+unique(db_full6new_hr_fix_stim$trialUnq.x)
+unique(db_full6new_hr_fix_stim$trialUnq.y)
+
+db_full6new_hr_fix_stim$trialUnq<- db_full6new_hr_fix_stim$trialUnq.x
+db_full6new_hr_fix_stim$trialUnq.y<- NULL
+db_full6new_hr_fix_stim$trialUnq.x<- NULL
+
+
+db_HR_bio_final_346_355_withfix_stim$stim<- db_HR_bio_final_346_355_withfix_stim$stim.x
+db_356_357_611_616_withfix_stim$stim<- db_356_357_611_616_withfix_stim$stim.x
+# db_356_357_611_616_withfix_stim$stim<- db_356_357_611_616_withfix_stim$stim.x
+
+# bind heartrate old and new
+table(is.na(db_HR_bio_final_346_355_withfix_stim$Bio_Mean_HR))
+table(is.na(db_356_357_611_616_withfix_stim$Bio_Mean_HR))
+table(is.na(db_full6new_hr_fix_stim$Bio_Mean_HR))
+test<- subset(db_full6new_hr_fix_stim, is.na(Bio_Mean_HR))
+test1<- subset(db_HR_bio_final_346_355_withfix_stim, is.na(Bio_Mean_HR))
+
+
+# select only needed columns
+colnames(db_full6new_hr_fix_stim)
+db_full6new_hr_fix_stim_select<- db_full6new_hr_fix_stim%>%
+  select(ssid:gaze_valid_prop,stimDescription:arousal,TAS, AQ,DASSAnxiety:DASSTotal,
+         BPQ, WASIM, screencontent_no,BIO_CDA.AmpSum:BIO_Global.Mean, fix_count:mean_fix_dur,
+         sac_count:SacAmp, Bio_Mean_HR_fix,Bio_Mean_HR_fix, ssid_num, trialUnq)
+
+hr_select<- colnames(db_full6new_hr_fix_stim_select)
+
+db_HR_bio_final_346_355_withfix_stim$hr
+
+db_HR_bio_final_346_355_withfix_stim_select<- select(db_HR_bio_final_346_355_withfix_stim,
+                                                     hr_select)
+
+db_356_357_611_616_withfix_stim_select <- select(db_356_357_611_616_withfix_stim,
+                                                     hr_select)
+
+
+  
+
+db_full6new_hr_fix_stim1<- bind_rows(db_full6new_hr_fix_stim,
+                                        db_HR_bio_final_346_355_withfix_stim)
+db_full6new_hr_fix_stim_select1 <- bind_rows(db_full6new_hr_fix_stim_select,
+                                     db_HR_bio_final_346_355_withfix_stim_select,
+                                        db_356_357_611_616_withfix_stim_select)
+
+unique(db_356_357_611_616_withfix_stim_select$ssid)
+
+unique(db_full6new_hr_fix_stim_select1$ssid)
+```
