@@ -586,6 +586,30 @@ AMp SUm
 SCR
 
 ```{r}
+unique(db_full4new_stim_screen_pupil_select1_scr$ssid)
+
+db_full4new_stim_screen_pupil_select1_scr %>%
+ subset(arousal_outler == FALSE)%>%
+       subset(BIO_CDA.SCR_outl  == FALSE)%>%
+  subset(BIO_CDA.PhasicMax!= 0)%>%
+  group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_log = log1p(BIO_CDA.PhasicMax+.1))%>%
+  mutate(BIO_CDA.PhasicMax_log_z = scale(BIO_CDA.PhasicMax_log))%>% 
+  mutate(cor_scr_ar = cor(BIO_CDA.PhasicMax_z, arousal))%>%
+  mutate(cor_scr_ar2 = cor(BIO_CDA.PhasicMax_log_z, arousal))%>%
+  mutate(cor_scr_ar3 = cor(BIO_CDA.PhasicMax_log, arousal))%>%
+  group_by(ssid, Group)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS, cor_scr_ar))+
+  geom_point()+
+  geom_smooth(method = lm, se = F)+
+  facet_grid(~Group)+
+  ggpubr::stat_cor()
+
+```
+
+
+```{r}
 lmer_scr_intero_thesis<- list()
 
 db_full4new_stim_screen_pupil_select1_scr<- db_full4new_stim_screen_pupil_select1_scr%>%
@@ -786,7 +810,6 @@ heart rate
 
 
 
-Heart rate
 
 ```{r}
 
@@ -985,7 +1008,7 @@ colnames(db_full6new_hr_fix_stim)
 db_full6new_hr_fix_stim_select<- db_full6new_hr_fix_stim%>%
   select(ssid:gaze_valid_prop,stimDescription:arousal,TAS, AQ,DASSAnxiety:DASSTotal,
          BPQ, WASIM, screencontent_no,BIO_CDA.AmpSum:BIO_Global.Mean, fix_count:mean_fix_dur,
-         sac_count:SacAmp, Bio_Mean_HR_fix,Bio_Mean_HR_fix, ssid_num, trialUnq)
+         sac_count:SacAmp, Bio_Mean_HR,Bio_Mean_HR_fix, ssid_num, trialUnq)
 
 hr_select<- colnames(db_full6new_hr_fix_stim_select)
 
@@ -1002,6 +1025,8 @@ db_356_357_611_616_withfix_stim_select <- select(db_356_357_611_616_withfix_stim
 
 db_full6new_hr_fix_stim1<- bind_rows(db_full6new_hr_fix_stim,
                                         db_HR_bio_final_346_355_withfix_stim)
+
+
 db_full6new_hr_fix_stim_select1 <- bind_rows(db_full6new_hr_fix_stim_select,
                                      db_HR_bio_final_346_355_withfix_stim_select,
                                         db_356_357_611_616_withfix_stim_select)
@@ -1009,4 +1034,1673 @@ db_full6new_hr_fix_stim_select1 <- bind_rows(db_full6new_hr_fix_stim_select,
 unique(db_356_357_611_616_withfix_stim_select$ssid)
 
 unique(db_full6new_hr_fix_stim_select1$ssid)
+
+db_full6new_hr_fix_stim_select1$Bio_Mean_HR_fix
+db_full6new_hr_fix_stim_select1$Bio_Mean_HR
+
+table(is.na(db_full6new_hr_fix_stim_select1$Bio_Mean_HR))
+test<- subset(db_full6new_hr_fix_stim_select1, is.na(Bio_Mean_HR))
+unique(test$ssid)
+
+# create heart rare dif
+# start by populating fixation heart rate next to stim heart rate
+db_full6new_hr_fix_stim_select2<- db_full6new_hr_fix_stim_select1 %>%
+  # mutate()
+  group_by(as.numeric(ssid_num), as.numeric(tNo)) %>%
+  arrange(ssid_num, as.numeric(tNo),as.numeric(screencontent_no))%>%
+  # select(ssid, tNo,screencontent_no, Bio_Mean_HR,Bio_Mean_HR_fix)
+  fill(Bio_Mean_HR_fix, .direction = "down")%>%
+  subset(screencontent_no == 2)
+
+# Now create the difference score
+# stim - fix = positive stim> neg stim<
+db_full6new_hr_fix_stim_select2<- db_full6new_hr_fix_stim_select2 %>%
+  mutate(Bio_Mean_HR_dif = Bio_Mean_HR - Bio_Mean_HR_fix)
+
+db_full6new_hr_fix_stim_select2%>%
+  ggplot(aes(Bio_Mean_HR_dif))+
+  geom_histogram()
+
+# flag heart rate outliers
+# b_full6new_hr_fix_stim_nt1.1$Bio_Mean_HR_dif_outl <- if_else(abs(db_full6new_hr_fix_stim_nt1.1$Bio_Mean_HR_dif)>                                                   (median(abs(db_full6new_hr_fix_stim_nt1.1$Bio_Mean_HR_dif),na.rm = TRUE) +                                                               (4*(sd(abs(db_full6new_hr_fix_stim_nt1.1$Bio_Mean_HR_dif), na.rm = TRUE))))
+
+db_full6new_hr_fix_stim_select2<-
+db_full6new_hr_fix_stim_select2%>%
+  group_by(ssid)%>%
+  mutate(Bio_Mean_HR_dif_outl = if_else(abs(Bio_Mean_HR_dif) > (median(abs(Bio_Mean_HR_dif), na.rm = TRUE) + (3*sd(abs(Bio_Mean_HR_dif), na.rm = TRUE))), "outlier", "not outlier"))
+
+
+db_full6new_hr_fix_stim_select2%>%
+  subset(Bio_Mean_HR_dif_outl == "outlier")%>%
+  ggplot(aes(Bio_Mean_HR_dif))+
+  geom_histogram()+
+  facet_grid(~Bio_Mean_HR_dif_outl)
+
+
+db_full6new_hr_fix_stim_select2%>%
+  subset(ssid == 609)%>%
+  # subset(Bio_Mean_HR_dif_outl == "outlier")%>%
+  ggplot(aes(Bio_Mean_HR_dif, color =Bio_Mean_HR_dif_outl ))+
+  geom_histogram()
+  facet_grid(~Bio_Mean_HR_dif_outl)
+  
+  table(db_full6new_hr_fix_stim_select2$ssid, db_full6new_hr_fix_stim_select2$Bio_Mean_HR_dif_outl)
+
+```
+
+
+create the scaled variables needed
+```{r}
+db_full6new_hr_fix_stim_select2
+
+db_full6new_hr_fix_stim_select2<- db_full6new_hr_fix_stim_select2%>%
+       ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         # Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1],
+         BPQc = scale(BPQ)[,1],
+         WASIM_c =scale(WASIM)[,1],
+         DASSTotalc = scale(DASSTotal)[,1])
+
+db_full6new_hr_fix_stim_select2$stim
+db_full6new_hr_fix_stim_select2$stimIAPS2 <- substring(db_full6new_hr_fix_stim_select2$trialUnq)
+
+db_full6new_hr_fix_stim_select2$Group <- if_else(db_full6new_hr_fix_stim_select2$ssid_num>500 & 
+                                                   db_full6new_hr_fix_stim_select2$ssid_num< 700, "ASD", "NT")
+
+unique(db_full6new_hr_fix_stim_select2$ssid)
+db_full6new_hr_fix_stim_select2 %>%
+    subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  subset(ssid_num < 800)%>%
+    subset(ssid_num != 356)%>% # outlier
+  # subset(ssid_num<500)%>%
+  # group_by(ssid)%>%
+  # mutate(Bio_Mean_HR_dif = abs(Bio_Mean_HR_dif))%>%
+  ungroup()%>%
+  mutate(Bio_Mean_HR_dif_stim_z = scale(Bio_Mean_HR_dif))%>%
+  group_by(ssid, Group)%>%
+  
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc, Bio_Mean_HR_dif_stim_z))+
+  # geom_point()+
+  geom_text(aes(label = ssid))+
+  # geom_smooth(aes(group = stimIAPS, y =Bio_Mean_HR_dif_stim), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  # stat_summary(geom = 'pointrange', pch = 1)+
+    ggpubr::stat_cor()+
+  p$graphstyle+
+  xlab("Alexithymia (Z)")+
+  ylab("HR difference")+
+  facet_grid(~Group)+
+p$graphstyle
+
+db336<- subset(db_full6new_hr_fix_stim_select2, ssid == 336)
+db340<- subset(db_full6new_hr_fix_stim_select2, ssid == 340)
+
+table(db336$Bio_Mean_HR_dif_outl)
+table(db340$Bio_Mean_HR_dif_outl)
+
+```
+
+
+correlation heart rate arousal
+```{r}
+db_full6new_hr_fix_stim_select2 %>%
+  subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  subset(ssid_num != 356)%>% # outlier
+  group_by(ssid)%>%
+  mutate(cor_hr_ar = cor(Bio_Mean_HR_dif, arousal))%>%
+  group_by(ssid, Group)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TAS,  cor_hr_ar))+
+  # geom_point()+
+  geom_text(aes(label=  ssid))+
+  facet_grid(~Group)+
+  geom_smooth(method = lm, se = F)+
+  ggpubr::stat_cor()
+
+
+# db_full6new_hr_fix_stim_select2 %>%
+#   subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+#   subset(ssid_num != 356)%>% # outlier
+#   group_by(ssid)%>%
+#   mutate(cor_hr_ar = cor(Bio_Mean_HR_dif, valence))%>%
+#   group_by(ssid, Group)%>%
+#   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+#   ggplot(aes(TAS,  cor_hr_ar))+
+#   # geom_point()+
+#   geom_text(aes(label=  ssid))+
+#   facet_grid(~Group)+
+#   geom_smooth(method = lm, se = F)+
+#   ggpubr::stat_cor()
+
+
+db_full6new_hr_fix_stim_select2<- db_full6new_hr_fix_stim_select2%>%
+  group_by(Group)%>%
+  mutate(Alexithymia_mediansplit_withinGr = if_else(TAS > median(TAS, na.rm = TRUE), "High", 'Low'))
+
+db_full6new_hr_fix_stim_select2 %>%
+  subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  subset(ssid_num != 356)%>% # outlier
+  group_by(ssid)%>%
+  mutate(cor_hr_ar = cor(Bio_Mean_HR_dif, arousal))%>%
+  group_by(ssid, Group)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Group,  cor_hr_ar))+
+ 
+  geom_jitter(width = .1, alpha = .1)+
+   stat_summary(geom = 'pointrange')+
+  
+  # geom_point()+
+  # geom_text(aes(label=  ssid))+
+  # facet_grid(~Group)+
+  geom_smooth(method = lm, se = F)+
+  ggpubr::stat_compare_means()
+
+
+# mediansplit b alexithymia
+db_full6new_hr_fix_stim_select2 %>%
+  subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  subset(ssid_num != 356)%>% # outlier
+  subset(!is.na(TAS))%>%
+  group_by(ssid)%>%
+  mutate(cor_hr_ar = cor(Bio_Mean_HR_dif, arousal))%>%
+  group_by(ssid,Group, Alexithymia_mediansplit_withinGr)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Alexithymia_mediansplit_withinGr,  cor_hr_ar))+
+ 
+  # geom_jitter(width = .1, alpha = .1)+
+   stat_summary(geom = 'pointrange')+
+  
+  # geom_point()+
+  geom_text(aes(label=  ssid))+
+  facet_grid(~Group)+
+  geom_smooth(method = lm, se = F)+
+  ggpubr::stat_compare_means()
+  
+
+```
+
+lmer models of hr
+
+```{r}
+
+lmer_hr_interoThesis<- list()
+db_full4new_stim_screen_pupil_select1_scr
+
+
+db_full6new_hr_fix_stim_select2$stim <- as.factor(db_full6new_hr_fix_stim_select2$stim)
+db_full6new_hr_fix_stim_select2$ssid <- as.factor(db_full6new_hr_fix_stim_select2$ssid)
+
+lmer_hr_interoThesis$biohr_tas_arous <- lmer(Bio_Mean_HR_dif ~ TASc * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356))
+     # %>%
+   # subset(ssid!= 351))
+
+summary(lmer_hr_interoThesis$biohr_tas_arous )
+
+# just NT
+
+lmer_hr_interoThesis$biohr_tas_arous_NT <- lmer(Bio_Mean_HR_dif ~ TASc * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+       subset(Group == "NT"))
+
+summary(lmer_hr_interoThesis$biohr_tas_arous_NT)
+
+?interactions::probe_interaction
+interactions::probe_interaction(lmer_hr_interoThesis$biohr_tas_arous_NT, pred =arousal_c, modx = TASc )
+interactions::interact_plot(lmer_hr_interoThesis$biohr_tas_arous_NT, pred =arousal_c, modx = TASc )
+
+# Just ASC
+
+lmer_hr_interoThesis$biohr_tas_arous_ASD <- lmer(Bio_Mean_HR_dif ~ TASc * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+       subset(Group == "ASD"))
+
+summary(lmer_hr_interoThesis$biohr_tas_arous_ASD)
+
+
+# TAS and AQ
+
+# just NT
+
+lmer_hr_interoThesis$biohr_tas_aq_arous_NT <- lmer(Bio_Mean_HR_dif ~ TASc * AQc* arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+       subset(Group == "NT"))
+
+summary(lmer_hr_interoThesis$biohr_tas_aq_arous_NT)
+
+# just AQ
+lmer_hr_interoThesis$biohr_aq_arous_NT <- lmer(Bio_Mean_HR_dif ~  AQc * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+       subset(Group == "NT"))
+
+summary(lmer_hr_interoThesis$biohr_aq_arous_NT)
+
+
+```
+
+
+Clustering responses and then compare them as a function of alexithymia
+- try clustering
+- barycentric discriminant analyses
+
+
+```{r}
+# subset NT only
+db_full6new_hr_fix_stim_select2_NT<- subset(db_full6new_hr_fix_stim_select2,
+                                            Group == "NT")
+
+# flag the multiple outliers in pupil scr arousal and heart rate
+
+db_full6new_hr_fix_stim_select2_NT$stimIAPS<- db_full6new_hr_fix_stim_select2_NT$stim
+
+db_full6new_hr_fix_stim_select2_NT<- db_full6new_hr_fix_stim_select2_NT%>%
+  group_by(stimIAPS) %>%
+  mutate(arousal_outler = if_else(arousal > (median(arousal, na.rm = TRUE) + 
+                                               (4*mad(arousal, na.rm = TRUE))), TRUE,
+         if_else(arousal < (median(arousal, na.rm = TRUE) - 
+                              (4*mad(arousal, na.rm = TRUE))), TRUE, FALSE)))%>%
+   mutate(valence_outler = if_else(valence > (median(valence, na.rm = TRUE) + 
+                                               (4*mad(valence, na.rm = TRUE))), TRUE,
+         if_else(valence < (median(valence, na.rm = TRUE) - 
+                              (4*mad(valence, na.rm = TRUE))), TRUE, FALSE)))%>%
+  group_by(ssid)%>%
+   mutate(pupil_outlier = if_else(pup_basCor > (median(pup_basCor, na.rm = TRUE) 
+                                                + (3*mad(pup_basCor, na.rm = TRUE))), TRUE,
+         if_else(pup_basCor < (median(pup_basCor, na.rm = TRUE) - 
+                                 (3*mad(pup_basCor, na.rm = TRUE))), TRUE, FALSE)))%>%
+    mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  mutate(BIO_CDA.PhasicMax_z_outl = if_else(abs(BIO_CDA.PhasicMax_z)> 3, TRUE, FALSE))%>%
+  ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         # Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1],
+         BPQc = scale(BPQ)[,1],
+         WASIM_c =scale(WASIM)[,1],
+         DASSTotalc = scale(DASSTotal)[,1])
+
+
+# is there is at least one outlier in HR, SCR or pupil flag true
+db_full6new_hr_fix_stim_select2_NT$pupil_outlier
+db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl
+db_full6new_hr_fix_stim_select2_NT$BIO_CDA.PhasicMax_z_outl
+
+db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl2<- if_else(db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl == "outlier", TRUE, FALSE)
+
+
+colnames(db_full6new_hr_fix_stim_select2_NT)
+
+
+# apply(db_full6new_hr_fix_stim_select2_NT[,56,48,59], 3, function(r) any(r %in% c("TRUE")))
+
+
+db_full6new_hr_fix_stim_select2_NT
+
+unique(db_full6new_hr_fix_stim_select2_NT$ssid)
+
+db_full6new_hr_fix_stim_select2_NT%>%
+  group_by()
+
+# try hierrquical clustering
+write_csv(db_full6new_hr_fix_stim_select2_NT, "db_full6new_hr_fix_stim_select2_NT.csv")
+
+
+db_full6new_hr_fix_stim_select2_NT
+
+db_full6new_hr_fix_stim_select2_NT_no_outl<- subset(db_full6new_hr_fix_stim_select2_NT, db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl2 == FALSE)
+
+colnames(db_full6new_hr_fix_stim_select2_NT)
+db_full6new_hr_fix_stim_select2_NT_select<- db_full6new_hr_fix_stim_select2_NT_no_outl[,c(1,53,12,15,16,17,18,
+                                                                                  42,8,28, 56,58,59,31:34)]
+
+
+# export to explore hierarquical clustering
+# db_full6new_hr_fix_stim_select2_NT_select, but first z score
+
+db_full6new_hr_fix_stim_select2_NT_select_scaled<- db_full6new_hr_fix_stim_select2_NT_select %>%
+  group_by(ssid)%>%
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  ungroup()%>%
+  mutate(BIO_CDA.PhasicMax_z_z = scale(BIO_CDA.PhasicMax_z),
+         Bio_Mean_HR_dif_z = scale(Bio_Mean_HR_dif),
+         pup_basCor_z = scale(pup_basCor))
+  
+write_csv(db_full6new_hr_fix_stim_select2_NT_select_scaled, "db_full6new_hr_fix_stim_select2_NT_select_scaled.csv")
+
+# jasp test
+
+library(readr)
+db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest <- read_csv("db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest.csv")
+View(db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest)
+
+db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest %>%
+  subset(!is.na(hierarquicaltest))%>%
+  subset(!is.na(TAS))%>%
+  group_by(ssid, alexmedian,hierarquicaltest)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(as.factor(hierarquicaltest), pup_basCor))+
+  geom_jitter(width = .1, alpha = .1) +
+  stat_summary(geom = 'pointrange')+
+  # geom_text(aes(label = ssid))+
+  facet_grid(~alexmedian)
+
+
+db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest %>%
+  subset(!is.na(hierarquicaltest))%>%
+  subset(!is.na(TAS))%>%
+  group_by(ssid, alexmedian,hierarquicaltest)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(as.factor(hierarquicaltest), pup_basCor_z))+
+  geom_jitter(width = .1, alpha = .1) +
+  stat_summary(geom = 'pointrange')+
+  # geom_text(aes(label = ssid))+
+  facet_grid(~alexmedian)
+
+
+
+
+db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest %>%
+  subset(!is.na(hierarquicaltest))%>%
+  subset(!is.na(TAS))%>%
+  group_by(ssid, alexmedian,hierarquicaltest)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(as.factor(hierarquicaltest), Bio_Mean_HR_dif))+
+  geom_jitter(width = .1, alpha = .1) +
+  stat_summary(geom = 'pointrange')+
+  # geom_text(aes(label = ssid))+
+  facet_grid(~alexmedian)
+
+
+
+db_full6new_hr_fix_stim_select2_NT_select_scaled_Hierclustest %>%
+  subset(!is.na(hierarquicaltest))%>%
+  subset(!is.na(TAS))%>%
+  group_by(ssid, alexmedian,hierarquicaltest)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(as.factor(hierarquicaltest), BIO_CDA.PhasicMax_z))+
+  geom_jitter(width = .1, alpha = .1) +
+  stat_summary(geom = 'pointrange')+
+  # geom_text(aes(label = ssid))+
+  facet_grid(~alexmedian)
+
+# find the clusters on the aggregated data
+
+db_full6new_hr_fix_stim_select2_NT_no_outl<- subset(db_full6new_hr_fix_stim_select2_NT, db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl2 == FALSE)
+
+
+db_full6new_hr_fix_stim_select2_NT_select_agg<- db_full6new_hr_fix_stim_select2_NT_no_outl %>%
+  group_by(stimIAPS, stimDescription)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+  mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  ungroup()%>%
+  mutate(BIO_CDA.PhasicMax_z_z = scale(BIO_CDA.PhasicMax_z),
+         Bio_Mean_HR_dif_z = scale(Bio_Mean_HR_dif),
+         pup_basCor_z = scale(pup_basCor))
+  
+write_csv(db_full6new_hr_fix_stim_select2_NT_select_agg, "db_full6new_hr_fix_stim_select2_NT_select_agg.csv")
+
+```
+Jasp clusters are super weird so do the clustering here
+
+
+```{r}
+db_full6new_hr_fix_stim_select2_NT_select_agg
+
+
+
+
+# K-Means Clustering
+
+# Importing the dataset
+
+
+
+colnames(db_full6new_hr_fix_stim_select2_NT_select_agg)
+
+db_full6new_hr_fix_stim_select2_NT_select_agg_no_na<- subset(db_full6new_hr_fix_stim_select2_NT_select_agg,
+                                                             !is.na(pup_basCor))
+
+db_full6new_hr_fix_stim_select2_NT_select_agg_no_na<- subset(db_full6new_hr_fix_stim_select2_NT_select_agg_no_na, !is.na(db_full6new_hr_fix_stim_select2_NT_select_agg_no_na$stimDescription))
+
+colnames(db_full6new_hr_fix_stim_select2_NT_select_agg_no_na)
+clust_dataset = db_full6new_hr_fix_stim_select2_NT_select_agg_no_na[c(4,36,44)]
+
+clust_dataset_scaled<- scale(clust_dataset)
+
+clust_dataset_scaled
+# Feature Scaling
+# training_set = scale(training_set)
+# test_set = scale(test_set)
+
+# Using the elbow method to find the optimal number of clusters
+set.seed(1)
+wcss = vector()
+for (i in 1:10) wcss[i] = sum(kmeans(clust_dataset_scaled, i)$withinss)
+plot(1:10,
+     wcss,
+     type = 'b',
+     main = paste('The Elbow Method'),
+     xlab = 'Number of clusters',
+     ylab = 'WCSS')
+
+# 3
+
+# Fitting K-Means to the dataset
+set.seed(25)
+
+kmeans = kmeans(x = clust_dataset_scaled, centers = 3)
+y_kmeans = kmeans$cluster
+
+# Visualising the clusters
+# install.packages("cluster")
+library(cluster)
+
+# ?clusplot
+
+clust_dataset_scaled
+y_kmeans
+
+clusplot(clust_dataset_scaled,
+         y_kmeans,
+         lines = 2,
+         shade = TRUE,
+         color = TRUE,
+         labels = 1,
+         plotchar = FALSE,
+         span = TRUE
+         # label = 
+         # main = paste('Clusters of customers'),
+         # xlab = 'Annual Income',
+         # ylab = 'Spending Score'
+         )
+
+
+db_full6new_hr_fix_stim_select2_NT_select_agg_no_na$y_kmeans <- y_kmeans
+
+db_full6new_hr_fix_stim_select2_NT_select_agg_no_na %>%
+  ggplot(aes(factor(y_kmeans), arousal))+
+  geom_point()+
+  geom_text(aes(label = stimDescription))
+
+kmean_select<- select(db_full6new_hr_fix_stim_select2_NT_select_agg_no_na,
+                      c(stimIAPS,y_kmeans))
+
+
+
+
+
+```
+
+a few visualisations
+```{r}
+
+median(db_full6new_hr_fix_stim_select2_NT_no_outl$TAS, na.rm = TRUE)
+
+summary(db_full6new_hr_fix_stim_select2_NT_no_outl$TAS)
+
+db_full6new_hr_fix_stim_select2_NT_no_outl$alex_1st_vs_3rd_qrt<- if_else(db_full6new_hr_fix_stim_select2_NT_no_outl$TAS> 52, "3 qrt",
+                                                                         if_else(db_full6new_hr_fix_stim_select2_NT_no_outl$TAS< 33, "1st qrt", NULL))
+
+table(db_full6new_hr_fix_stim_select2_NT_no_outl$alex_1st_vs_3rd_qrt)
+
+clustering_agg_noflood$y_kmeans<- y_kmeans
+
+left_join(db_full6new_hr_fix_stim_select2_NT_no_outl, kmean_select)%>%
+  subset(!is.na(TAS))%>%
+  subset(!is.na(stimDescription))%>%
+  group_by(ssid, alex_1st_vs_3rd_qrt, y_kmeans)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(alex_1st_vs_3rd_qrt, pup_basCor))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = 'pointrange')+
+  facet_grid(~y_kmeans)+
+    ggpubr::stat_compare_means()
+
+
+left_join(db_full6new_hr_fix_stim_select2_NT_no_outl, kmean_select)%>%
+  subset(!is.na(TAS))%>%
+  subset(!is.na(stimDescription))%>%
+  subset(!is.na(alex_1st_vs_3rd_qrt))%>%
+  group_by(ssid, alex_1st_vs_3rd_qrt, y_kmeans)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(alex_1st_vs_3rd_qrt, Bio_Mean_HR_dif))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = 'pointrange')+
+  facet_grid(~y_kmeans)+
+    ggpubr::stat_compare_means()
+
+
+left_join(db_full6new_hr_fix_stim_select2_NT_no_outl, kmean_select)%>%
+  subset(!is.na(TAS))%>%
+  subset(!is.na(stimDescription))%>%
+   subset(!is.na(alex_1st_vs_3rd_qrt))%>%
+  group_by(ssid, alex_1st_vs_3rd_qrt, y_kmeans)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(alex_1st_vs_3rd_qrt, BIO_CDA.PhasicMax_z))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = 'pointrange')+
+  facet_grid(~y_kmeans)+
+    ggpubr::stat_compare_means()
+
+
+left_join(db_full6new_hr_fix_stim_select2_NT_no_outl, kmean_select)%>%
+  subset(!is.na(TAS))%>%
+  subset(!is.na(stimDescription))%>%
+  subset(!is.na(alex_1st_vs_3rd_qrt))%>%
+  group_by(ssid, alex_1st_vs_3rd_qrt, y_kmeans)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(alex_1st_vs_3rd_qrt, arousal))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = 'pointrange')+
+  facet_grid(~y_kmeans)+
+    ggpubr::stat_compare_means()
+
+
+left_join(db_full6new_hr_fix_stim_select2_NT_no_outl, kmean_select)%>%
+  subset(!is.na(TAS))%>%
+  subset(!is.na(stimDescription))%>%
+  subset(!is.na(alex_1st_vs_3rd_qrt))%>%
+  group_by(ssid, alex_1st_vs_3rd_qrt, y_kmeans)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(alex_1st_vs_3rd_qrt, valence))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = 'pointrange')+
+  facet_grid(~y_kmeans)+
+    ggpubr::stat_compare_means()
+
+```
+
+
+BADIA
+
+```{r}
+
+db_full6new_hr_fix_stim_select2_NT_no_outl
+
+summary(db_full6new_hr_fix_stim_select2_NT_select_agg_no_na$TAS)
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj<- db_full6new_hr_fix_stim_select2_NT_no_outl%>%
+  subset(!is.na(TAS))%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+summary(db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj$TAS)
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj$alex_quartil <- if_else(db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj$TAS< 33, "1st", 
+if_else(db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj$TAS> 52, "3rd",                                                                              "Mean"))
+
+table(db_full6new_hr_fix_stim_select2_NT_no_outl_agg_bysubj$alex_quartil)
+
+# reformat
+colnames(db_full6new_hr_fix_stim_select2_NT_no_outl)
+
+db_full6new_hr_fix_stim_select2_NT_no_outl$log1p_BIO_CDA.PhasicMax<- log1p(db_full6new_hr_fix_stim_select2_NT_no_outl$BIO_CDA.PhasicMax+.1)
+
+# select only necesssary columns
+db_full6new_hr_fix_stim_select2_NT_no_outl
+
+db_full6new_hr_fix_stim_select2_NT_no_outl$stimIAPS2<- substr(db_full6new_hr_fix_stim_select2_NT_no_outl$stimIAPS, 1,4)
+db_full6new_hr_fix_stim_select2_NT_no_outl_3<- select(db_full6new_hr_fix_stim_select2_NT_no_outl,
+                                                      c(ssid, stimIAPS, stimIAPS2, stimDescription, TAS, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax))
+
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_3<- subset(db_full6new_hr_fix_stim_select2_NT_no_outl_3,!is.na(stimDescription))
+unique(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS)
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS2<- substr(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS, 1,4)
+
+factor(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS2)
+
+# reshape
+colnames(db_full6new_hr_fix_stim_select2_NT_no_outl_3)
+
+table(is.na(db_full6new_hr_fix_stim_select2_NT_no_outl_3))
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_4<- subset(db_full6new_hr_fix_stim_select2_NT_no_outl_3, !is.na(TAS))
+
+table(is.na(db_full6new_hr_fix_stim_select2_NT_no_outl_4$TAS))
+# dcast()
+
+colnames(db_full6new_hr_fix_stim_select2_NT_no_outl_4)
+
+# fill in NA with average per individual
+# - not working
+# are things being recognised as something otehr than NA, eg NaN
+table(is.nan(db_full6new_hr_fix_stim_select2_NT_no_outl_4))
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_4[db_full6new_hr_fix_stim_select2_NT_no_outl_4 == "NaN"] <- NA
+
+# seems like it
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_5 <- db_full6new_hr_fix_stim_select2_NT_no_outl_4%>%
+  group_by(ssid)%>%
+  mutate(ssid_pup_basCor_mean = mean(pup_basCor, na.rm = TRUE), 
+         ssid_Bio_Mean_HR_dif_mean = mean(Bio_Mean_HR_dif, na.rm = TRUE),
+         ssid_log1p_BIO_CDA.PhasicMax_mean = mean(log1p_BIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  mutate(pup_basCor = if_else(is.na(pup_basCor) == TRUE, ssid_pup_basCor_mean, pup_basCor))%>%
+  mutate(Bio_Mean_HR_dif = if_else(is.na(Bio_Mean_HR_dif) == TRUE, ssid_Bio_Mean_HR_dif_mean, Bio_Mean_HR_dif))%>%
+  mutate(log1p_BIO_CDA.PhasicMax = if_else(is.na(log1p_BIO_CDA.PhasicMax) == TRUE, ssid_log1p_BIO_CDA.PhasicMax_mean, log1p_BIO_CDA.PhasicMax)) 
+
+
+db_full6new_hr_fix_stim_select2_NT_no_outl_5
+db_full6new_hr_fix_stim_select2_NT_no_outl_5
+
+db_forBADA1<- data.table::dcast(setDT(db_full6new_hr_fix_stim_select2_NT_no_outl_5), 
+                    ssid + TAS ~ stimIAPS2, value.var = c('pup_basCor',
+                'Bio_Mean_HR_dif', 'log1p_BIO_CDA.PhasicMax'))
+
+
+
+table(is.na(db_forBADA1))
+View(db_forBADA1)
+na.omit(db_forBADA1)
+
+
+db_forBADA1 %>%
+    select_if(~ any(is.na(.)))
+
+table(is.na(db_forBADA1$log1p_BIO_CDA.PhasicMax_9472))
+
+# try to fill means rowwise
+colnames(db_forBADA1)
+
+db_forBADA1_pupil<- db_forBADA1[,1:58]
+table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA1_pupil), arr.ind=TRUE)
+k
+
+db_forBADA1_pupil$ssid<- as.numeric(as.character(db_forBADA1_pupil$ssid))
+db_forBADA1_pupil[k] <- rowMeans(db_forBADA1_pupil, na.rm=TRUE)[k[,1]]
+
+# hr
+db_forBADA1_hr<- db_forBADA1[,c(1:2,59:(59+55))]
+# table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA1_hr), arr.ind=TRUE)
+k
+
+db_forBADA1_hr$ssid<- as.numeric(as.character(db_forBADA1_hr$ssid))
+db_forBADA1_hr[k] <- rowMeans(db_forBADA1_hr, na.rm=TRUE)[k[,1]]
+
+db_forBADA1_hr
+
+# scr
+colnames(db_forBADA1)
+db_forBADA1_scr<- db_forBADA1[,c(1:2,115:170)]
+# table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA1_scr), arr.ind=TRUE)
+k
+
+db_forBADA1_scr$ssid<- as.numeric(as.character(db_forBADA1_scr$ssid))
+db_forBADA1_scr[k] <- rowMeans(db_forBADA1_scr, na.rm=TRUE)[k[,1]]
+
+db_forBADA1_scr
+
+table(is.na(bind_cols(db_forBADA1_pupil, db_forBADA1_hr[,3:58], db_forBADA1_scr[,3:58])))
+
+
+# create quartiles for alexithymia
+summary(db_forBADA1_pupil$TAS)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#   22.00   33.00   42.00   42.82   52.00   71.00 
+
+db_forBADA1_pupil$alex_quartil<- if_else(db_forBADA1_pupil$TAS<33, "1st",
+                                         if_else(db_forBADA1_pupil$TAS>52, "2nd", "Mean"))
+db_badia_nona <- bind_cols(db_forBADA1_pupil, db_forBADA1_hr[,3:58], db_forBADA1_scr[,3:58])
+
+db_badia_nona1<- db_badia_nona[,c(1:2,59,3:58,60:171)]
+
+table(is.na(db_badia_nona1))
+```
+
+
+```{r}
+install.packages("TInPosition")
+install.packages("ade4")
+install.packages("TExPosition")
+install.packages("MExPosition")
+install.packages("ExPosition")
+install.packages("prettyGraphs")
+
+library(TInPosition)
+library(MExPosition)
+
+ExPosition::epPCA()
+
+##PCA with Inference
+# all.data <- read.csv("PCA_Dataset_2.csv",header=TRUE)
+all.data<- db_badia_nona1
+
+all.data$alex_quartil<- ifelse(all.data$TAS> median(all.data$TAS), "High", "Low")
+
+colnames(all.data)
+
+# rownames(all.data) <- all.data[,1]
+# all.data_highlow<- subset(all.data, all.data$alex_quartil != "Mean")
+
+table(is.na(all.data[,3]))
+var.design <- as.factor(all.data$alex_quartil)
+var.data <- all.data[,c(4:171)]
+
+# Mexposition package missing
+ade4
+
+?TInPosition::tepDICA.inference.battery()
+
+TInPosition::print.tepBADA.inference.battery()
+TInPosition::pca
+ExPosition::epPCA()
+
+# oiginal
+?epPCA.inference.battery
+InPosition::
+var.PCA.inf <-InPosition::epPCA.inference.battery(var.data, 
+                                       scale = TRUE, 
+                                       center = TRUE, 
+                                       DESIGN = var.design, 
+                                       make_design_nominal = FALSE, 
+                                       graphs = TRUE, k = 0, 
+                                       test.iters = 100, 
+                                       constrained = FALSE, critical.value = 1.7)
+
+?ExPosition::epPCA
+?correlationPlotter
+library(prettyGraphs)
+
+var.PCA.inf <- ExPosition::epPCA(var.data1, scale = TRUE, center = TRUE, DESIGN = var.design, make_design_nominal = TRUE, graphs = TRUE, k = 0)
+
+
+# let's try tinpositioinsta
+
+install.packages('InPosition')
+
+?epPCA.inference.battery
+
+# var.PCA.inf <- InPosition::epPCA.inference.battery(var.data1, scale = TRUE, center = TRUE, DESIGN = var.design, make_design_nominal = TRUE, graphs = TRUE, k = 0, test.iters = 100, constrained = FALSE, critical.value = 2)
+
+
+row.cols<- var.PCA.inf$Fixed.Data$Plotting.Data$fi.col
+## Look at other dimensions
+row.cols <- read.csv("row_cols.csv",header=TRUE)
+
+
+# row.cols <- var.data[,2]
+
+# row.cols<- all.data_highlow[,3]
+
+x_axis <- 1
+y_axis <- 2
+
+var.PCA.inf$ExPosition.Data
+
+tau <- var.PCA.inf$Fixed.Data$ExPosition.Data$t
+p.val <- var.PCA.inf$Inference.Data$components$p.vals
+xlab = paste("Component", x_axis, "Variance:",round(tau[x_axis],digits = 2),"%, ","p =",p.val[x_axis])
+ylab = paste("Component", y_axis, "Variance:",round(tau[y_axis],digits = 2),"%, ","p =",p.val[y_axis])
+main = "PCA with Inference"
+
+pca.plot <- prettyPlot(var.PCA.inf$Fixed.Data$ExPosition.Data$fi,
+x_axis=x_axis,
+y_axis=y_axis,
+col=row.cols,
+pch=22,
+cex=NULL,
+text.cex=NULL,
+pos=3,
+xlab=xlab,ylab=ylab,main=main,display_names=FALSE,display_points=TRUE,
+constraints=NULL,contributionCircles=TRUE,contributions=var.PCA.inf$Fixed.Data$ExPosition.Data$ci, axes=TRUE, fg.line.width=3,fg.type="l", fg.col="black",
+bg.line.width=1.5, bg.lty=3, bg.col="black",flip=FALSE,asp=1, findBounds=TRUE,dev.new=TRUE,new.plot=TRUE)
+
+## Barycentric Discriminant Analysis (BaDa)
+# var.data <- all.data_highlow[,c(4:171)]
+
+TInPosition::tepBADA.inference.battery()
+# 
+# table(is.na(var.data))
+# na.omit(var.data)
+# 
+#  var.data$log1p_BIO_CDA.PhasicMax_9926
+# 
+#  
+#  var.data %>%
+#     select_if(~ any(is.infinite(.)))
+#  
+#  var.data1<- na.omit(var.data)
+ 
+ 
+var.design<- as.factor(all.data_highlow$alex_quartil)
+
+
+resBADA <- TExPosition::tepBADA(var.data, DESIGN = var.design, scale = TRUE,
+                   graphs = FALSE)
+
+colnames(var.data)
+
+?TInPosition::tepBADA.inference.battery
+var.BADA.inf <- TInPosition::tepBADA.inference.battery(var.data, 
+                                                       scale = TRUE, 
+                                                       center = TRUE, 
+                                                       DESIGN = var.design, 
+                                                       make_design_nominal = TRUE, 
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       graphs = TRUE, 
+                                                       k = 0, 
+                                                       test.iters = 100, 
+                                                       critical.value = 1)
+
+
+
+# try tep bada
+resBADA <-TExPosition::tepBADA(var.data, DESIGN = var.design, 
+                               scale = FALSE,
+                   graphs = TRUE)
+
+
+resBADA.inf <- TInPosition::tepBADA.inference.battery(var.data, scale = FALSE,
+                  DESIGN = var.design,
+                  test.iters = 100,
+                  graphs = FALSE)
+
+
+resBADA$Plotting.Data
+
+row.names(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+colnames(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+resBADA.inf$Inference.Data$loo.data$fixed.confuse
+
+plot(resBADA.inf)
+
+
+TInPosition::tinGraphs(resBADA.inf)
+```
+
+
+lets try including asd
+
+
+
+```{r}
+db_full6new_hr_fix_stim_select3<- db_full6new_hr_fix_stim_select2
+
+# flag the multiple outliers in pupil scr arousal and heart rate
+
+db_full6new_hr_fix_stim_select3$stimIAPS<- db_full6new_hr_fix_stim_select3$stim
+
+db_full6new_hr_fix_stim_select3<- db_full6new_hr_fix_stim_select3%>%
+  group_by(stimIAPS) %>%
+  mutate(arousal_outler = if_else(arousal > (median(arousal, na.rm = TRUE) + 
+                                               (4*mad(arousal, na.rm = TRUE))), TRUE,
+         if_else(arousal < (median(arousal, na.rm = TRUE) - 
+                              (4*mad(arousal, na.rm = TRUE))), TRUE, FALSE)))%>%
+   mutate(valence_outler = if_else(valence > (median(valence, na.rm = TRUE) + 
+                                               (4*mad(valence, na.rm = TRUE))), TRUE,
+         if_else(valence < (median(valence, na.rm = TRUE) - 
+                              (4*mad(valence, na.rm = TRUE))), TRUE, FALSE)))%>%
+  group_by(ssid)%>%
+   mutate(pupil_outlier = if_else(pup_basCor > (median(pup_basCor, na.rm = TRUE) 
+                                                + (3*mad(pup_basCor, na.rm = TRUE))), TRUE,
+         if_else(pup_basCor < (median(pup_basCor, na.rm = TRUE) - 
+                                 (3*mad(pup_basCor, na.rm = TRUE))), TRUE, FALSE)))%>%
+    mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  mutate(BIO_CDA.PhasicMax_z_outl = if_else(abs(BIO_CDA.PhasicMax_z)> 3, TRUE, FALSE))%>%
+  ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         # Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1],
+         BPQc = scale(BPQ)[,1],
+         WASIM_c =scale(WASIM)[,1],
+         DASSTotalc = scale(DASSTotal)[,1])
+
+
+# is there is at least one outlier in HR, SCR or pupil flag true
+
+db_full6new_hr_fix_stim_select3$Bio_Mean_HR_dif_outl2<- if_else(db_full6new_hr_fix_stim_select3$Bio_Mean_HR_dif_outl == "outlier", TRUE, FALSE)
+
+
+colnames(db_full6new_hr_fix_stim_select3)
+
+
+
+
+```
+db_full6new_hr_fix_stim_select3
+
+BADIA
+
+```{r}
+
+db_full6new_hr_fix_stim_select3
+db_full6new_hr_fix_stim_select3
+
+# reformat
+colnames(db_full6new_hr_fix_stim_select3)
+
+db_full6new_hr_fix_stim_select3$log1p_BIO_CDA.PhasicMax<- log1p(db_full6new_hr_fix_stim_select3$BIO_CDA.PhasicMax+.1)
+
+# select only necessary columns
+
+
+db_full6new_hr_fix_stim_select3$stimIAPS2<- substr(db_full6new_hr_fix_stim_select3$stimIAPS, 1,4)
+
+db_full6new_hr_fix_stim_select4 <- select(db_full6new_hr_fix_stim_select3,
+                                                      c(ssid, Group, stimIAPS, stimIAPS2, stimDescription, TAS, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax))
+
+
+db_full6new_hr_fix_stim_select4<- subset(db_full6new_hr_fix_stim_select4,!is.na(stimDescription))
+unique(db_full6new_hr_fix_stim_select4$stimIAPS)
+
+db_full6new_hr_fix_stim_select4$stimIAPS2<- substr(db_full6new_hr_fix_stim_select4$stimIAPS, 1,4)
+
+factor(db_full6new_hr_fix_stim_select4$stimIAPS2)
+
+# reshape
+colnames(db_full6new_hr_fix_stim_select4)
+
+
+db_full6new_hr_fix_stim_select4<- subset(db_full6new_hr_fix_stim_select4, !is.na(Group))
+
+colnames(db_full6new_hr_fix_stim_select4)
+
+# fill in NA with average per individual
+# - not working
+# are things being recognised as something otehr than NA, eg NaN
+table(is.nan(db_full6new_hr_fix_stim_select4))
+
+db_full6new_hr_fix_stim_select4[db_full6new_hr_fix_stim_select4 == "NaN"] <- NA
+
+# seems like it
+
+db_full6new_hr_fix_stim_select5 <- db_full6new_hr_fix_stim_select4%>%
+  group_by(ssid)%>%
+  mutate(ssid_pup_basCor_mean = mean(pup_basCor, na.rm = TRUE), 
+         ssid_Bio_Mean_HR_dif_mean = mean(Bio_Mean_HR_dif, na.rm = TRUE),
+         ssid_log1p_BIO_CDA.PhasicMax_mean = mean(log1p_BIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  mutate(pup_basCor = if_else(is.na(pup_basCor) == TRUE, ssid_pup_basCor_mean, pup_basCor))%>%
+  mutate(Bio_Mean_HR_dif = if_else(is.na(Bio_Mean_HR_dif) == TRUE, ssid_Bio_Mean_HR_dif_mean, Bio_Mean_HR_dif))%>%
+  mutate(log1p_BIO_CDA.PhasicMax = if_else(is.na(log1p_BIO_CDA.PhasicMax) == TRUE, ssid_log1p_BIO_CDA.PhasicMax_mean, log1p_BIO_CDA.PhasicMax)) 
+
+
+db_full6new_hr_fix_stim_select5
+
+library(data.table)
+?dcast
+db_forBADA2<- data.table::dcast(setDT(db_full6new_hr_fix_stim_select5), 
+                    ssid + Group ~ stimIAPS2, value.var = c('pup_basCor',
+                'Bio_Mean_HR_dif', 'log1p_BIO_CDA.PhasicMax'),fun.aggregate = mean)
+
+
+
+table(is.na(db_forBADA2))
+View(db_forBADA2)
+na.omit(db_forBADA2)
+
+
+db_forBADA2 %>%
+    select_if(~ any(is.na(.)))
+
+table(is.na(db_forBADA2$log1p_BIO_CDA.PhasicMax_9472))
+
+# try to fill means rowwise
+colnames(db_forBADA2)
+
+db_forBADA2_pupil<- db_forBADA2[,3:58]
+# table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA2_pupil), arr.ind=TRUE)
+k
+
+# db_forBADA1_pupil$ssid<- as.numeric(as.character(db_forBADA1_pupil$ssid))
+db_forBADA2_pupil[k] <- rowMeans(db_forBADA2_pupil, na.rm=TRUE)[k[,1]]
+
+# hr
+db_forBADA2_hr<- db_forBADA2[,c(59:114)]
+# table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA2_hr), arr.ind=TRUE)
+k
+
+db_forBADA2_hr[k] <- rowMeans(db_forBADA2_hr, na.rm=TRUE)[k[,1]]
+
+db_forBADA2_hr
+
+# scr
+colnames(db_forBADA2)
+db_forBADA2_scr<- db_forBADA2[,115:170]
+# table(is.na(db_forBADA1_pupil$TAS))
+
+k <- which(is.na(db_forBADA2_scr), arr.ind=TRUE)
+k
+
+db_forBADA2_scr[k] <- rowMeans(db_forBADA2_scr, na.rm=TRUE)[k[,1]]
+
+db_forBADA2_scr
+
+
+
+# bind
+db_badia2_nona <- bind_cols(db_forBADA2[,1:2], db_forBADA2_pupil, db_forBADA2_hr, db_forBADA2_scr)
+
+
+```
+
+
+
+```{r}
+
+install.packages("TInPosition")
+install.packages("ade4")
+install.packages("TExPosition")
+install.packages("MExPosition")
+install.packages("ExPosition")
+install.packages("prettyGraphs")
+
+library(TInPosition)
+library(MExPosition)
+
+ExPosition::epPCA()
+
+##PCA with Inference
+# all.data <- read.csv("PCA_Dataset_2.csv",header=TRUE)
+all.data_asd<- db_badia2_nona
+
+all.data_asd <- na.omit(all.data_asd)
+# rownames(all.data) <- all.data[,1]
+# all.data_highlow<- subset(all.data, all.data$alex_quartil != "Mean")
+
+
+var.design_asd <- as.factor(all.data_asd$Group)
+var.data_asd <- all.data_asd[,c(3:170)]
+
+na.omit(var.data_asd)
+# Mexposition package missing
+ade4
+
+?TInPosition::tepDICA.inference.battery()
+
+TInPosition::print.tepBADA.inference.battery()
+TInPosition::pca
+ExPosition::epPCA()
+
+# oiginal
+?InPosition::epPCA.inference.battery
+?correlationPlotter
+library(prettyGraphs)
+var.PCA.inf_asd <-InPosition::epPCA.inference.battery(var.data_asd, 
+                                       scale = TRUE, 
+                                       center = TRUE, 
+                                       DESIGN = var.design_asd,
+                                       make_design_nominal = TRUE, 
+                                       graphs = TRUE, k = 0, 
+                                       test.iters = 100, 
+                                       constrained = FALSE, critical.value = 2)
+
+?ExPosition::epPCA
+
+ExPosition::epGraphs(var.PCA.inf_asd$Fixed.Data$Plotting.Data)
+
+# store factor scores
+
+score_test <-var.PCA.inf_asd[["Fixed.Data"]][["ExPosition.Data"]][["fi"]][,1:3]
+var.PCA.inf_asd
+library(ggplot2)
+library(tidyverse)
+# I think this is storing the first 2
+as.data.frame(score_test)%>%
+  ggplot(aes(V1, V2))+
+  geom_point(aes(color = var.design_asd))
+
+# now bidn this to dataset
+
+
+# store pcs on the data
+var.data_asd_with2pcs$PC1 <- score_test[,1]
+var.data_asd_with2pcs$PC2 <- score_test[,2]
+var.data_asd_with2pcs$PC2 <- score_test[,2]
+
+all.data_asd$PC1 <- score_test[,1]
+all.data_asd$PC2 <- score_test[,2]
+all.data_asd$PC3 <- score_test[,3]
+
+# now try kmeans on the components
+all.data_asd2pcs<- all.data_asd
+
+# var.data_asd_with2pcs
+
+colnames(all.data_asd2pcs)
+all.data_asd2pcs_forkmean<- all.data_asd2pcs[,c(1,2,171:173)]
+# Feature Scaling
+# training_set = scale(training_set)
+# test_set = scale(test_set)
+
+# Using the elbow method to find the optimal number of clusters
+set.seed(1)
+wcss = vector()
+for (i in 1:10) wcss[i] = sum(kmeans(scaled_all.data_asd2pcs_forkmean, i)$withinss)
+plot(1:10,
+     wcss,
+     type = 'b',
+     main = paste('The Elbow Method'),
+     xlab = 'Number of clusters',
+     ylab = 'WCSS')
+
+# 3 or 2
+
+# Fitting K-Means to the dataset
+set.seed(25)
+
+?kmeans
+kmeans_res = kmeans(x = scaled_all.data_asd2pcs_forkmean, centers = 2)
+y_kmeans = kmeans_res$cluster
+rm(kmeans)
+
+install.packages("factoextra")
+
+?factoextra::fviz_nbclust
+factoextra::fviz_nbclust(scaled_all.data_asd2pcs_forkmean, 
+                         kmeans, 
+                         method='silhouette')
+
+# Visualising the clusters
+# install.packages("cluster")
+library(cluster)
+
+# ?clusplot
+
+clust_dataset_scaled
+y_kmeans
+
+scaled_all.data_asd2pcs_forkmean$y_kmeans<- y_kmeans
+
+# all.data_asd2pcs_forkmean$TAS<- all.data
+
+mean(all.data_asd2pcs_forkmean$PC1)
+sd(all.data_asd2pcs_forkmean$PC1)
+mean(all.data_asd2pcs_forkmean$PC2)
+sd(all.data_asd2pcs_forkmean$PC2)
+scaled_all.data_asd2pcs_forkmean <- as.data.frame(scale(all.data_asd2pcs_forkmean[,3:4])[,1:2])
+
+
+clusplot(scaled_all.data_asd2pcs_forkmean,
+         y_kmeans,
+         lines = 2,
+         shade = TRUE,
+         color = TRUE,
+         labels = 1,
+         plotchar = FALSE,
+         span = TRUE
+         # label = 
+         # main = paste('Clusters of customers'),
+         # xlab = 'Annual Income',
+         # ylab = 'Spending Score'
+         )
+
+
+kmeans$tot.withinss/kmeans$totss
+
+kmeans$tot.withinss/ kmeans$betweenss
+(kmeans$tot.withinss + kmeans$betweenss)/kmeans$totss
+db_full6new_hr_fix_stim_select5
+
+# 
+ssid_tasaq<- db_full6new_hr_fix_stim_select3%>%
+  group_by(ssid, Group)%>%
+  summarise_at(c('TAS', 'AQ'), mean, na.rm = TRUE)
+# ssid_tas_aq<- select(db_full6new_hr_fix_stim_select3, c(ssid, TAS))
+
+scaled_all.data_asd2pcs_forkmean$ssid<- all.data_asd2pcs_forkmean$ssid
+
+left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
+  ggplot(aes(as.factor(y_kmeans), AQ))+
+  stat_summary(geom = "pointrange")+
+  geom_text(aes(label = ssid), alpha = .1)
+
+kmeans$ifault
+left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
+  ggplot(aes(as.factor(y_kmeans), TAS))+
+  stat_summary(geom = "pointrange")+
+  geom_text(aes(label = ssid), alpha = .1)
+
+
+scaled_all.data_asd2pcs_forkmean$PC3<- all.data_asd2pcs_forkmean$PC3
+
+scaled_all.data_asd2pcs_forkmean2<- left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)
+
+table(scaled_all.data_asd2pcs_forkmean2$Group, scaled_all.data_asd2pcs_forkmean2$y_kmeans)
+
+scaled_all.data_asd2pcs_forkmean2$alex_median<- if_else(scaled_all.data_asd2pcs_forkmean2$TAS> median(scaled_all.data_asd2pcs_forkmean2$TAS, na.rm = TRUE), "High", "Low")
+
+
+table(scaled_all.data_asd2pcs_forkmean2$alex_median, scaled_all.data_asd2pcs_forkmean2$y_kmeans)
+
+
+scaled_all.data_asd2pcs_forkmean2%>%
+  ggplot(aes(as.factor(y_kmeans), TAS))+
+  stat_summary(geom = "pointrange")+
+  geom_text(aes(label = ssid), alpha = .1)+
+  facet_grid(~alex_median)
+
+scaled_all.data_asd2pcs_forkmean2$km_gr<- paste0(scaled_all.data_asd2pcs_forkmean2$y_kmeans, paste0(scaled_all.data_asd2pcs_forkmean2$Group))
+
+scaled_all.data_asd2pcs_forkmean2%>%
+  ggplot(aes(km_gr, TAS))+
+  stat_summary(geom = "pointrange")+
+  geom_text(aes(label = ssid), alpha = .1)
+  facet_grid(~alex_median)
+  
+  
+  # flag just the sigmificant variables
+  # subset to keep the varioables that came sgnificant ut of the infernce PCA for either of the first 2 or 3 dimmensions
+  signiftestpca_df<- as.data.frame(signiftestpca)
+  signiftestpca1_2<- signiftestpca_df%>%
+                            any(~(V1, V2) == TRUE)
+  
+  unique(signiftestpca1_2$V1)
+  unique(signiftestpca1_2$V2)  
+  
+  new.data <- signiftestpca_df[ which( signiftestpca_df$V1 == TRUE | signiftestpca_df$V2 == TRUE) , ]
+  
+  
+  unique(new.data$V1)
+  unique(new.data$V2)
+  
+  View(new.data)
+  
+  new.data
+  new.data$pca_v1_v2<- paste0(new.data$V1, paste0(new.data$V2))
+  unique( new.data$pca_v1_v2)
+  new.data1<- select(new.data, c(V1, V2, V3, pca_v1_v2))
+  
+  # store row name into a variable
+  new.data1$variable<- rownames(new.data1)
+  
+  
+  # extract pattern after the last underscore
+     new.data1$stimIAPS2<- sub('.*\\_', '', new.data1$variable)
+  new.data1$stimIAPS2
+  
+    new.data1$InPCA<- "YES"
+    
+    scaled_all.data_asd2pcs_forkmean2
+    
+    new.data1
+     unique( new.data1$pca_v1_v2)
+
+
+# merge this back with the full data
+        db_full6new_hr_fix_stim_select5
+        
+        unique(scaled_all.data_asd2pcs_forkmean2$ssid)
+  kmean_pca_longdata  <- left_join(scaled_all.data_asd2pcs_forkmean2, db_full6new_hr_fix_stim_select3, 
+                                   by = c("ssid", "Group"))
+  
+  kmean_pca_longdata
+  
+ # new.data2 <- new.data1%>%
+ #    arrange(stimIAPS2)%>%
+ #    subset(!duplicated(stimIAPS2))
+ 
+ new.data2<- new.data1
+ 
+ unique( new.data2$pca_v1_v2)
+ 
+ unique(new.data2)
+ unique(kmean_pca_longdata$ssid)
+ 
+ kmean_pca_longdata
+new.data3<- left_join( new.data2,kmean_pca_longdata)
+  # left_join( new.data2,kmean_pca_longdata) %>%
+
+unique(new.data3$pca_v1_v2)
+
+
+V3
+
+all.data_asd2pcs_forkmean
+new.data3$PC3<- all.data_asd2pcs_forkmean$PC3
+new.data3 %>%
+  # subset(Group == "NT")%>%
+  subset(ssid!=336)%>%
+    group_by(ssid, Group)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes( TAS.y, PC2))+
+  geom_point()+
+  geom_smooth(method = 'lm', se = F)+
+  geom_text(aes(label = ssid))+
+  ggpubr::stat_cor(method = 'spearman')+
+    stat_ellipse()
+  # stat_summary(geom = 'pointrange')+
+      geom_jitter(alpha = .1, width = .1)+
+  
+      # facet_grid(~Group)+
+  ggpubr::stat_compare_means()
+
+
+```
+
+```{r}
+new.data3$PCAsolution<- paste0(new.data3$V1, paste0(new.data3$V2))
+
+unique(new.data3$PCAsolution)
+# show the average cluster profile
+
+new.data3 %>%
+    group_by(ssid, Group, km_gr, y_kmeans, V1, V2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), pup_basCor, color = V1))+
+  stat_summary(geom = 'pointrange')+
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(Group~V2)
+
+
+new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid, Group, km_gr, y_kmeans, V1, V2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), log1p_BIO_CDA.PhasicMax, color = V1))+
+  stat_summary(geom = 'pointrange')+
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(Group~V2)
+
+
+new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid, alex_median, y_kmeans, V1, V2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), Bio_Mean_HR_dif, color = V1))+
+  stat_summary(geom = 'pointrange')+
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(alex_median~V2)
+
+
+new.data3%>%
+  gather()
+
+gather(new.data3, key = "measurement", value = "value",
+       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2,-alex_median)%>%
+  subset(!is.na(alex_median))%>%
+  group_by(ssid)%>%
+  mutate(value1 = scale(value))%>%
+  ggplot(aes(measurement,value1, color = as.factor(pca_v1_v2)))+
+  stat_summary(geom = "pointrange")+
+  facet_grid(alex_median~y_kmeans)
+
+
+gather(new.data3, key = "measurement", value = "value",
+       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2)%>%
+  group_by(ssid,measurement)%>%
+  mutate(value1 = scale(value))%>%
+  ggplot(aes(measurement,SacAmp, color = as.factor(pca_v1_v2)))+
+  stat_summary(geom = "pointrange")+
+  facet_grid(~y_kmeans)
+unique(new.data3$ssid)
+
+
+# compare them on the scores components
+gather(new.data3, key = "measurement", value = "value",
+       PC1, PC2, -ssid, - y_kmeans, -pca_v1_v2)%>%
+  group_by(ssid,y_kmeans,measurement)%>%
+  # mutate(value1 = scale(value))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(as.factor(y_kmeans),value))+
+  geom_jitter(width = .1, alpha = .2)+
+  stat_summary(geom = "pointrange")+
+  geom_boxplot(alpha = .1)+
+  facet_grid(~measurement)+
+  ggpubr::stat_compare_means()
+unique(new.data3$ssid)
+
+gather(new.data3, key = "measurement", value = "value",
+       PC1, PC2, -ssid, - y_kmeans, -pca_v1_v2)%>%
+  subset(Group == "NT")%>%
+  group_by(ssid,y_kmeans,measurement)%>%
+  # mutate(value1 = scale(value))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  
+  ggplot(aes(as.factor(y_kmeans),AQ.x))+
+  geom_jitter(width = .1, alpha = .2)+
+  stat_summary(geom = "pointrange")+
+  geom_boxplot(alpha = .1)+
+  facet_grid(~measurement)+
+  ggpubr::stat_compare_means()
+
+
+unique(new.data3$PC1)
+new.data3%>%
+  
+```
+
+
+
+```
+
+# score_test
+
+
+?correlationPlotter
+library(prettyGraphs)
+
+var.PCA.inf_asd$Fixed.Data
+
+
+
+# let's try tinpositioinsta
+
+install.packages('InPosition')
+
+?epPCA.inference.battery
+
+# var.PCA.inf <- InPosition::epPCA.inference.battery(var.data1, scale = TRUE, center = TRUE, DESIGN = var.design, make_design_nominal = TRUE, graphs = TRUE, k = 0, test.iters = 100, constrained = FALSE, critical.value = 2)
+
+
+row.cols<- var.data_asd
+  
+  var.PCA.inf_asd$Fixed.Data$Plotting.Data$fi.col
+## Look at other dimensions
+row.cols <- read.csv("row_cols.csv",header=TRUE)
+
+
+# row.cols <- var.data[,2]
+
+# row.cols<- all.data_highlow[,3]
+
+x_axis <- 1
+y_axis <- 2
+
+var.PCA.inf$ExPosition.Data
+
+tau <- var.PCA.inf_asd$Fixed.Data$ExPosition.Data$t
+p.val <- var.PCA.inf_asd$Inference.Data$components$p.vals
+xlab = paste("Component", x_axis, "Variance:",round(tau[x_axis],digits = 2),"%, ","p =",p.val[x_axis])
+ylab = paste("Component", y_axis, "Variance:",round(tau[y_axis],digits = 2),"%, ","p =",p.val[y_axis])
+main = "PCA with Inference"
+
+pca.plot <- prettyPlot(var.PCA.inf_asd$Fixed.Data$ExPosition.Data$fi,
+x_axis=x_axis,
+y_axis=y_axis,
+col= var.PCA.inf_asd$Fixed.Data$Plotting.Data$fi.col,
+pch=22,
+cex=NULL,
+text.cex=NULL,
+pos=3,
+xlab=xlab,ylab=ylab,main=main,display_names=FALSE,display_points=TRUE,
+constraints=NULL,contributionCircles=TRUE,contributions=var.PCA.inf$Fixed.Data$ExPosition.Data$ci, axes=TRUE, fg.line.width=3,fg.type="l", fg.col="black",
+bg.line.width=1.5, bg.lty=3, bg.col="black",flip=FALSE,asp=1, findBounds=TRUE,dev.new=TRUE,new.plot=TRUE)
+
+var.PCA.inf_asd$Inference.Data$components$
+```
+
+## Barycentric Discriminant Analysis (BaDa)
+```{r}
+# var.data <- all.data_highlow[,c(4:171)]
+
+TInPosition::tepBADA.inference.battery()
+# 
+# table(is.na(var.data))
+# na.omit(var.data)
+# 
+#  var.data$log1p_BIO_CDA.PhasicMax_9926
+# 
+#  
+#  var.data %>%
+#     select_if(~ any(is.infinite(.)))
+#  
+#  var.data1<- na.omit(var.data)
+ 
+ 
+var.design<- as.factor(all.data_highlow$alex_quartil)
+
+
+resBADA <- TExPosition::tepBADA(var.data, DESIGN = var.design, scale = TRUE,
+                   graphs = FALSE)
+
+colnames(var.data)
+
+?TInPosition::tepBADA.inference.battery
+
+?TExPosition::tepBADA
+
+
+test <- TExPosition::tepBADA(var.data_asd, 
+                                                       scale = TRUE, 
+                                                       center = TRUE, 
+                                                       DESIGN = var.design_asd, 
+                                                       make_design_nominal = TRUE, 
+                                                       group.masses = NULL, 
+                                                       # weights = NULL, 
+                                                       graphs = TRUE, 
+                                                       k = 0
+                                                       # test.iters = 100, 
+                                                       # critical.value = 2
+                     )
+
+
+test$Plotting.Data
+
+TExPosition::tepDICA()
+?TInPosition::print.tepDICA.inference.battery()
+var.BADA.inf_asd <- TInPosition::tepBADA.inference.battery(var.data_asd, 
+                                                       scale = TRUE, 
+                                                       center = TRUE, 
+                                                       DESIGN = all.data_asd$Group, 
+                                                       make_design_nominal = TRUE, 
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       graphs = TRUE, 
+                                                       k = 0, 
+                                                       test.iters = 100, 
+                                                       critical.value = 2)
+
+
+?TInPosition::tepDICA.inference.battery
+na.omit(var.data_asd)
+na.action(var.data_asd)
+
+table(is.finite(as.data.frame(var.data_asd)))\\?TExPosition::print.tepDICA
+
+?TExPosition::tepDICA
+
+infinite_issue<-var.data_asd[,colSums(var.data_asd != 0) != 0]
+
+table(is.infinite(scale(var.data_asd)))
+
+var.data_asd_sca<- scale(var.data_asd)
+var.data_asd_sca<- as.data.frame(var.data_asd_sca)
+var.data_asd_sca
+var.data_asd_sca[var.data_asd_sca == "NaN"]
+na.omit(var.data_asd_sca)
+
+var.data_asd_sca%>%
+  mutate(colSumst= colSums())
+  subset(colSums!= 0)
+
+  
+var.data_asd_sca[, colSums(var.data_asd_sca != 0) > 0]
+  
+
+Sample.scaled.2 
+
+data.frame(t(na.omit(t(var.data_asd_sca))))
+(var.data_asd)
+
+?svd
+svd(var.data_asd_sca)
+
+log(var.data_asd_sca+10)
+var.BADA.inf_asd_doica <- TExPosition::tepDICA(var.data_asd_sca+10,
+                                                       # scale = TRUE, 
+                                                       # center = TRUE, 
+                                                       DESIGN = as.factor(all.data_asd$Group), 
+                                                       make_design_nominal = TRUE, 
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       symmetric = TRUE,
+                                                       graphs = TRUE, 
+                                                       k = 0)
+
+
+
+# try tep bada
+resBADA <-TExPosition::tepBADA(var.data, DESIGN = var.design, 
+                               scale = FALSE,
+                   graphs = TRUE)
+
+
+resBADA.inf <- TInPosition::tepBADA.inference.battery(var.data+10, scale = FALSE,
+                  DESIGN = var.design,
+                  test.iters = 100,
+                  graphs = FALSE)
+
+
+resBADA$Plotting.Data
+
+row.names(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+colnames(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+resBADA.inf$Inference.Data$loo.data$fixed.confuse
+
+plot(resBADA.inf)
+
+
+TInPosition::tinGraphs(resBADA.inf)
+```
+
+
 ```
