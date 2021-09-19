@@ -263,7 +263,7 @@ db_full4new_stim_screen_pupil_select1%>%
 
 
 db_full4new_stim_screen_pupil_select1%>%
-  # subset(Group == "NT")%>%
+  subset(!is.na(TAS))%>%
   subset(pupil_outlier == FALSE)%>%
    # subset(valence_outler == FALSE)%>%
   # subset(arousal_outler == FALSE)%>%
@@ -274,6 +274,25 @@ db_full4new_stim_screen_pupil_select1%>%
   mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
   ggplot(aes(AQ,cor_ar_pup))+
+  geom_point(aes(color = Group))+
+  # geom_text(aes(label = ssid))+
+    geom_smooth(method = lm, se = F)+
+    ggpubr::stat_cor()+
+  p$graphstyle
+
+
+db_full4new_stim_screen_pupil_select %>%
+  subset(!is.na(TAS))%>%
+  subset(pupil_outlier == FALSE)%>%
+   # subset(valence_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(ssid!= 356)%>% #clear pupil outlier
+  subset(ssid!= 351)%>%
+  subset(ssid!= 344)%>% #anthony
+  group_by(ssid, Group)%>%
+  mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(Age,cor_ar_pup))+
   geom_point(aes(color = Group))+
   # geom_text(aes(label = ssid))+
     geom_smooth(method = lm, se = F)+
@@ -302,6 +321,8 @@ db_full4new_stim_screen_pupil_select1%>%
     geom_smooth(method = lm, se = F)+
     ggpubr::stat_cor()
 
+```
+```{r}
 table(is.na(db_full4new_stim_screen_pupil_select1$TAS))
 
 test<- subset(db_full4new_stim_screen_pupil_select1, is.na(TAS))
@@ -374,9 +395,43 @@ db_full4new_stim_screen_pupil_select1%>%
 ```
 
 ```{r}
+
+
+# demographocs
+
+db_full4new_stim_screen_pupil_select1 %>%
+  # subset(Age< 55)%>%
+  group_by(ssid, Group,Gender)%>%
+  summarise_at(c('Age', 'TAS', 'DASSTotal', 'BPQ', 'AQ','WASIM'), mean, na.rm = TRUE)%>%
+  ungroup()%>%
+  
+  group_by(Group,Gender)%>%
+  mutate(n = n())%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+db_full4new_stim_screen_pupil_select1 %>%
+  # subset(Age< 55)%>%
+  group_by(ssid, Group,Gender)%>%
+  summarise_at(c('Age', 'TAS', 'DASSTotal', 'BPQ', 'AQ','WASIM'), mean, na.rm = TRUE)%>%
+  ungroup()%>%
+  
+  group_by(Group,Gender)%>%
+  mutate(n = n())%>%
+  summarise_if(is.numeric, sd, na.rm = TRUE)
+  
+
+# sd feamlas_data_frame()
+(16.165808+12.735955)/2
+
+# asd mean age
+(41.00000+35.25000)/2
+```
+
 lmer_intero_pupil<- list()
 
 # factor random effects
+
+unique(db_full4new_stim_screen_pupil_select1$ssid)
 
 db_full4new_stim_screen_pupil_select1<- db_full4new_stim_screen_pupil_select1%>%
   mutate(stimIAPS2 = factor(stimIAPS2),
@@ -838,6 +893,7 @@ lmer_scr_intero_thesis$PhasMax_ar_TAS <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousa
                         REML = FALSE,
                         data = db_full4new_stim_screen_pupil_select1_scr%>%
      subset(arousal_outler == FALSE)%>%
+       # subset(as.numeric(ssid)<600)%>%
        subset(BIO_CDA.PhasicMax_z_outl  == FALSE))
   # subset(BIO_CDA.SCR!= 0)) # exlude non responding trials
 
@@ -845,21 +901,85 @@ anova(lmer_scr_intero_thesis$PhasMax_ar_TAS)
 
 summary(lmer_scr_intero_thesis$PhasMax_ar_TAS)
 
+db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       # subset(as.numeric(ssid)<600)%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE)%>%
+  subset(!is.na(TAS))%>%
+  mutate(logBIO_CDA.PhasicMax = log1p(BIO_CDA.PhasicMax+.1))%>%
+  group_by(ssid,TAS, Group)%>%
+  mutate(logBIO_CDA.PhasicMax_mean = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  group_by(ssid,stimIAPS2)%>%
+  mutate(logBIO_CDA.PhasicMax_mean_stim = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc,logBIO_CDA.PhasicMax))+
+  # stat_summary(geom = 'pointrange')+
+  
+  geom_smooth(aes(group = stimIAPS2, y =logBIO_CDA.PhasicMax_mean_stim), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  stat_summary(aes(color = Group), geom = 'pointrange', pch = 1)+
+   # geom_ysidedensity(aes(x=stat(density), alpha = .4))+
+   # geom_xsidedensity(aes(y=stat(density), alpha = .4))+
+    # geom_point(aes(color = ssid),size =2, pch  = 1)+
+  
+  
+  # ggpubr::stat_cor()+
+  xlab("Alexithymia (Z)")+
+  ylab("SCR")+
+p$graphstyle
+
+
+
+db_full4new_stim_screen_pupil_select1_scr%>%
+     subset(arousal_outler == FALSE)%>%
+       # subset(Group == "NT")%>%
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE)%>%
+  subset(!is.na(TAS))%>%
+  mutate(logBIO_CDA.PhasicMax = log1p(BIO_CDA.PhasicMax+.1))%>%
+  group_by(ssid,TAS, Group)%>%
+  mutate(logBIO_CDA.PhasicMax_mean = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  group_by(ssid,stimIAPS2)%>%
+  mutate(logBIO_CDA.PhasicMax_mean_stim = mean(logBIO_CDA.PhasicMax, na.rm = TRUE))%>%
+  # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(AQc,logBIO_CDA.PhasicMax))+
+  # stat_summary(geom = 'pointrange')+
+  
+  geom_smooth(aes(group = stimIAPS2, y =logBIO_CDA.PhasicMax_mean_stim), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  stat_summary(aes(color = Group), geom = 'pointrange', pch = 1)+
+   # geom_ysidedensity(aes(x=stat(density), alpha = .4))+
+   # geom_xsidedensity(aes(y=stat(density), alpha = .4))+
+    # geom_point(aes(color = ssid),size =2, pch  = 1)+
+  
+  
+  # ggpubr::stat_cor()+
+  xlab("Autism (Z)")+
+  ylab("SCR")+
+p$graphstyle
+
+```
+
+
+```{r}
+
 
 # TAS +aq
-lmer_scr_intero_thesis$PhasMax_ar_TAS <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
-                                            (TASc+AQ)+
+lmer_scr_intero_thesis$PhasMax_ar_TAS_aq <- lmer(log(BIO_CDA.PhasicMax+.1) ~ arousal_c *
+                                            (TASc+AQc)+
                                              (1|ssid) + 
                                             (1|stimIAPS),
                         REML = FALSE,
                         data = db_full4new_stim_screen_pupil_select1_scr%>%
      subset(arousal_outler == FALSE)%>%
-       subset(BIO_CDA.PhasicMax_z_outl  == FALSE))
+       subset(BIO_CDA.PhasicMax_z_outl  == FALSE)%>%
+       subset(Group == "NT"))
   # subset(BIO_CDA.SCR!= 0)) # exlude non responding trials
 
-anova(lmer_scr_intero_thesis$PhasMax_ar_TAS)
+anova(lmer_scr_intero_thesis$PhasMax_ar_TAS_aq)
 
-summary(lmer_scr_intero_thesis$PhasMax_ar_TAS)
+summary(lmer_scr_intero_thesis$PhasMax_ar_TAS_aq)
 
 
 
@@ -1285,6 +1405,9 @@ db_full6new_hr_fix_stim_select2 %>%
   ggpubr::stat_cor()
 
 
+```
+
+```{r}
 # db_full6new_hr_fix_stim_select2 %>%
 #   subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
 #   subset(ssid_num != 356)%>% # outlier
@@ -1359,10 +1482,12 @@ db_full6new_hr_fix_stim_select2$ssid <- as.factor(db_full6new_hr_fix_stim_select
 
 lmer_hr_interoThesis$biohr_tas_arous <- lmer(Bio_Mean_HR_dif ~ TASc * arousal_c + 
                  (1|ssid) + 
+                   # (1|Group)+
                  (1| stim),
      REML = FALSE,
      data = db_full6new_hr_fix_stim_select2 %>%
        subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 336)%>%
        subset(ssid!= 356))
      # %>%
    # subset(ssid!= 351))
@@ -1378,6 +1503,8 @@ lmer_hr_interoThesis$biohr_tas_arous_NT <- lmer(Bio_Mean_HR_dif ~ TASc * arousal
      data = db_full6new_hr_fix_stim_select2 %>%
        subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
        subset(ssid!= 356)%>%
+        subset(ssid!= 336)%>%
+       
        subset(Group == "NT"))
 
 summary(lmer_hr_interoThesis$biohr_tas_arous_NT)
@@ -1385,6 +1512,118 @@ summary(lmer_hr_interoThesis$biohr_tas_arous_NT)
 ?interactions::probe_interaction
 interactions::probe_interaction(lmer_hr_interoThesis$biohr_tas_arous_NT, pred =arousal_c, modx = TASc )
 interactions::interact_plot(lmer_hr_interoThesis$biohr_tas_arous_NT, pred =arousal_c, modx = TASc )
+
+
+```
+
+
+```{r}
+# aq
+
+lmer_hr_interoThesis$biohr_aq_arous_NT <- lmer(Bio_Mean_HR_dif ~ AQc * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+        subset(ssid!= 336)%>%
+       
+       subset(Group == "NT"))
+
+summary(lmer_hr_interoThesis$biohr_aq_arous_NT)
+
+interactions::interact_plot(lmer_hr_interoThesis$biohr_aq_arous_NT, pred =arousal_c, modx = AQc )
+```
+
+# tas and aq
+
+```{r}
+
+lmer_hr_interoThesis$biohr_tasaq_arous_NT <- lmer(Bio_Mean_HR_dif ~ (TASc+AQc) * arousal_c + 
+                 (1|ssid) + 
+                 (1| stim),
+     REML = FALSE,
+     data = db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+       subset(ssid!= 356)%>%
+        subset(ssid!= 336)%>%
+       
+       subset(Group == "NT"))
+
+summary(lmer_hr_interoThesis$biohr_tasaq_arous_NT)
+
+
+```
+
+
+
+db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  
+       subset(ssid!= 356)%>%
+   subset(ssid!= 336)%>%
+  subset(ssid!= 340)%>%
+   # subset(ssid!= 332)%>%
+  subset(Group == "NT")%>%
+  ungroup()%>%
+  # group_by(ssid)%>%
+  mutate(Bio_Mean_HR_dif = scale(Bio_Mean_HR_dif))%>%
+  group_by(ssid, Group)%>%
+  
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc, Bio_Mean_HR_dif))+
+  
+  geom_text(aes(label = ssid))+
+  
+  # geom_smooth(aes(group = stim, y =Bio_Mean_HR_dif), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  stat_summary(aes(label = ssid),geom = 'pointrange', pch = 1)+
+  stat_ellipse()+
+  ggpubr::stat_cor()+
+  p$graphstyle+
+  xlab("Alexithymia (Z)")+
+  ylab("HR difference")+
+p$graphstyle
+
+
+
+
+
+db_full6new_hr_fix_stim_select2 %>%
+       subset(Bio_Mean_HR_dif_outl == "not outlier")%>%
+  
+       subset(ssid!= 356)%>%
+   subset(ssid!= 336)%>%
+  subset(ssid!= 340)%>%
+   # subset(ssid!= 332)%>%
+  subset(Group == "NT")%>%
+  # ungroup()%>%
+  # group_by(ssid)%>%
+  mutate(Bio_Mean_HR_dif = scale(Bio_Mean_HR_dif))%>%
+  group_by(ssid, stim, Group)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(TASc, Bio_Mean_HR_dif))+
+  
+  # geom_text(aes(label = ssid))+
+  
+  # geom_smooth(aes(group = stim, y =Bio_Mean_HR_dif), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
+  geom_smooth( method=lm, se=FALSE, linetype="dashed",
+             color="darkred", size = 2)+
+  stat_summary(aes(label = ssid),geom = 'pointrange', pch = 1)+
+  # stat_ellipse()+
+  # ggpubr::stat_cor()+
+  p$graphstyle+
+  xlab("Alexithymia (Z)")+
+  ylab("HR difference")+
+p$graphstyle
+
+```
+
+
+
+```{r}
 
 # Just ASC
 
@@ -2304,6 +2543,7 @@ ExPosition::epPCA()
 ?correlationPlotter
 library(prettyGraphs)
 ?InPosition::epPCA.inference.battery
+?InPosition::epPCA.inference.battery
 var.PCA.inf_asd <-InPosition::epPCA.inference.battery(var.data_asd, 
                                        scale = TRUE, 
                                        center = TRUE, 
@@ -2447,6 +2687,15 @@ boottest1$variable_stim2<- substr(boottest1$variable_stim,1,9)
 # return the name of the column witha  maximum value above 2
 apply(df[,-1],1,function(x) names(df[,-1])[which(x>0.33)])
 
+
+```
+
+
+```
+
+
+
+```{r}
 boottest1$PC<- apply(boottest1[,1:2],1,function(x) names(boottest1[,1:2])[which(abs(x)>2)] 
       [which(abs(x) == max(abs(x)))])
 # boottest1$PC<- if_else()
@@ -2545,7 +2794,7 @@ boottest1%>%
   ggpubr::stat_compare_means()
 
 
-boottest1%>%
+boottest1 %>%
   subset(is.na(PC) == TRUE)%>%
   group_by(PC,stimIAPS2,stimDescription)%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
@@ -2693,6 +2942,10 @@ ggplot(aes(x = PC1, y = PC2, colour = as.factor(y_kmeans), fill = as.factor(y_km
   # scale_color_manual(values = c("red", "green", "blue"))+
   p$graphstyle+
   theme()
+  
+  
+  all.data_asd2pcs2.1_forkmean %>%
+    ggplot(aes())
 
 ```
 
@@ -2921,7 +3174,7 @@ pcor(test_teoPi,method="spearman")$estimate
   # stat_summary(geom = 'pointrange')+
       geom_jitter(alpha = .1, width = .1)+
   
-
+```
 
 
 ```{r}
@@ -2931,7 +3184,7 @@ unique(new.data3$PCAsolution)
 # show the average cluster profile
 
 new.data3 %>%
-    group_by(ssid, Group, km_gr, y_kmeans, V1, V2)%>%
+    group_by(ssid, Group, y_kmeans)%>%
     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
     ggplot(aes(as.factor(y_kmeans), pup_basCor, color = V1))+
   stat_summary(geom = 'pointrange')+
@@ -2942,38 +3195,105 @@ new.data3 %>%
 new.data3 %>%
   # group_by(ssid)%>%
   # mutate()
-    group_by(ssid, Group, km_gr, y_kmeans, V1, V2)%>%
+    group_by(ssid, y_kmeans)%>%
     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-    ggplot(aes(as.factor(y_kmeans), log1p_BIO_CDA.PhasicMax, color = V1))+
+    ggplot(aes(as.factor(y_kmeans), log1p_BIO_CDA.PhasicMax))+
   stat_summary(geom = 'pointrange')+
+    ggpubr::stat_compare_means()
+
+```
     # geom_jitter(alpha = .1, width = .1)
     facet_grid(Group~V2)
 
-
+```{r}
 new.data3 %>%
   # group_by(ssid)%>%
   # mutate()
-    group_by(ssid, alex_median, y_kmeans, V1, V2)%>%
+    group_by(ssid)%>%
     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-    ggplot(aes(as.factor(y_kmeans), Bio_Mean_HR_dif, color = V1))+
+    ggplot(aes(as.factor(y_kmeans), Bio_Mean_HR_dif))+
   stat_summary(geom = 'pointrange')+
+      ggpubr::stat_compare_means()
     # geom_jitter(alpha = .1, width = .1)
     facet_grid(alex_median~V2)
+    
+    
+    
+    
+new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), pup_basCor))+
+  stat_summary(geom = 'pointrange')+
+      ggpubr::stat_compare_means()
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(alex_median~V2)
+    
+    
+    new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), PC1))+
+  stat_summary(geom = 'pointrange')+
+      ggpubr::stat_compare_means()
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(alex_median~V2)
+    
+    
+    
+        
+    new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), PC2))+
+  stat_summary(geom = 'pointrange')+
+      ggpubr::stat_compare_means()
+
+```
 
 
 new.data3%>%
   gather()
-
+```{r}
 gather(new.data3, key = "measurement", value = "value",
-       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2,-alex_median)%>%
-  subset(!is.na(alex_median))%>%
+       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2)%>%
+  # subset(!is.na(alex_median))%>%
   group_by(ssid)%>%
   mutate(value1 = scale(value))%>%
   ggplot(aes(measurement,value1, color = as.factor(pca_v1_v2)))+
-  stat_summary(geom = "pointrange")+
-  facet_grid(alex_median~y_kmeans)
+  stat_summary(geom = "pointrange", position = position_dodge(1))+
+  facet_grid(~y_kmeans)
 
 
+gather(new.data3, key = "measurement", value = "value",
+       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2)%>%
+  # subset(!is.na(alex_median))%>%
+  group_by(ssid)%>%
+  mutate(value1 = scale(value))%>%
+  ggplot(aes(measurement,value1))+
+  stat_summary(geom = "pointrange", position = position_dodge(1))+
+  facet_grid(pca_v1_v2~y_kmeans)
+
+
+
+gather(new.data3, key = "measurement", value = "value",
+       pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans)%>%
+  # subset(!is.na(alex_median))%>%
+  group_by(ssid)%>%
+  mutate(value1 = scale(value))%>%
+  ggplot(aes(measurement,value1))+
+  stat_summary(geom = "pointrange", position = position_dodge(1))+
+  facet_grid(~y_kmeans)
+
+```
+
+```{r}
 gather(new.data3, key = "measurement", value = "value",
        pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2)%>%
   group_by(ssid,measurement)%>%
@@ -3014,7 +3334,16 @@ gather(new.data3, key = "measurement", value = "value",
 
 
 unique(new.data3$PC1)
-new.data3%>%
+
+new.data3 %>%
+  # group_by(ssid)%>%
+  # mutate()
+    group_by(ssid, alex_median, y_kmeans, V1, V2)%>%
+    summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+    ggplot(aes(as.factor(y_kmeans), Bio_Mean_HR_dif, color = V1))+
+  stat_summary(geom = 'pointrange')+
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(alex_median~V2)
   
 ```
 
