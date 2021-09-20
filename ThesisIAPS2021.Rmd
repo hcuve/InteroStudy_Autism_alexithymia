@@ -242,8 +242,10 @@ options(scipen = 999)
 # first concordance
 
 # across all participants
-db_full4new_stim_screen_pupil_select1%>%
-  # subset(Group == "NT")%>%
+
+pupil_plots<- list()
+pupil_plots$tas_pupil <- db_full4new_stim_screen_pupil_select1%>%
+  subset( Age < 50)%>%
   subset(pupil_outlier == FALSE)%>%
    # subset(valence_outler == FALSE)%>%
   # subset(arousal_outler == FALSE)%>%
@@ -253,12 +255,25 @@ db_full4new_stim_screen_pupil_select1%>%
   group_by(ssid, Group)%>%
   mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(TAS,cor_ar_pup))+
-  geom_point(aes(color = Group))+
+  ggplot(aes(TASc,cor_ar_pup))+
+  geom_point(aes(color = Group), size = 2)+
   # geom_text(aes(label = ssid))+
     geom_smooth(method = lm, se = F)+
+    # ylim(-0.1, 0.5)+
     ggpubr::stat_cor()+
-  p$graphstyle
+  xlab("Alexithymia (z)")+
+  ylab(expression("Pupil vs subjective arousal ("*rho * ")")) +
+  scale_y_continuous(breaks = c(-.1,0,.1,.2, .3,.4,.5), limits = c(-.1, .5))+
+  scale_x_continuous(breaks = c(-2, -1, 0, 1, 2), limits = c(-2, 2.5))+
+  p$graphstyle+
+  scale_color_brewer(palette = "Dark2")
+
+pupil_plots$tas_pupil
+
+```
+
+
+```{r}
 
 
 
@@ -281,6 +296,36 @@ db_full4new_stim_screen_pupil_select1%>%
   p$graphstyle
 
 
+pupil_plots$aq_pupil <- db_full4new_stim_screen_pupil_select1%>%
+  subset(Age <45)%>%
+  subset(pupil_outlier == FALSE)%>%
+   # subset(valence_outler == FALSE)%>%
+  # subset(arousal_outler == FALSE)%>%
+  subset(ssid!= 356)%>% #clear pupil outlier
+  subset(ssid!= 351)%>%
+  subset(ssid!= 344)%>% #anthony
+  group_by(ssid, Group)%>%
+  mutate(cor_ar_pup = cor(arousal_c, pup_basCor, use = "complete"))%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
+  ggplot(aes(AQc,cor_ar_pup))+
+  geom_point(aes(color = Group), size = 2)+
+  # geom_text(aes(label = ssid))+
+    geom_smooth(method = lm, se = F)+
+    # ylim(-0.1, 0.5)+
+    ggpubr::stat_cor()+
+  xlab("Autism (z)")+
+  ylab(expression("Pupil vs subjective arousal ("*rho * ")")) +
+  scale_y_continuous(breaks = c(-.1,0,.1,.2, .3,.4,.5), limits = c(-.1, .5))+
+  scale_x_continuous(breaks = c(-2, -1, 0, 1, 2), limits = c(-2, 2.5))+
+  p$graphstyle+
+  scale_color_brewer(palette = "Dark2")
+
+pupil_plots$aq_pupil
+
+
+```
+
+
 db_full4new_stim_screen_pupil_select %>%
   subset(!is.na(TAS))%>%
   subset(pupil_outlier == FALSE)%>%
@@ -300,7 +345,6 @@ db_full4new_stim_screen_pupil_select %>%
   p$graphstyle
 
 
-```
 
 # aq
 ```{r}
@@ -427,6 +471,8 @@ db_full4new_stim_screen_pupil_select1 %>%
 (41.00000+35.25000)/2
 ```
 
+
+```{r}
 lmer_intero_pupil<- list()
 
 # factor random effects
@@ -482,13 +528,38 @@ summary(pupil_arousal_findings$pup_self_tas_no_outl)
 
 sjPlot::tab_model(pupil_arousal_findings$pup_self_tas_no_outl)
 
-interactions::probe_interaction(pupil_arousal_findings$pup_self_tas_no_outl,
+pupil_plots$tas_pupil_int<- interactions::probe_interaction(pupil_arousal_findings$pup_self_tas_no_outl,
+                                pred= arousal_c, modx = TASc)pupil_plots$tas_pupil_int
+pupil_plots$tas_pupil_int<- interactions::interact_plot(pupil_arousal_findings$pup_self_tas_no_outl,
                                 pred= arousal_c, modx = TASc)
+
+
+
+
+pupil_plots$tas_pupil_int<- pupil_plots$tas_pupil_int +   
+  scale_x_continuous(breaks = c(-2,-1, 0,1, 2), limits = c(-2,2.4))+
+  scale_y_continuous(breaks = c(-1, -.8, -.6, -.4), limits = c(-1.2, -.4))
+
+
+pupil_plots$tas_pupil_int
+
+
+pupil_plots$tas_pupil_int<- pupil_plots$tas_pupil_int +
+# plots_paper$interaction_ar_vl +
+  theme_classic()+
+  p$graphstyle_int+
+  xlab("Subjective arousal (z)")+
+  ylab("Pupil (au)")
+  
+```
+
+
+```{r}
 
 # AQ
 
 pupil_arousal_findings$pup_self_tasaq_no_outl <- lmer(pup_basCor ~ (arousal_c)* 
-                                                    (AQc+TASc)+
+                                                    (AQc*TASc)+
                                                     # *Group_NT_pos+
   Mean_gray_z +
                                                       (1|stimIAPS2)+
@@ -499,7 +570,7 @@ pupil_arousal_findings$pup_self_tasaq_no_outl <- lmer(pup_basCor ~ (arousal_c)*
      # subset(arousal_outler == FALSE)%>%
     subset(ssid!= 356)%>%
       subset(gaze_valid_tresh == "include")%>%
-         # subset(as.numeric(ssid) < 500))
+                 subset(Age < 51)%>%
    subset(ssid!= 351))
 
 
@@ -515,8 +586,10 @@ pupil_arousal_findings$pup_self_aq_no_outl <- lmer(pup_basCor ~ (arousal_c)*
      # subset(arousal_outler == FALSE)%>%
     subset(ssid!= 356)%>%
       subset(gaze_valid_tresh == "include")%>%
-         # subset(as.numeric(ssid) < 500))
+         subset(Age < 50)%>%
    subset(ssid!= 351))
+
+db_full4new_stim_screen_pupil_select1$Age
 
 summary(pupil_arousal_findings$pup_self_tasaq_no_outl)
 summary(pupil_arousal_findings$pup_self_aq_no_outl)
@@ -526,10 +599,43 @@ anova(pupil_arousal_findings$pup_self_tasaq_no_outl, pupil_arousal_findings$pup_
 
 car::vif(pupil_arousal_findings$pup_self_tasaq_no_outl)
 
-
-
 interactions::probe_interaction(pupil_arousal_findings$pup_self_tasaq_no_outl,
                                 pred= arousal_c, modx = AQc)
+pupil_plots$aq_pupil_int <- interactions::interact_plot(pupil_arousal_findings$pup_self_tasaq_no_outl,
+                                pred= arousal_c, modx = AQc)
+
+
+
+pupil_plots$aq_pupil_int<- pupil_plots$aq_pupil_int +   
+  scale_x_continuous(breaks = c(-2,-1, 0,1, 2), limits = c(-2,2.4))+
+  scale_y_continuous(breaks = c(-1, -.8, -.6, -.4), limits = c(-1.2, -.4))
+
+
+pupil_plots$aq_pupil_int
+
+
+pupil_plots$aq_pupil_int<- pupil_plots$aq_pupil_int +
+# plots_paper$interaction_ar_vl +
+  theme_classic()+
+  p$graphstyle_int+
+  xlab("Subjective arousal (z)")+
+  ylab("Pupil (au)")
+
+pupil_plots$aq_pupil_int
+
+
+
+
+library(patchwork)
+pupil_plots$PatchworkPupillmer <- pupil_plots$tas_pupil + pupil_plots$aq_pupil+
+pupil_plots$tas_pupil_int+ pupil_plots$aq_pupil_int+
+  plot_layout(ncol = 2)+
+  plot_annotation(tag_levels = "A")
+
+pupil_plots$PatchworkPupillmer
+
+ggsave("PatchworkPupillmer.tiff", pupil_plots$PatchworkPupillmer, 
+       device = "tiff", width = 14, height = 10, dpi = 800)
 
 ```
 
