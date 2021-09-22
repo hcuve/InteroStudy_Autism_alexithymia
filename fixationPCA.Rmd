@@ -1,0 +1,293 @@
+---
+title: "FixationTonicPCAs"
+author: "Helio"
+date: "22/09/2021"
+output: html_document
+---
+
+```{r}
+# check if pupil or scr values might be duplicated
+  unique(test_pupipil_fix$screencontent)
+
+
+test_pupipil_fix%>%
+  subset(ssid == 306)
+
+
+```
+
+```{r}
+
+db_fixation_pcaSep22_304_up<- subset(db_fixation_pcaSep22,
+                                     as.numeric(ssid)> 303)
+
+
+
+
+nrow(db_fixation_pcaSep22_304_up)
+db_fixation_pcaSep22_304_up_3<- db_fixation_pcaSep22_304_up
+colnames(db_fixation_pcaSep22_304_up_3)
+
+# flag the multiple outliers in pupil scr arousal and heart rate
+
+
+db_fixation_pcaSep22_304_up_3<- db_fixation_pcaSep22_304_up_3%>%
+  group_by(stimIAPS2) %>%
+  mutate(arousal_outler = if_else(arousal > (median(arousal, na.rm = TRUE) + 
+                                               (4*mad(arousal, na.rm = TRUE))), TRUE,
+         if_else(arousal < (median(arousal, na.rm = TRUE) - 
+                              (4*mad(arousal, na.rm = TRUE))), TRUE, FALSE)))%>%
+   mutate(valence_outler = if_else(valence > (median(valence, na.rm = TRUE) + 
+                                               (4*mad(valence, na.rm = TRUE))), TRUE,
+         if_else(valence < (median(valence, na.rm = TRUE) - 
+                              (4*mad(valence, na.rm = TRUE))), TRUE, FALSE)))%>%
+  group_by(ssid)%>%
+   mutate(pupil_outlier = if_else(pup_basCor > (median(pup_basCor, na.rm = TRUE) 
+                                                + (3*mad(pup_basCor, na.rm = TRUE))), TRUE,
+         if_else(pup_basCor < (median(pup_basCor, na.rm = TRUE) - 
+                                 (3*mad(pup_basCor, na.rm = TRUE))), TRUE, FALSE)))%>%
+    mutate(BIO_CDA.PhasicMax_z = scale(BIO_CDA.PhasicMax))%>%
+  mutate(BIO_CDA.PhasicMax_z_outl = if_else(abs(BIO_CDA.PhasicMax_z)> 3, TRUE, FALSE))%>%
+  ungroup()%>%
+  mutate(arousal_c = scale(arousal, center = TRUE, scale = TRUE)[,1],
+         valence_c = scale(valence, center = TRUE, scale = TRUE)[,1],
+         # Mean_gray_z = scale(Mean)[,1],
+         TASc = scale(TAS)[,1],
+         AQc = scale(AQ)[,1]
+         # BPQc = scale(BPQ)[,1],
+         # WASIM_c =scale(WASIM)[,1],
+         # DASSTotalc = scale(DASSTotal)[,1]
+         )
+
+db_fixation_pcaSep22_304_up_3<- db_fixation_pcaSep22_304_up_3%>%
+group_by(ssid)%>%
+  mutate(Bio_Mean_HR_outl = if_else(abs(Bio_Mean_HR) > (median(abs(Bio_Mean_HR), na.rm = TRUE) + (3*sd(abs(Bio_Mean_HR), na.rm = TRUE))), "outlier", "not outlier"))
+
+# is there is at least one outlier in HR, SCR or pupil flag true
+
+db_fixation_pcaSep22_304_up_3$Bio_Mean_HR_dif_outl2<- if_else(db_fixation_pcaSep22_304_up_3$Bio_Mean_HR == "outlier", TRUE, FALSE)
+
+
+colnames(db_fixation_pcaSep22_304_up_3)
+
+table(db_fixation_pcaSep22_304_up_3$Bio_Mean_HR_dif_outl2)
+table(db_fixation_pcaSep22_304_up_3$pupil_outlier)
+table(db_fixation_pcaSep22_304_up_3$BIO_CDA.PhasicMax_z_outl)
+
+n
+db_fixation_pcaSep22_304_up_3_no_outl<-
+subset(db_fixation_pcaSep22_304_up_3, db_fixation_pcaSep22_304_up_3$BIO_CDA.PhasicMax_z_outl == FALSE)
+
+nrow(db_fixation_pcaSep22_304_up_3_no_outl)
+
+db_fixation_pcaSep22_304_up_3_no_outl
+# db_full6new_hr_fix_stim_select3_no
+
+db_fixation_pcaSep22_304_up_3_no_outl$log_BIO_CDA.PhasicMax<- log1p(db_fixation_pcaSep22_304_up_3_no_outl$BIO_CDA.PhasicMax+.1)
+
+db_fixation_pcaSep22_304_up_3_no_outl4<- db_fixation_pcaSep22_304_up_3_no_outl%>%
+  group_by(ssid, Group)%>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+nrow(db_fixation_pcaSep22_304_up_3_no_outl4)
+
+# db_full6new_hr_fix_stim_select3_no_outl
+
+# reformat
+colnames(db_fixation_pcaSep22_304_up_3_no_outl4)
+
+
+# select only necessary columns
+
+
+# select columns with residuals or pupil
+db_fixation_pcaSep22_304_up_3_no_outl4.1 <- select(db_fixation_pcaSep22_304_up_3_no_outl4,
+                                                      c(ssid, Group,TAS, AQ, pup_basCor, Bio_Mean_HR, log_BIO_CDA.PhasicMax, arousal, valence))
+
+
+db_fixation_pcaSep22_304_up_3_no_outl4.1<- subset(db_fixation_pcaSep22_304_up_3_no_outl4.1,!is.na(TAS))
+
+table(is.na(db_fixation_pcaSep22_304_up_3_no_outl4.1))
+
+db_fixation_pcaSep22_304_up_3_no_outl4.2<- na.omit(db_fixation_pcaSep22_304_up_3_no_outl4.1)
+
+nrow(db_fixation_pcaSep22_304_up_3_no_outl4.2)
+
+# unique(db_full6new_hr_fix_stim_select4$stimIAPS)
+
+
+# fill in NA with average per individual
+# - not working
+# are things being recognised as something otehr than NA, eg NaN
+# table(is.nan(db_full6new_hr_fix_stim_select4))
+
+db_fixation_pcaSep22_304_up_3_no_outl4.2[db_fixation_pcaSep22_304_up_3_no_outl4.2 == "NaN"] <- NA
+
+
+
+```
+
+
+```{r}
+library(data.table)
+# ?dcast
+
+db_forBADA_tonic<- db_fixation_pcaSep22_304_up_3_no_outl4.2
+
+
+
+install.packages("TInPosition")
+install.packages("ade4")
+install.packages("TExPosition")
+install.packages("MExPosition")
+install.packages("ExPosition")
+install.packages("prettyGraphs")
+
+library(TInPosition)
+library(MExPosition)
+
+colnames(db_forBADA_tonic)
+
+var.data_asd_tonic<- db_forBADA_tonic[,5:7]
+
+db_forBADA_tonic$tas_mediansplit<- if_else(db_forBADA_tonic$TAS> median(db_forBADA_tonic$TAS, na.rm = TRUE), "High", "Low")
+db_forBADA_tonic$aq_mediansplit<- if_else(db_forBADA_tonic$AQ> median(db_forBADA_tonic$AQ, na.rm = TRUE), "High", "Low")
+
+var.design_asd_group_tonic<- as.factor(db_forBADA_tonic$Group)
+var.design_asd_tas_tonic<- as.factor(db_forBADA_tonic$tas_mediansplit)
+var.design_asd_aq_tonic<- as.factor(db_forBADA_tonic$aq_mediansplit)
+
+
+colnames(var.data_asd_tonic)
+# PCA asd
+
+library(prettyGraphs)
+
+
+var.PCA.inf_asd_group 
+colnames(var.data_asd_tonic)
+var.PCA.inf_asd_group_tonic <-InPosition::epPCA.inference.battery(var.data_asd_tonic, 
+                                       scale = TRUE, 
+                                       center = TRUE, 
+                                       DESIGN = var.design_asd_group_tonic,
+                                       make_design_nominal = TRUE, 
+                                       graphs = TRUE, k = 0, 
+                                       test.iters = 1000, 
+                                       constrained = FALSE, critical.value = 2)
+
+
+
+var.BADA.inf_asd_group_tonic <- TInPosition::tepBADA.inference.battery(var.data_asd_tonic, 
+                                                       scale = FALSE, 
+                                                       center = FALSE, 
+                                                       DESIGN = var.design_asd_group_tonic,
+                                                       make_design_nominal = TRUE,
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       graphs = FALSE, 
+                                                       k = 0, 
+                                                       test.iters = 1000, 
+                                                       critical.value = 2)
+
+
+var.BADA.inf_tas_tonic <- TInPosition::tepBADA.inference.battery(var.data_asd_tonic, 
+                                                       scale = FALSE, 
+                                                       center = FALSE, 
+                                                       DESIGN = var.design_asd_tas_tonic,
+                                                       make_design_nominal = TRUE,
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       graphs = TRUE, 
+                                                       k = 0, 
+                                                       test.iters = 1000, 
+                                                       critical.value = 2)
+
+
+var.BADA.inf_aq_tonic <- TInPosition::tepBADA.inference.battery(var.data_asd_tonic, 
+                                                       scale = FALSE, 
+                                                       center = FALSE, 
+                                                       DESIGN = var.design_asd_aq_tonic,
+                                                       make_design_nominal = TRUE,
+                                                       group.masses = NULL, 
+                                                       weights = NULL, 
+                                                       graphs = TRUE, 
+                                                       k = 0, 
+                                                       test.iters = 1000, 
+                                                       critical.value = 2)
+
+
+# keep the multiple repetitions
+
+
+# fit kmean with the 3 variables
+
+# Using the elbow method to find the optimal number of clusters
+
+colnames(var.data_asd_tonic)
+scaled_var.data_asd_tonic<- scale(var.data_asd_tonic)
+set.seed(1)
+wcss = vector()
+for (i in 1:10) wcss[i] = sum(kmeans(scaled_var.data_asd_tonic, i)$withinss)
+plot(1:10,
+     wcss,
+     type = 'b',
+     main = paste('The Elbow Method'),
+     xlab = 'Number of clusters',
+     ylab = 'WCSS')
+
+#  2 or 3
+
+# Fitting K-Means to the dataset
+set.seed(25)
+
+
+
+?factoextra::fviz_nbclust
+factoextra::fviz_nbclust(as.data.frame(scaled_var.data_asd_tonic), 
+                         kmeans, 
+                         method='silhouette')
+
+# 3
+
+?kmeans
+kmeans_res_tonic = kmeans(x = scaled_var.data_asd_tonic, centers = 3)
+
+y_kmeans_tonic = kmeans_res_tonic$cluster
+
+library(cluster)
+
+
+
+
+range(scaled_all.data_asd2pcs2.1_forkmean)
+range(all.data_asd2pcs2.1_forkmean$PC1)
+cluster::clusplot(scaled_var.data_asd_tonic,
+         y_kmeans_tonic,
+         lines = 2,
+         shade = TRUE,
+         color = TRUE,
+         labels = 1,
+         plotchar = FALSE,
+         span = TRUE
+         # label = 
+         # main = paste('Clusters of customers'),
+         # xlab = 'Annual Income',
+         # ylab = 'Spending Score'
+         )
+
+
+db_forBADA_tonic$y_kmean<- y_kmeans_tonic
+
+table(db_forBADA_tonic$y_kmean, db_forBADA_tonic$tas_mediansplit)
+
+db_forBADA_tonic
+
+colnames(db_forBADA_tonic)
+bind_cols(as.data.frame(scaled_var.data_asd_tonic),db_forBADA_tonic[,c(1:4,10:12)])%>%
+  gather(key = "key", value = "value",pup_basCor,Bio_Mean_HR,log_BIO_CDA.PhasicMax, -y_kmean, - Group, -tas_mediansplit, -aq_mediansplit)%>%
+  ggplot(aes(key, value, color = y_kmean))+
+  stat_summary(geom = "pointrange", position = position_dodge(1))+
+  facet_grid(~y_kmean)
+
+```
+
