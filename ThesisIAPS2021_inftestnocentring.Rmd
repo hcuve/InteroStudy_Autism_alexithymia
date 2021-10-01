@@ -15,103 +15,7 @@ db_full4new_stim_screen_pupil_nopract
 #######################################
 PUPIL
 ######################################
-
-db_full4new will have other screens I think
-
-db_345_355
-db_356_357_611_616
-
-try and get a fixation bit for tonic analyses
-
 ```{r}
-
-unique(db_full4new$ssid)
-
-db_345_355
-unique(db_345_355$ssid)
-unique(db_356_357_611_616$ssid)
-
-unique(db_full6new$ssid)
-
-db_full6new$Bio_Mean_HR
-unique(db_full6new$screencontent)
-
-colnames(db_full6new)
-db_full6new_select_forpca<- db_full6new %>%
-  select(c(ssid, Group, TAS, AQ,stimIAPS,tNo, Bio_Mean_HR,Mean_HR,BIO_CDA.PhasicMax, pup_basCor, arousal, valence, screencontent))
-
-db_full6new_select_forpca$Mean_HR
-db_full6new_select_forpca$Bio_Mean_HR
-
-# new datasets select
-
-db_345_355$Bio_Mean_HR<- db_345_355$Mean_HR
-
-db_345_355_select_forpca<- db_345_355%>%
-    select(c(ssid,  TAS, AQ,stimIAPS,tNo, Bio_Mean_HR,Mean_HR,BIO_CDA.PhasicMax, pup_basCor, arousal, valence, screencontent))
-
-# remeber to remake group
-db_356_357_611_616$Bio_Mean_HR <-db_356_357_611_616$Mean_HR
-
-db_356_357_611_616_select_forpca<- db_356_357_611_616%>%
-    select(c(ssid,  TAS, AQ, stimIAPS,tNo, Bio_Mean_HR,Mean_HR,BIO_CDA.PhasicMax, pup_basCor, arousal, valence, screencontent, ))
-db_full6new_select_forpca$Group<- NULL
-  
-
-# bind all
-
-db_345_355_select_forpca$ssid<- as.character(db_345_355_select_forpca$ssid)
-
-db_356_357_611_616_select_forpca$ssid<- as.character(db_356_357_611_616_select_forpca$ssid)
-
-
-db_345_355_select_forpca$tNo<- as.character(db_345_355_select_forpca$tNo)
-
-db_356_357_611_616_select_forpca$tNo<- as.character(db_356_357_611_616_select_forpca$tNo)
-
-db_fixation_pcaSep22<- bind_rows(db_full6new_select_forpca,
-          db_345_355_select_forpca,
-          db_356_357_611_616_select_forpca)
-  subset(screencontent == "fixation")
-  
-  
-  unique(db_fixation_pcaSep22$screencontent)
-  
-  
-  test_pupipil_fix<- subset(db_fixation_pcaSep22,
-                            screencontent == "fixation"|screencontent == "stim")
-
-  unique(test_pupipil_fix$screencontent)
-  
-unique(db_fixation_pcaSep22$tNo)
-db_fixation_pcaSep22$stimIAPS2<- substr(db_fixation_pcaSep22$stimIAPS, 1,4)
-
-unique(db_fixation_pcaSep22$ssid)
-db_fixation_pcaSep22$Group<- if_else(as.numeric(db_fixation_pcaSep22$ssid)> 400 & as.numeric(db_fixation_pcaSep22$ssid)< 800, "ASD", "NT")
-
-db_fixation_pcaSep22_304_up<- subset(db_fixation_pcaSep22,
-                                     as.numeric(ssid)> 303)
-
-
-
-```
-
-
-```{r}
-
-
-
-db_full6new_hr_fix_stim_select$scr
-db_full6new_hr_fix_stim_select$screencontent_no
-
-
-
-
-
-
-colnames(db_full4new)
-unique(db_full4new$screencontent)
-unique(db_full4new$ssid)
 unique(db_full4new_stim_screen_pupil_nopract$ssid)
 # missing data
 
@@ -949,27 +853,22 @@ SCR
 ```{r}
 unique(db_full4new_stim_screen_pupil_select1_scr$ssid)
 
-
-db_full4new_stim_screen_pupil_select1_scr$median_split_valence_ground<- cut(db_full4new_stim_screen_pupil_select1_scr$ValenceMean, 2)
-
-
-db_full4new_stim_screen_pupil_select1_scr$median_split_valence_self<- cut(db_full4new_stim_screen_pupil_select1_scr$valence, 2)
 db_full4new_stim_screen_pupil_select1_scr %>%
  subset(arousal_outler == FALSE)%>%
        subset(BIO_CDA.SCR_outl  == FALSE)%>%
   subset(BIO_CDA.PhasicMax!= 0)%>%
-  group_by(ssid,median_split_valence_self)%>%
+  group_by(ssid)%>%
   mutate(BIO_CDA.PhasicMax_log = log1p(BIO_CDA.PhasicMax+.1))%>%
   mutate(BIO_CDA.PhasicMax_log_z = scale(BIO_CDA.PhasicMax_log))%>% 
   mutate(cor_scr_ar = cor(BIO_CDA.PhasicMax_z, arousal))%>%
   mutate(cor_scr_ar2 = cor(BIO_CDA.PhasicMax_log_z, arousal))%>%
   mutate(cor_scr_ar3 = cor(BIO_CDA.PhasicMax_log, arousal))%>%
-  group_by(ssid, Group,median_split_valence_self)%>%
+  group_by(ssid, Group)%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(AQ, cor_scr_ar3,color = Group))+
-  geom_point(aes(color = Group))+
+  ggplot(aes(TAS, cor_scr_ar))+
+  geom_point()+
   geom_smooth(method = lm, se = F)+
-  facet_grid(~median_split_valence_self)+
+  facet_grid(~Group)+
   ggpubr::stat_cor()
 
 ```
@@ -1847,9 +1746,8 @@ hr_plots$tas_hrdif<- db_full6new_hr_fix_stim_select2 %>%
   
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
   ggplot(aes(TASc, Bio_Mean_HR_dif))+
-  # geom_point(size = 2, pch = 1)+
   
-  # geom_text(aes(label = ssid))+
+  geom_text(aes(label = ssid))+
   
   # geom_smooth(aes(group = stim, y =Bio_Mean_HR_dif), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
   geom_smooth( method=lm, se=FALSE, linetype="dashed",
@@ -1865,19 +1763,17 @@ p$graphstyle
 
 hr_plots$tas_hrdif
 
-hr_plots$tas_hrdif<- hr_plots$tas_hrdif+
+hr_plots$tas_hrdif
   # scale_y_continuous(limits = c(-10,-2))+
-  scale_x_continuous(breaks = c(-2, -1, 0, 1), limits = c(-2, 1.2))
-
-```
+  # scale_x_continuous(breaks = c(-2, -1, 0, 1, 2), limits = c(-2, 2.5))
   # scale_color_brewer(palette = "Dark2")
 
-```{r}
+
 # hr interaction
 
 interactions::interact_plot(lmer_hr_interoThesis$biohr_tas_arous, pred =arousal_c, modx = TASc )
 
-hr_plots$int_tas_hr <-
+hr_plots$int_tas_hr<-
 interactions::interact_plot(lmer_hr_interoThesis$biohr_tas_arous_NT, pred =arousal_c, modx = TASc ) +
   scale_x_continuous(breaks = c(-2,-1, 0,1, 2), limits = c(-2,2.4))+
   scale_y_continuous(limits = c(-4, -1.5))+
@@ -1910,7 +1806,7 @@ hr_plots$AQ_hrdif<- db_full6new_hr_fix_stim_select2 %>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
   ggplot(aes(AQc, Bio_Mean_HR_dif))+
   
-  # geom_text(aes(label = ssid))+
+  geom_text(aes(label = ssid))+
   
   # geom_smooth(aes(group = stim, y =Bio_Mean_HR_dif), method=lm, se=FALSE, colour = "gray40", alpha = .01,linetype="dashed", size = .2 )+
   geom_smooth( method=lm, se=FALSE, linetype="dashed",
@@ -1924,11 +1820,6 @@ hr_plots$AQ_hrdif<- db_full6new_hr_fix_stim_select2 %>%
 p$graphstyle
 
 
-hr_plots$AQ_hrdif<- hr_plots$AQ_hrdif+
-  # scale_y_continuous(limits = c(-10,-2))+
-  scale_x_continuous(breaks = c(-2, -1, 0, 1), limits = c(-2, 1.2))
-
-hr_plots$AQ_hrdif
 
 # hr interaction with AQ
 
@@ -1949,7 +1840,6 @@ hr_plots$int_aq_hr
 
 
 # hr patchwork
-library(patchwork)
 hr_plots$patchwork_hr <- (hr_plots$tas_hrdif + hr_plots$AQ_hrdif + hr_plots$int_tas_hr + hr_plots$int_aq_hr)+
   plot_layout(ncol = 2)+plot_annotation(tag_levels = "A")
 
@@ -2115,7 +2005,7 @@ db_full6new_hr_fix_stim_select2_NT
 
 db_full6new_hr_fix_stim_select2_NT_no_outl<- subset(db_full6new_hr_fix_stim_select2_NT, db_full6new_hr_fix_stim_select2_NT$Bio_Mean_HR_dif_outl2 == FALSE)
 
-colnames(db_full6new_hr_fix_stim_select2_NT_no_outl)
+colnames(db_full6new_hr_fix_stim_select2_NT)
 db_full6new_hr_fix_stim_select2_NT_select<- db_full6new_hr_fix_stim_select2_NT_no_outl[,c(1,53,12,15,16,17,18,
                                                                                   42,8,28, 56,58,59,31:34)]
 
@@ -2207,14 +2097,14 @@ db_full6new_hr_fix_stim_select2_NT_select_agg<- db_full6new_hr_fix_stim_select2_
 write_csv(db_full6new_hr_fix_stim_select2_NT_select_agg, "db_full6new_hr_fix_stim_select2_NT_select_agg.csv")
 
 ```
-
-
-
 Jasp clusters are super weird so do the clustering here
 
 
 ```{r}
 db_full6new_hr_fix_stim_select2_NT_select_agg
+
+
+
 
 # K-Means Clustering
 
@@ -2407,29 +2297,21 @@ db_full6new_hr_fix_stim_select2_NT_no_outl$log1p_BIO_CDA.PhasicMax<- log1p(db_fu
 db_full6new_hr_fix_stim_select2_NT_no_outl
 
 db_full6new_hr_fix_stim_select2_NT_no_outl$stimIAPS2<- substr(db_full6new_hr_fix_stim_select2_NT_no_outl$stimIAPS, 1,4)
-
 db_full6new_hr_fix_stim_select2_NT_no_outl_3<- select(db_full6new_hr_fix_stim_select2_NT_no_outl,
-                                                      c(ssid, stimIAPS, stimIAPS2, stimDescription, TAS, AQ, Group, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax, arousal, valence))
-
-# stoee residual
-db_full6new_hr_fix_stim_select2_NT_no_outl_3.1<- select(db_full6new_hr_fix_stim_select2_NT_no_outl,
-                                                      c(ssid, stimIAPS, stimIAPS2, stimDescription, TAS, AQ, Group, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax, arousal, valence))
+                                                      c(ssid, stimIAPS, stimIAPS2, stimDescription, TAS, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax, arousal, valence))
 
 # eliminate NAs in stimuli
 db_full6new_hr_fix_stim_select2_NT_no_outl_3<- subset(db_full6new_hr_fix_stim_select2_NT_no_outl_3,!is.na(stimDescription))
-
-
 unique(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS)
 
 db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS2<- substr(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS, 1,4)
 
-# factor(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS2)
+factor(db_full6new_hr_fix_stim_select2_NT_no_outl_3$stimIAPS2)
 
 # reshape
 colnames(db_full6new_hr_fix_stim_select2_NT_no_outl_3)
 
 table(is.na(db_full6new_hr_fix_stim_select2_NT_no_outl_3))
-
 # eliminante no scores in TAS
 db_full6new_hr_fix_stim_select2_NT_no_outl_4<- subset(db_full6new_hr_fix_stim_select2_NT_no_outl_3, !is.na(TAS))
 
@@ -2456,10 +2338,13 @@ db_full6new_hr_fix_stim_select2_NT_no_outl_5 <- db_full6new_hr_fix_stim_select2_
   mutate(Bio_Mean_HR_dif = if_else(is.na(Bio_Mean_HR_dif) == TRUE, ssid_Bio_Mean_HR_dif_mean, Bio_Mean_HR_dif))%>%
   mutate(log1p_BIO_CDA.PhasicMax = if_else(is.na(log1p_BIO_CDA.PhasicMax) == TRUE, ssid_log1p_BIO_CDA.PhasicMax_mean, log1p_BIO_CDA.PhasicMax)) 
 
-library(data.table)
 
+db_full6new_hr_fix_stim_select2_NT_no_outl_5
+db_full6new_hr_fix_stim_select2_NT_no_outl_5
+
+library(data.table)
 db_forBADA1<- data.table::dcast(setDT(db_full6new_hr_fix_stim_select2_NT_no_outl_5), 
-                    ssid + TAS+AQ+Group ~ stimIAPS2, value.var = c('pup_basCor',
+                    ssid + TAS ~ stimIAPS2, value.var = c('pup_basCor',
                 'Bio_Mean_HR_dif', 'log1p_BIO_CDA.PhasicMax', 'arousal', 'valence'))
 
 
@@ -2468,12 +2353,16 @@ table(is.na(db_forBADA1))
 View(db_forBADA1)
 na.omit(db_forBADA1)
 
+
+db_forBADA1 %>%
+    select_if(~ any(is.na(.)))
+
+table(is.na(db_forBADA1$log1p_BIO_CDA.PhasicMax_9472))
+
 # try to fill means rowwise
 colnames(db_forBADA1)
 
-db_forBADA1_pupil_1_4<- db_forBADA1_pupil[,1:4]
-
-db_forBADA1_pupil<- db_forBADA1[,5:60]
+db_forBADA1_pupil<- db_forBADA1[,1:58]
 table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA1_pupil), arr.ind=TRUE)
@@ -2483,10 +2372,8 @@ db_forBADA1_pupil$ssid<- as.numeric(as.character(db_forBADA1_pupil$ssid))
 db_forBADA1_pupil[k] <- rowMeans(db_forBADA1_pupil, na.rm=TRUE)[k[,1]]
 
 # hr
-colnames(db_forBADA1)
-db_forBADA1_hr<- db_forBADA1[,c(61:(61+55))]
+db_forBADA1_hr<- db_forBADA1[,c(1:2,59:(59+55))]
 # table(is.na(db_forBADA1_pupil$TAS))
-colnames(db_forBADA1_hr)
 
 k <- which(is.na(db_forBADA1_hr), arr.ind=TRUE)
 k
@@ -2498,7 +2385,7 @@ db_forBADA1_hr
 
 # scr
 colnames(db_forBADA1)
-db_forBADA1_scr<- db_forBADA1[,c(117:172)]
+db_forBADA1_scr<- db_forBADA1[,c(1:2,115:170)]
 # table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA1_scr), arr.ind=TRUE)
@@ -2509,12 +2396,12 @@ db_forBADA1_scr[k] <- rowMeans(db_forBADA1_scr, na.rm=TRUE)[k[,1]]
 
 db_forBADA1_scr
 
-# table(is.na(bind_cols(db_forBADA1_pupil, db_forBADA1_hr[,3:58], db_forBADA1_scr[,3:58])))
+table(is.na(bind_cols(db_forBADA1_pupil, db_forBADA1_hr[,3:58], db_forBADA1_scr[,3:58])))
 
 # arousal and valence
 # scr
 colnames(db_forBADA1)
-db_forBADA1_ar_vl<- db_forBADA1[,c(173:284)]
+db_forBADA1_ar_vl<- db_forBADA1[,c(1:2,171:282)]
 # table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA1_ar_vl), arr.ind=TRUE)
@@ -2532,31 +2419,18 @@ summary(db_forBADA1_pupil$TAS)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 #   22.00   33.00   42.00   42.82   52.00   71.00 
 
-# db_forBADA1_pupil$alex_quartil<- if_else(db_forBADA1_pupil$TAS<33, "1st",
-#                                          if_else(db_forBADA1_pupil$TAS>52, "2nd", "Mean"))
+db_forBADA1_pupil$alex_quartil<- if_else(db_forBADA1_pupil$TAS<33, "1st",
+                                         if_else(db_forBADA1_pupil$TAS>52, "2nd", "Mean"))
 
 colnames(db_forBADA1_ar_vl)
-db_forBADA1_pupil$ssid<- NULL
-db_forBADA1_hr$ssid<- NULL
-db_forBADA1_scr$ssid<- NULL
-db_forBADA1_ar_vl$ssid<- NULL
-db_forBADA1_ar_vl$ssid<- NULL
-
-db_badia_nona <- bind_cols(db_forBADA1_pupil_1_4, 
-                           db_forBADA1_pupil, 
-                           db_forBADA1_hr, 
-                           db_forBADA1_scr, 
-                           db_forBADA1_ar_vl)
+db_badia_nona <- bind_cols(db_forBADA1_pupil, db_forBADA1_hr[,3:58], db_forBADA1_scr[,3:58], db_forBADA1_ar_vl[,3:114])
 
 colnames(db_badia_nona)
+db_badia_nona1<- db_badia_nona[,c(1:2,59,3:58,60:283)]
 
-colnames(db_badia_nona)
-db_badia_nona1<- db_badia_nona[,c(1:2,59,3:58,60:284)]
-
-nrow(db_badia_nona1)
 table(is.na(db_badia_nona1))
 ```
-PCA and BADA just NT
+
 
 ```{r}
 install.packages("TInPosition")
@@ -2574,68 +2448,43 @@ ExPosition::epPCA()
 
 ##PCA with Inference
 # all.data <- read.csv("PCA_Dataset_2.csv",header=TRUE)
-db_badia_nona1
 all.data<- db_badia_nona1
 
-all.data$TAS_mediansplit<- if_else(all.data$TAS> median(all.data$TAS), "High", "Low")
-all.data$AQ_mediansplit<- if_else(all.data$AQ> median(all.data$AQ), "High", "Low")
- # design
-var.design_asd <- as.factor(all.data$Group)
-var.design_aq <- as.factor(all.data$AQ_mediansplit)
-var.design_tas <- as.factor(all.data$TAS_mediansplit)
+all.data$alex_quartil<- ifelse(all.data$TAS> median(all.data$TAS), "High", "Low")
+
 colnames(all.data)
 
-var.data <- all.data[,c(6:172)]
+# rownames(all.data) <- all.data[,1]
+# all.data_highlow<- subset(all.data, all.data$alex_quartil != "Mean")
+
+table(is.na(all.data[,3]))
+var.design <- as.factor(all.data$alex_quartil)
+var.data <- all.data[,c(4:283)]
 
 # Mexposition package missing
+ade4
+
+?TInPosition::tepDICA.inference.battery()
+
+TInPosition::print.tepBADA.inference.battery()
+TInPosition::pca
+ExPosition::epPCA()
 
 # oiginal
 ?epPCA.inference.battery
 # InPosition::
-all.data$ssid
-
-?InPosition::epPCA.inference.battery
-
-# PCA ASD
-var.PCA.inf_asd <-InPosition::epPCA.inference.battery(var.data, 
-                                       scale = FALSE, 
-                                       center = FALSE, 
-                                       DESIGN = var.design_asd, 
-                                       make_design_nominal = TRUE, 
+  
+var.PCA.inf <-InPosition::epPCA.inference.battery(var.data, 
+                                       scale = TRUE, 
+                                       center = TRUE, 
+                                       DESIGN = var.design, 
+                                       make_design_nominal = FALSE, 
                                        graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, 
-                                       critical.value = 2)
-
-# PCA AQ NT
-
-var.PCA.inf_AQ <-InPosition::epPCA.inference.battery(var.data, 
-                                       scale = FALSE, 
-                                       center = FALSE, 
-                                       DESIGN = var.design_aq, 
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, 
-                                       critical.value = 2)
-
-# tas
-
-var.PCA.inf_tas <-InPosition::epPCA.inference.battery(var.data, 
-                                       scale = FALSE, 
-                                       center = FALSE, 
-                                       DESIGN = var.design_tas, 
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, 
-                                       critical.value = 2)
-
-
-
+                                       test.iters = 100, 
+                                       constrained = FALSE, critical.value = 2)
 
 ```
-graphic stuff to explore later
+
 ?ExPosition::epPCA
 ?correlationPlotter
 library(prettyGraphs)
@@ -2656,12 +2505,14 @@ row.cols<- var.PCA.inf$Fixed.Data$Plotting.Data$fi.col
 ## Look at other dimensions
 row.cols <- read.csv("row_cols.csv",header=TRUE)
 
+
 # row.cols <- var.data[,2]
 
 # row.cols<- all.data_highlow[,3]
 
 x_axis <- 1
 y_axis <- 2
+
 var.PCA.inf$ExPosition.Data
 
 tau <- var.PCA.inf$Fixed.Data$ExPosition.Data$t
@@ -2681,7 +2532,7 @@ pos=3,
 xlab=xlab,ylab=ylab,main=main,display_names=FALSE,display_points=TRUE,
 constraints=NULL,contributionCircles=TRUE,contributions=var.PCA.inf$Fixed.Data$ExPosition.Data$ci, axes=TRUE, fg.line.width=3,fg.type="l", fg.col="black",
 bg.line.width=1.5, bg.lty=3, bg.col="black",flip=FALSE,asp=1, findBounds=TRUE,dev.new=TRUE,new.plot=TRUE)
-
+```{r}
 ## Barycentric Discriminant Analysis (BaDa)
 # var.data <- all.data_highlow[,c(4:171)]
 
@@ -2713,55 +2564,39 @@ nrow(var.data)
 nrow(var.data_asd)
 var.design
 
-
-
-BADA part
-```{r}
-
-var.PCA.inf_tas <-InPosition::epPCA.inference.battery(var.data, 
-                                       scale = FALSE, 
-                                       center = FALSE, 
-                                       DESIGN = var.design_tas, 
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, 
-                                       critical.value = 2)
-
-# aq
-
-var.BADA.inf_aq <- TInPosition::tepBADA.inference.battery(var.data, 
+nrow(var.data)
+var.BADA.inf <- TInPosition::tepBADA.inference.battery(var.data, 
                                                        scale = FALSE, 
                                                        center = FALSE, 
-                                                       DESIGN = var.design_aq, 
+                                                       DESIGN = as.factor(var.design), 
                                                        make_design_nominal = TRUE,
+                                                       # force_bary = TRUE,
                                                        group.masses = NULL, 
                                                        weights = NULL, 
                                                        graphs = TRUE, 
                                                        k = 0, 
-                                                       test.iters = 1000, 
+                                                       test.iters = 100, 
                                                        critical.value = 2)
 
-# TAS
 
-var.BADA.inf_tas <- TInPosition::tepBADA.inference.battery(var.data, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
-                                                       DESIGN = var.design_tas, 
-                                                       make_design_nominal = TRUE,
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = TRUE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
 
-# if I scale i have a singular
-# resBADA$Plotting.Data
-# 
-# row.names(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
-# colnames(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
-# resBADA.inf$Inference.Data$loo.data$fixed.confuse
+# try tep bada
+resBADA <-TExPosition::tepBADA(var.data, DESIGN = var.design, 
+                               scale = FALSE,
+                   graphs = TRUE)
+
+
+resBADA.inf <- TInPosition::tepBADA.inference.battery(var.data, scale = FALSE,
+                  DESIGN = var.design,
+                  test.iters = 100,
+                  graphs = FALSE)
+
+
+resBADA$Plotting.Data
+
+row.names(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+colnames(resBADA.inf$Inference.Data$loo.data$fixed.confuse) <- c("Low", "High")
+resBADA.inf$Inference.Data$loo.data$fixed.confuse
 
 plot(resBADA.inf)
 
@@ -2775,9 +2610,7 @@ lets try including asd
 
 
 ```{r}
-nrow(db_full6new_hr_fix_stim_select2)
 db_full6new_hr_fix_stim_select3<- db_full6new_hr_fix_stim_select2
-colnames(db_full6new_hr_fix_stim_select3)
 
 # flag the multiple outliers in pupil scr arousal and heart rate
 
@@ -2818,107 +2651,34 @@ db_full6new_hr_fix_stim_select3$Bio_Mean_HR_dif_outl2<- if_else(db_full6new_hr_f
 
 colnames(db_full6new_hr_fix_stim_select3)
 
-table(db_full6new_hr_fix_stim_select3$Bio_Mean_HR_dif_outl2)
-table(db_full6new_hr_fix_stim_select3$pupil_outlier)
-table(db_full6new_hr_fix_stim_select3$BIO_CDA.PhasicMax_z_outl)
 
-db_full6new_hr_fix_stim_select3_no_outl<-
-subset(db_full6new_hr_fix_stim_select3, db_full6new_hr_fix_stim_select3$Bio_Mean_HR_dif_outl2 == FALSE)
 
-db_full6new_hr_fix_stim_select3
-# db_full6new_hr_fix_stim_select3_no
 
-db_full6new_hr_fix_stim_select3_no_outl
 ```
 db_full6new_hr_fix_stim_select3
-
-```{r}
-# descriptices mean and sd by high and low ASD
-library(tidyverse)
-for_demog_new<- db_full6new_hr_fix_stim_select3_no_outl %>%
-  group_by(ssid,Group)%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ungroup()%>%
-  # group_by(Group)%>%
-  # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  select(c(ssid,Group, TAS, AQ, DASSTotal,log1p_BIO_CDA.PhasicMax,Bio_Mean_HR_dif, pup_basCor, arousal, valence))
-
-
-# grouped%>%
-#   summarise(grouped, mean=mean(value), sd=sd(value))
-
-unique(demog_summ$ssid)
-
-demog_summ %>%
-  select(c(ssid, Group, TAS, AQ, DASSTotal,BIO_CDA.PhasicMax,Bio_Mean_HR_dif, pup_basCor))
-  
-colnames(demog_summ)
-demog_summ$WASIM
-for_demog_new2<- left_join(for_demog_new, demog_summ[,c(1,13,25)])
-
-write_csv(for_demog_new2, "for_demog_new2.csv")
-
-for_demog_new3<- subset(for_demog_new2, ssid!= 600)
-for_demog_new4<- subset(for_demog_new3, Age< 51)
-
-write_csv(, "for_demog_new5.csv")
-colnames(for_demog_new4)
-psych::describe.by(for_demog_new4[,3:11], for_demog_new4$Group)
-```
 
 BADIA
 
 ```{r}
-# db_full6new_hr_fix_stim_select3_no_outl
+
+db_full6new_hr_fix_stim_select3
+db_full6new_hr_fix_stim_select3
 
 # reformat
-colnames(db_full6new_hr_fix_stim_select3_no_outl)
-db_full6new_hr_fix_stim_select3_no_outl
+colnames(db_full6new_hr_fix_stim_select3)
 
-db_full6new_hr_fix_stim_select3_no_outl$log1p_BIO_CDA.PhasicMax<- log1p(db_full6new_hr_fix_stim_select3_no_outl$BIO_CDA.PhasicMax+.1)
+db_full6new_hr_fix_stim_select3$log1p_BIO_CDA.PhasicMax<- log1p(db_full6new_hr_fix_stim_select3$BIO_CDA.PhasicMax+.1)
 
 # select only necessary columns
-db_full6new_hr_fix_stim_select3_backup<- db_full6new_hr_fix_stim_select3
-db_full6new_hr_fix_stim_select3<- db_full6new_hr_fix_stim_select3_no_outl
-# db_full6new_hr_fix_stim_select3_no_outl
+
 
 db_full6new_hr_fix_stim_select3$stimIAPS2<- substr(db_full6new_hr_fix_stim_select3$stimIAPS, 1,4)
 
-# include image statistics
-colnames(imageJ_IAPS)
-db_full6new_hr_fix_stim_select3_withgray<- left_join(db_full6new_hr_fix_stim_select3, imageJ_IAPS[,c(4,15)])
-nrow(db_full6new_hr_fix_stim_select3_withgray)
-nrow(db_full6new_hr_fix_stim_select3)
-
-
-pupil_arousal_findings$pupil_from_brightness_lm_2 <- lm(pup_basCor ~ 
-                                                    Mean,
-                                                    
-                      data = db_full6new_hr_fix_stim_select3_withgray, na.action=na.exclude) 
-
-
-summary(pupil_arousal_findings$pupil_from_brightness_lm_2)
-
-plot(pupil_arousal_findings$pupil_from_brightness)
-
-# store residuals
-
-db_full6new_hr_fix_stim_select3_withgray$pup_resid_lm <- resid(pupil_arousal_findings$pupil_from_brightness_lm_2,
-                                                            na.action=na.exclude)
-
-
-# 
-db_full6new_hr_fix_stim_select4_backup<- db_full6new_hr_fix_stim_select4
-
-# select columns with residuals or pupil
-db_full6new_hr_fix_stim_select4 <- select(db_full6new_hr_fix_stim_select3_withgray,
-                                                      c(ssid, Group,TAS, AQ, stimIAPS, stimIAPS2, stimDescription, pup_resid_lm, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax, arousal, valence))
+db_full6new_hr_fix_stim_select4 <- select(db_full6new_hr_fix_stim_select3,
+                                                      c(ssid, Group, stimIAPS, stimIAPS2, stimDescription, TAS, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax))
 
 
 db_full6new_hr_fix_stim_select4<- subset(db_full6new_hr_fix_stim_select4,!is.na(stimDescription))
-db_full6new_hr_fix_stim_select4<- subset(db_full6new_hr_fix_stim_select4,!is.na(TAS))
-
-
 unique(db_full6new_hr_fix_stim_select4$stimIAPS)
 
 db_full6new_hr_fix_stim_select4$stimIAPS2<- substr(db_full6new_hr_fix_stim_select4$stimIAPS, 1,4)
@@ -2936,14 +2696,11 @@ colnames(db_full6new_hr_fix_stim_select4)
 # fill in NA with average per individual
 # - not working
 # are things being recognised as something otehr than NA, eg NaN
-# table(is.nan(db_full6new_hr_fix_stim_select4))
+table(is.nan(db_full6new_hr_fix_stim_select4))
 
 db_full6new_hr_fix_stim_select4[db_full6new_hr_fix_stim_select4 == "NaN"] <- NA
 
 # seems like it
-
-db_full6new_hr_fix_stim_select4$pup_basCor<- db_full6new_hr_fix_stim_select4$pup_resid_lm
-db_full6new_hr_fix_stim_select4$pup_resid_lm<- NULL
 
 db_full6new_hr_fix_stim_select5 <- db_full6new_hr_fix_stim_select4 %>%
   group_by(ssid)%>%
@@ -2958,12 +2715,11 @@ db_full6new_hr_fix_stim_select5 <- db_full6new_hr_fix_stim_select4 %>%
 nrow(db_full6new_hr_fix_stim_select5)
 
 library(data.table)
-# ?dcast
-db_forBADA2_backup_properpupil<- db_forBADA2
+?dcast
 
 db_forBADA2 <- data.table::dcast(setDT(db_full6new_hr_fix_stim_select5), 
-                    ssid +TAS+AQ+ Group ~ stimIAPS2, value.var = c('pup_basCor',
-                'Bio_Mean_HR_dif', 'log1p_BIO_CDA.PhasicMax', 'arousal', 'valence'),fun.aggregate = mean)
+                    ssid +TAS+ Group ~ stimIAPS2, value.var = c('pup_basCor',
+                'Bio_Mean_HR_dif', 'log1p_BIO_CDA.PhasicMax'),fun.aggregate = mean)
 
 
 
@@ -2971,15 +2727,16 @@ table(is.na(db_forBADA2))
 View(db_forBADA2)
 na.omit(db_forBADA2)
 
+
+db_forBADA2 %>%
+    select_if(~ any(is.na(.)))
+
 table(is.na(db_forBADA2$log1p_BIO_CDA.PhasicMax_9472))
 
 # try to fill means rowwise
 colnames(db_forBADA2)
 
-db_forBADA2_pupil_ssid<- db_forBADA2[,1:4]
-
-# 
-db_forBADA2_pupil<- db_forBADA2[,5:60]
+db_forBADA2_pupil<- db_forBADA2[,3:58]
 # table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA2_pupil), arr.ind=TRUE)
@@ -2989,8 +2746,7 @@ k
 db_forBADA2_pupil[k] <- rowMeans(db_forBADA2_pupil, na.rm=TRUE)[k[,1]]
 
 # hr
-colnames(db_forBADA2)
-db_forBADA2_hr<- db_forBADA2[,c(61:116)]
+db_forBADA2_hr<- db_forBADA2[,c(59:114)]
 # table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA2_hr), arr.ind=TRUE)
@@ -3002,7 +2758,7 @@ db_forBADA2_hr
 
 # scr
 colnames(db_forBADA2)
-db_forBADA2_scr<- db_forBADA2[,117:172]
+db_forBADA2_scr<- db_forBADA2[,115:170]
 # table(is.na(db_forBADA1_pupil$TAS))
 
 k <- which(is.na(db_forBADA2_scr), arr.ind=TRUE)
@@ -3012,28 +2768,15 @@ db_forBADA2_scr[k] <- rowMeans(db_forBADA2_scr, na.rm=TRUE)[k[,1]]
 
 db_forBADA2_scr
 
-# ar val
-colnames(db_forBADA2)
-db_forBADA2_ar_vl<- db_forBADA2[,173:284]
-# table(is.na(db_forBADA1_pupil$TAS))
-
-k <- which(is.na(db_forBADA2_ar_vl), arr.ind=TRUE)
-k
-
-db_forBADA2_ar_vl[k] <- rowMeans(db_forBADA2_ar_vl, na.rm=TRUE)[k[,1]]
 
 
+# bind
+db_badia2_nona <- bind_cols(db_forBADA2[,1:2], db_forBADA2_pupil, db_forBADA2_hr, db_forBADA2_scr)
 
-# bind badia with asd
-db_badia2_nona_backup_properPupil<-db_badia2_nona
 
-db_badia2_nona <- bind_cols(db_forBADA2[,1:4], db_forBADA2_pupil, db_forBADA2_hr, db_forBADA2_scr,db_forBADA2_ar_vl)
-
-db_badia2_nona$pup_basCor_1019
-db_badia2_nona_backup_properPupil$pup_basCor_1019
 ```
 
-now fit the same with the asd group
+
 
 ```{r}
 
@@ -3047,289 +2790,66 @@ install.packages("prettyGraphs")
 library(TInPosition)
 library(MExPosition)
 
-colnames(db_badia2_nona)
+ExPosition::epPCA()
 
-var.data_asd_backup_properpupil<- var.data_asd
-var.data_asd<- db_badia2_nona[,5:172]
+##PCA with Inference
+# all.data <- read.csv("PCA_Dataset_2.csv",header=TRUE)
+all.data_asd<- db_badia2_nona
 
-db_badia2_nona$tas_mediansplit<- if_else(db_badia2_nona$TAS> median(db_badia2_nona$TAS, na.rm = TRUE), "High", "Low")
-db_badia2_nona$aq_mediansplit<- if_else(db_badia2_nona$AQ> median(db_badia2_nona$AQ, na.rm = TRUE), "High", "Low")
+all.data_asd <- na.omit(all.data_asd)
+# rownames(all.data) <- all.data[,1]
+# all.data_highlow<- subset(all.data, all.data$alex_quartil != "Mean")
 
-var.design_asd_group<- as.factor(db_badia2_nona$Group)
-var.design_asd_tas<- as.factor(db_badia2_nona$tas_mediansplit)
-var.design_asd_aq<- as.factor(db_badia2_nona$aq_mediansplit)
+var.design_tas<- all.data_asd
+# nrow(new.data)
+
+nrow(db_forBADA2)
+nrow(all.data_asd)
+na.omit(var.design_tas)
 
 
-colnames(var.data_asd)
-# PCA asd
-db_badia2_nona$ssid
+var.design_tas<- if_else(db_forBADA2$TAS> median(db_forBADA2$TAS, na.rm = TRUE), "High", "Low")
+var.design_asd <- as.factor(tasy_agg$Alex_median)
+var.data_asd <- all.data_asd[,c(3:170)]
+
+
+tasy_agg<- new.data3 %>%
+group_by(ssid,Alex_median)%>%
+  summarise_at(c("TAS.y"), mean, na.rm = TRUE)
+
+na.omit(var.data_asd)
+# Mexposition package missing
+ade4
+
+?TInPosition::tepDICA.inference.battery()
+
+TInPosition::print.tepBADA.inference.battery()
+TInPosition::pca
+ExPosition::epPCA()
+
+# oiginal
+?InPosition::epPCA.inference.battery
+?correlationPlotter
 library(prettyGraphs)
-
-
-newnames_var
-
-var.data_asd2<- var.data_asd
-names(var.data_asd2)<- newnames_var
-
-colnames(var.data_asd2)
-
-bootratio_df2$MeasureStim<- paste0(bootratio_df2$measure1, paste0(".",bootratio_df2$stimDescription))
-unique(bootratio_df2$MeasureStim)
-
-?prettyGraphs::prettyBars
-prettyGraphs::prettyBars(bootratio_df2$V1,
-                         axis = 2)
-
-measurenames<- bootratio_df2$measure1
-variablethemes<- bootratio_df2$stimDescription
-newnames_var<- bootratio_df2$MeasureStim
-  
-colnames(var.data_asd2)<- measurenames
-library(prettyGraphs)
-var.data_asd4<- var.data_asd
-colnames(var.data_asd4)<- newnames_var
-
-colnames(var.data_asd2)
-
-var.data_asd3<- var.data_asd2
-colnames(var.data_asd3)<- variablethemes
-
-colnames(var.data_asd4)
-library(prettyGraphs)
-
-var.data_asd$pup_basCor_1019
-var.data_asd_backup_properpupil$pup_basCor_1019
-var.PCA.inf_asd_group <-InPosition::epPCA.inference.battery(var.data_asd, 
+?InPosition::epPCA.inference.battery
+?InPosition::epPCA.inference.battery
+var.PCA.inf_asd <-InPosition::epPCA.inference.battery(var.data_asd, 
                                        scale = TRUE, 
                                        center = TRUE, 
-                                       DESIGN = var.design_asd_group,
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, critical.value = 2)
-?InPosition::inGraphs
-InPosition::inGraphs(var.PCA.inf_asd_group, y_axis = 2,
-                     biplots = TRUE)
-
-prettyGraphs::correlationPlotter(var.data_asd4,
-  
-  factor_scores= var.PCA.inf_asd_group$Fixed.Data$ExPosition.Data$fi)
-
-prettyGraphs::
-
-colnames(var.data_asd3)
-var.PCA.inf_asd_group_stimdescr <-InPosition::epPCA.inference.battery(var.data_asd3, 
-                                       scale = TRUE, 
-                                       center = TRUE, 
-                                       DESIGN = var.design_asd_group,
+                                       DESIGN = var.design_tas,
                                        make_design_nominal = TRUE, 
                                        graphs = TRUE, k = 0, 
                                        test.iters = 1000, 
                                        constrained = FALSE, critical.value = 2)
 
-?InPosition::inGraphs
-InPosition::inGraphs(var.PCA.inf_asd_group, y_axis = 2)
-InPosition::inGraphs(var.PCA.inf_asd_group_stimdescr, y_axis = 2)
-
-gpca.iris.res <- epPCA.inference.battery(var.data_asd2,
-                                          DESIGN=var.design_asd_group,
-                                          make_design_nominal=FALSE)
-	inGraphs(gpca.iris.res,y_axis=3)
-
-
-	
-	InPosition::inGraphs(var.PCA.inf_asd_group, y_axis = 2)
-
-# store boostrap rations
-bootratio<- var.PCA.inf_asd_group[["Inference.Data"]][["fj.boots"]][["tests"]][["boot.ratios"]]
-
-as.data.frame(bootratio)[,1:3]
-bootratio_df<- as.data.frame(bootratio)[,1:3]
-bootratio_df$variable<- row.names(bootratio_df)
-bootratio_df$stimIAPS2<- unique(str_sub(bootratio_df$variable,-4))
-
-install.packages("ggwordcloud")
-# librar
-
-
-bootratio_df$measure<- substr(bootratio_df$variable, 1,6)
-
-
-unique(bootratio_df$measure)
-bootratio_df$measure1<- if_else(bootratio_df$measure == "pup_ba", "PUP",
-                                 if_else(bootratio_df$measure == "Bio_Me", "HR",
-                                         if_else(bootratio_df$measure == "log1p_", "SCR", NULL)))
-
-left_join(bootratio_df, cluster_stim)%>%
-  subset(abs(V1)> 2 & abs(V2)< 2)%>% #| abs(V1)>2 & abs(V2)>2
-  select(c(V1:stimIAPS2, stimDescription))%>%
-  group_by(stimDescription)%>%
-  mutate(n = n())%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(label = stimDescription, size = n)) +
-  ggwordcloud::geom_text_wordcloud() +
-  theme_minimal()
-
-
-left_join(bootratio_df, cluster_stim)%>%
-  subset(abs(V1)> 2 & abs(V2)< 2)%>% #| abs(V1)>2 & abs(V2)>2
-  select(c(V1:stimIAPS2, stimDescription,measure))%>%
-  group_by(stimDescription,measure)%>%
-  mutate(n = n())%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(label = stimDescription, size = n)) +
-  ggwordcloud::geom_text_wordcloud() +
-  theme_minimal()+
-  facet_grid(~measure)
-
-
-left_join(bootratio_df, cluster_stim)%>%
-  subset(abs(V1)< 2 & abs(V2)> 2)%>% #| abs(V1)>2 & abs(V2)>2
-  select(c(V1:stimIAPS2, stimDescription,measure))%>%
-  group_by(stimDescription,measure1)%>%
-  mutate(n = n())%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(label = stimDescription, size = n)) +
-  ggwordcloud::geom_text_wordcloud() +
-  theme_minimal()+
-  facet_grid(~measure1)
-
-
-left_join(bootratio_df, cluster_stim)%>%
-  subset(abs(V1)> 2 & abs(V2)> 2)%>% #| abs(V1)>2 & abs(V2)>2
-  select(c(V1:stimIAPS2, stimDescription,measure,measure1))%>%
-  group_by(stimDescription,measure1)%>%
-  mutate(n = n())%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  ggplot(aes(label = stimDescription, size = n)) +
-  ggwordcloud::geom_text_wordcloud() +
-  theme_minimal()+
-  facet_grid(~measure1)
-
-
-bootratio_df2<- left_join(bootratio_df, cluster_stim)
-
-bootratio_df2$MeasureStim<- paste0(bootratio_df2$measure1, paste0(".",bootratio_df2$stimDescription))
-unique(bootratio_df2$MeasureStim)
-
-?prettyGraphs::prettyBars
-prettyGraphs::prettyBars(bootratio_df2$V1,
-                         axis = 2)
-
-newnames_var<- bootratio_df2$MeasureStim
-  
-  
-  
-library(tidyverse)
-test<- left_join(bootratio_df, cluster_stim)%>%
-  subset(abs(V1)< 2 & abs(V2)> 2)
-  
-test
-
-
-unique(test$stimIAPS2)
-
-```
-
-# 24 seems to be an outlier
-
-```{r}
-
-# AQ median split
-var.PCA.inf_asd_aq <-InPosition::epPCA.inference.battery(var.data_asd, 
-                                       scale = TRUE, 
-                                       center = TRUE, 
-                                       DESIGN = var.design_asd_aq,
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, critical.value = 2)
-# who is 51 = 604
-
-InPosition::inGraphs(var.PCA.inf_asd_aq, y_axis = 2)
-InPosition::inGraphs(var.PCA.inf_asd_aq, y_axis = 2)
-
-# TAS median split
-var.PCA.inf_asd_tas <-InPosition::epPCA.inference.battery(var.data_asd, 
-                                       scale = TRUE, 
-                                       center = TRUE, 
-                                       DESIGN = var.design_asd_tas,
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, critical.value = 2)
-# who is 51 = 604
-
-InPosition::inGraphs(var.PCA.inf_asd_aq, y_axis = 2)
-
-# BADIA
-
-# Group AS
-ar.design_tas_49_2[c(1:23, 25:49)]
-var.BADA.inf_asd_group <- TInPosition::tepBADA.inference.battery(var.data_asd, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
-                                                       DESIGN = var.design_asd_group,
-                                                       make_design_nominal = TRUE,
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = FALSE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
-
-var.BADA.inf_asd_group$Inference.Data$omni$p.val
-var.BADA.inf_asd_group$Inference.Data$components$p.vals
-var.BADA.inf_asd_group$Inference.Data$r2$p.val
-var.BADA.inf_asd_group$Inference.Data$r2$r2.perm
-
-
-var.BADA.inf_asd_group$Inference.Data$components$p.vals
-# aq split
-
-var.BADA.inf_asd_group <- TInPosition::tepBADA.inference.battery(var.data_asd, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
-                                                       DESIGN = var.design_asd_aq,
-                                                       make_design_nominal = TRUE,
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = TRUE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
-# tas
-
-var.BADA.inf_asd_group$Inference.Data$omni$p.val
-var.BADA.inf_asd_group$Inference.Data$omni$inertia
-
-var.BADA.inf_asd_group$Inference.Data$r2$r2
-var.BADA.inf_asd_group$Inference.Data$r2$p.val
-# aq split
-
-var.BADA.inf_asd_tas <- TInPosition::tepBADA.inference.battery(var.data_asd, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
-                                                       DESIGN = var.design_asd_tas,
-                                                       make_design_nominal = TRUE,
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = FALSE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
-
-var.BADA.inf_asd_tas$Inference.Data$omni$p.val
-var.BADA.inf_asd_tas$Inference.Data$omni$inertia
-
-var.BADA.inf_asd_tas$Inference.Data$r2$r2
-var.BADA.inf_asd_tas$Inference.Data$r2$p.val
-
-var.BADA.inf_asd_group$Inference.Data$components$p.vals
-var.BADA.inf_asd_tas$Inference.Data$components$p.vals
-var.BADA.inf_asd_tas$Fixed.Data$TExPosition.Data$assign$
 ?ExPosition::epPCA
 
+ExPosition::epGraphs(var.PCA.inf_asd$Fixed.Data$Plotting.Data)
+
+var.PCA.inf_asd
+
+var.PCA.inf_asd$Inference.Data$components$p.vals
+var.PCA.inf_asd$Inference.Data$fj.boots$boots
 
 sum(var.PCA.inf_asd$Fixed.Data$ExPosition.Data$t) #explained variuances
 # 
@@ -3352,7 +2872,65 @@ var.PCA.inf_asd$Inference.Data$components$eigs.perm
 ?prettyPlot
 
 write_csv("var.PCA.inf_asd_forpca.csv", var.data_asd)
+pca.plot <- prettyGraphs::prettyPlot(var.PCA.inf_asd$Fixed.Data$ExPosition.Data$fi,
+                       x_axis=x_axis,
+                       y_axis=y_axis,
+                       col=var.design_tas,
+                       pch=22,
+                       cex=NULL,
+                       text.cex=NULL,
+                       pos=3,
 
+                       xlab=xlab,
+                       ylab=ylab,
+                       main=main,
+                       display_names=TRUE,
+                       display_points=TRUE,
+                       constraints=NULL,
+                       contributionCircles=TRUE,
+                       contributions=var.PCA.inf_asd$Fixed.Data$ExPosition.Data$ci, 
+                       axes=TRUE, 
+                       fg.line.width=3,
+                       fg.type="l", 
+                       fg.col="black",
+                       bg.line.width=1.5, 
+                       bg.lty=3, 
+                       bg.col="black",
+                       flip=FALSE,asp=1, 
+                       findBounds=TRUE,
+                       dev.new=TRUE,
+                       new.plot=TRUE)
+?prettyGraphs::correlationPlotter()
+
+
+prettyGraphs::correlationPlotter(var.data_asd,
+  var.PCA.inf_asd$Fixed.Data$ExPosition.Data$fi,
+  col= var.design_asd,
+                       pch=22,
+                       # cex=NULL,
+                       # text.cex=NULL,
+                       # pos=3,
+
+                       xlab=xlab,
+                       ylab=ylab,
+                       main=main
+                       # display_names=TRUE,
+                       # display_points=TRUE,
+                       # constraints=NULL,
+                       # contributionCircles=TRUE,
+                       # contributions=var.PCA.inf_asd$Fixed.Data$ExPosition.Data$ci, 
+                       # axes=TRUE, 
+                       # fg.line.width=3,
+                       # fg.type="l", 
+                       # fg.col="black",
+                       # bg.line.width=1.5, 
+                       # bg.lty=3, 
+                       # bg.col="black",
+                       # flip=FALSE,asp=1, 
+                       # findBounds=TRUE,
+                       # dev.new=TRUE,
+                       # new.plot=TRUE
+                                 )
 
 
 
@@ -3400,7 +2978,11 @@ apply(df[,-1],1,function(x) names(df[,-1])[which(x>0.33)])
 
 
 ```
- 
+
+
+```
+
+
 
 ```{r}
 boottest1$PC<- apply(boottest1[,1:2],1,function(x) names(boottest1[,1:2])[which(abs(x)>2)] 
@@ -3556,7 +3138,7 @@ all.data_asd2pcs_forkmean<- all.data_asd2pcs[,c(1,2,171:173)]
 # Using the elbow method to find the optimal number of clusters
 set.seed(1)
 wcss = vector()
-for (i in 1:10) wcss[i] = sum(kmeans(scaled_all.data_asd2pcs_forkmean[,c(1:2,5)], i)$withinss)
+for (i in 1:10) wcss[i] = sum(kmeans(scaled_all.data_asd2pcs_forkmean, i)$withinss)
 plot(1:10,
      wcss,
      type = 'b',
@@ -3574,12 +3156,12 @@ kmeans_res = kmeans(x = scaled_all.data_asd2pcs_forkmean, centers = 2)
 y_kmeans = kmeans_res$cluster
 rm(kmeans)
 
-kmeans_res$
-
 install.packages("factoextra")
 
-
-```
+?factoextra::fviz_nbclust
+factoextra::fviz_nbclust(scaled_all.data_asd2pcs_forkmean$PC2, 
+                         kmeans, 
+                         method='silhouette')
 
 # Visualising the clusters
 # install.packages("cluster")
@@ -3637,97 +3219,22 @@ colnames(all.data_asd2.1)
 
 # all.data_asd2pcs2.1_forkmean$
 # left_join(scaled_all.data_asd2pcs_forkmean,all.data_asd2.1[,1:2], by = "ssid")%>%
-
-```{r}
-
-all.data_asd2pcs2.1_forkmean$Cluster <- as.factor(all.data_asd2pcs2.1_forkmean$y_kmeans)
-  
-kmeanplots <- list()
-
-kmeanplots$Kmeanplot<-
-all.data_asd2pcs2.1_forkmean%>%
-
-  ggplot(aes(x = PC1, y = PC2, colour = Cluster, fill = Cluster, linetype = Cluster, shape = Cluster)) +
-  geom_point(size = 2, alpha = .6)+
-  # geom_text(aes(label= ssid))+
-  stat_ellipse(aes(fill = Cluster), show.legend = TRUE, size = 2)+
+  all.data_asd2pcs2.1_forkmean%>%
+ggplot(aes(x = PC1, y = PC2, colour = as.factor(y_kmeans), fill = as.factor(y_kmeans))) +
+  geom_point(size = 2, alpha = .4)+
+  geom_text(aes(label= ssid))+
+  stat_ellipse(show.legend = TRUE)+
   ylab("Componet 2")+
   xlab("Component 1")+
+  scale_color_brewer(palette= "Dark2")+
   scale_fill_brewer(palette= "Dark2")+   
-    scale_color_brewer(palette= "Dark2")+
-  p$graphstyle_tsne +
-  theme()
-
-kmeanplots$Kmeanplot
-
-# silhouete
-
-?factoextra::fviz_nbclust
-kmeanplots$clustsilhoute <- factoextra::fviz_nbclust(scaled_all.data_asd2pcs_forkmean[,c(1:2,5)], 
-                         kmeans, 
-                         method='silhouette') +
-  xlab("k")+
-  ylab("Silhouette")+
-  p$graphstyle
-kmeanplots$clustsilhoute
-clustsilhoute$data
-
-clustsilhoute
-
-
-kmeanplots$clustelbow<- factoextra::fviz_nbclust(scaled_all.data_asd2pcs_forkmean[,c(1:2,5)], kmeans, method = "wss")+
-  xlab("k")+
-  ylab("WCSS")+
-  p$graphstyle
-
-kmeanplots$clustelbow
-clustelbow$data
-  
-kmeanplots
-
-all.data_asd2pcs2.1_forkmean
-scaled_all.data_asd2pcs_forkmean
-
-kmeanplots$cluster_vs_PC <-
-
-all.data_asd2pcs2.1_forkmean %>%
-gather( key = "measurement", value = "value",
-       PC1, PC2, -Cluster,-ssid)%>%
-  ggplot(aes(Cluster, value, fill = measurement,color = measurement, linetype = measurement))+
-  stat_summary(geom = "pointrange", position = position_dodge(1), size = 1)+
-    geom_bar(stat="summary", fun.y = "mean", alpha = .5, width = .5, position = position_dodge(1), size = 1.5)+
-  geom_hline(yintercept = 0, size = 2, linetype = "dashed", alpha = .4)+
-  scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-  p$graphstyle
-
-kmeanplots$cluster_vs_PC
-
-# now cluster vs AQ and TAS
-
-# create those density separatio plots
-write_csv(all.data_asd2pcs2.1_forkmean, "all.data_asd2pcs2.1_forkmean.csv")
-
-all.data_asd2pcs2.1_forkmean
-
-kmeanplots$density<-
-all.data_asd2pcs2.1_forkmean%>%
-gather( key = "measurement", value = "value",
-       PC1, PC2, -ssid, - Cluster)%>%
-  ggplot(aes(value, fill = Cluster))+
-  geom_density(color = FALSE, alpha = .6)+
-  facet_grid(~measurement)+
-  ylab("Density")+
-  
+  # scale_color_manual(values = c("red", "green", "blue"))+
   p$graphstyle+
-  scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank())
-
-
-kmeanplots$aq_kmeans
-
+  theme()
+  
+  
+  all.data_asd2pcs2.1_forkmean %>%
+    ggplot(aes())
 
 ```
 
@@ -3753,228 +3260,20 @@ left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
   ggpubr::stat_compare_means()
 
 kmeans$ifault
-
 left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
   ggplot(aes(as.factor(y_kmeans), TAS))+
   stat_summary(geom = "pointrange")+
-  geom_text(aes(label = ssid), alpha = .1)+
-  ggpubr::stat_compare_means()
+  geom_text(aes(label = ssid), alpha = .1)
 
+?  ggpubr::stat_compare_means()
 
-  ggplot(aes(Cluster, value, fill = measurement,color = measurement, linetype = measurement))+
-  stat_summary(geom = "pointrange", position = position_dodge(1), size = 1)+
-    geom_bar(stat="summary", fun.y = "mean", alpha = .5, width = .5, position = position_dodge(1), size = 1.5)+
-  geom_hline(yintercept = 0, size = 2, linetype = "dashed", alpha = .4)+
-  scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-  p$graphstyle
-
-
-
-# aq kmean plot
-  
-  
-  kmeanplots$aq_kmeans<-
-left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
-  # subset(Group == "NT")%>%
-  ggplot(aes(as.factor(y_kmeans), AQ))+
-   geom_jitter(aes(color = Group, shape = Group),width = .1, alpha = .5)+
-  stat_summary(geom = "pointrange")+
-  geom_boxplot(alpha = .5, width = .5, size = .6)+
-  # facet_grid(~measurement)+
-  ggpubr::stat_compare_means(method = "t.test")+
-  scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-  xlab("Cluster")+
-  ylab("Austistic Traits")+
-  p$graphstyle
-
-  
-    kmeanplots$tas_kmeans<-
 left_join(scaled_all.data_asd2pcs_forkmean ,ssid_tasaq)%>%
   # subset(Group == "NT")%>%
   ggplot(aes(as.factor(y_kmeans), TAS))+
-      geom_jitter(aes(color = Group, shape = Group),width = .1, alpha = .5)+
   stat_summary(geom = "pointrange")+
-  geom_boxplot(alpha = .5, width = .5, size = .6)+
-  # facet_grid(~measurement)+
-  ggpubr::stat_compare_means(method = "t.test")+
-  scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-  xlab("Cluster")+
-  ylab("Alexithymic Traits")+
-  p$graphstyle
+  # geom_text(aes(label = ssid), alpha = .1)+
+  ggpubr::stat_compare_means(method = "t.test")
 
-    kmeanplots$aq_kmeans
-    kmeanplots$tas_kmeans
-```
-
-Bow how thus clustering relates to subjective ratings
-```{r}
-gather(new.data3, key = "measurement", value = "value",
-       PC1, PC2, -ssid, - y_kmeans, -pca_v1_v2)
-  # subset(Group == "NT")%>%
-  
-kmeanplots$valence_kmean <-  
-  new.data3%>%
-  group_by(ssid,Group, y_kmeans)%>%
-  # mutate(value1 = scale(value))%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  
-  ggplot(aes(as.factor(y_kmeans),valence))+
-  geom_jitter(aes(color = Group, shape = Group),width = .1, alpha = .5)+
-  stat_summary(geom = "pointrange")+
-  geom_boxplot(alpha = .5, width = .5, size = .6)+
-  # facet_grid(~measurement)+
-  ggpubr::stat_compare_means(method = "t.test")+
-    xlab("Cluster")+
-    ylab("Subjective Valence")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-    p$graphstyle
-
-
-kmeanplots$arousal_kmean <-  
-  new.data3%>%
-  group_by(ssid,Group, y_kmeans)%>%
-  # mutate(value1 = scale(value))%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  
-  ggplot(aes(as.factor(y_kmeans),arousal))+
-  geom_jitter(aes(color = Group, shape = Group),width = .1, alpha = .5)+
-  stat_summary(geom = "pointrange")+
-  geom_boxplot(alpha = .5, width = .5, size = .6)+
-  # facet_grid(~measurement)+
-  ggpubr::stat_compare_means(method = "t.test")+
-    xlab("Cluster")+
-    ylab("Subjective Arousal")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_color_brewer(palette = "Dark2")+
-    p$graphstyle
-
-kmeanplots$arousal_kmean 
-kmeanplots$valence_kmean 
-
-new.data3_agg<- new.data3%>%
-  group_by(ssid,Group, y_kmeans)%>%
-  # mutate(value1 = scale(value))%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)
-
-t.test(new.data3_agg$TAS.x[new.data3_agg$y_kmeans == 1],new.data3_agg$TAS.x[new.data3_agg$y_kmeans == 2] )
-t.test(new.data3_agg$AQ.x[new.data3_agg$y_kmeans == 1],new.data3_agg$AQ.x[new.data3_agg$y_kmeans == 2] )
-
-kmeanplots
-
-(kmeanplots$Kmeanplot + kmeanplots$clustsilhoute + kmeanplots$clustelbow+
-  kmeanplots$cluster_vs_PC + kmeanplots$density+kmeanplots$aq_kmeans + kmeanplots$tas_kmeans+
-  kmeanplots$valence_kmean+ kmeanplots$arousal_kmean)
-
-# just clustering plots
-kmeanplots$patchwork1 <- ((kmeanplots$Kmeanplot / 
-  (kmeanplots$clustsilhoute + kmeanplots$clustelbow)+
-  (kmeanplots$cluster_vs_PC + kmeanplots$density))|
-  (kmeanplots$valence_kmean/kmeanplots$arousal_kmean/kmeanplots$aq_kmeans/kmeanplots$tas_kmeans))+
-  patchwork::plot_layout(widths = c(2,1))+
-  # nrow = 3, heights = c(2,1,1,1)
-  plot_annotation(tag_levels = "A")
-
-
-ggsave("jkmean_patchwork1.tiff", kmeanplots$patchwork1, device = "tiff", width = 10, height = 10, dpi = 800)
-
-ggsave("jkmean_patchwork1.tiff", kmeanplots$patchwork1, device = "tiff", width = 10, height = 12, dpi = 800)
-
-kmeanplots$aq_kmeans
-kmeanplots$tas_kmeans
-
-kmeanplots$valence_kmean
-kmeanplots$arousal_kmean
-
-new.data3
-t.test(new.data3_agg$arousal[new.data3_agg$y_kmeans == 1],new.data3_agg$arousal[new.data3_agg$y_kmeans == 2] )
-t.test(new.data3_agg$valence[new.data3_agg$y_kmeans == 1],new.data3_agg$valence[new.data3_agg$y_kmeans == 2] )
-
-new.data3_forlmer<- new.data3%>%
-  group_by(ssid, stimIAPS2, Group, y_kmeans)%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)
-
-# first do thes egroups whos diferences in trial by trial valence and arousal
-new.data3_forlmer$Cluster<- as.factor(new.data3_forlmer$y_kmeans)
-new.data3_forlmer$ssid<- as.factor(new.data3_forlmer$ssid)
-new.data3_forlmer$stimIAPS2<- as.factor(new.data3_forlmer$stimIAPS2)
-
-dimensional_lmers<- list()
-library(lmerTest)
-dimensional_lmers$val_clust <- lmer(valence ~ Cluster + (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer)
-
-summary(dimensional_lmers$val_clust)
-
-
-dimensional_lmers$ar_clust <- lmer(arousal ~ Cluster + (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer)
-
-summary(dimensional_lmers$ar_clust)
-
-
-# 
-
-dimensional_lmers$val_pca_tas <- lmer(valence ~ (PC1_z + PC2_z)*TASc +(1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data =new.data3_forlmer%>%
-                          subset(Group == "NT"))
-
-summary(dimensional_lmers$val_pca_tas)
-new.data3_forlmer$PC1_z<- scale(new.data3_forlmer$PC1)[,1]
-new.data3_forlmer$PC2_z<- scale(new.data3_forlmer$PC2)[,1]
-dimensional_lmers$ar_pca_tas <- lmer(arousal ~ (PC1_z + PC2_z)*TASc +(1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer%>%
-                          subset(Group == "NT")%>%
-                           subset(ssid!=336))
-
-summary(dimensional_lmers$ar_pca_tas)
-
-
-# AQ
-
-dimensional_lmers$val_pca_aq <- lmer(valence ~ (PC1 + PC2)*AQc+ (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer%>%
-                          subset(Group == "NT"))
-
-summary(dimensional_lmers$val_pca_aq)
-
-dimensional_lmers$ar_pca_aq <- lmer(arousal ~ (PC1 + PC2)*AQc+ (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer%>%
-                          subset(Group == "NT"))
-
-summary(dimensional_lmers$ar_pca_aq)
-
-# the effects mirror one another
-# the aq effect is primarly driven by autistic participants
-# combine aq and tas
-
-dimensional_lmers$val_pca_aq_tas <- lmer(valence ~ (PC1 + PC2)* (AQc+TASc)+ (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer%>%
-                          subset(ssid!=336))
-                        # %>%
-                          # subset(Group == "NT"))
-
-summary(dimensional_lmers$val_pca_aq_tas)
-
-dimensional_lmers$ar_pca_aq_tas <- lmer(arousal ~ (PC1 + PC2)*(AQc+TASc)+ (1|ssid)+
-                        (1|stimIAPS2), REML = FALSE,
-                        data = new.data3_forlmer%>% subset(ssid!=336))
-                        # %>%
-                          subset(Group == "NT"))
-
-unique(new.data3_forlmer$ssid)
-
-summary(dimensional_lmers$ar_pca_aq_tas)
 
 ```
 
@@ -4126,10 +3425,6 @@ scaled_all.data_asd2pcs_forkmean_forcor<- left_join(scaled_all.data_asd2pcs_fork
 scaled_all.data_asd2pcs_forkmean_forcor_nona<- subset(scaled_all.data_asd2pcs_forkmean_forcor, !is.na(TAS))
 ppcor::pcor.test(scaled_all.data_asd2pcs_forkmean_forcor_nona$TAS, scaled_all.data_asd2pcs_forkmean_forcor_nona$PC1, scaled_all.data_asd2pcs_forkmean_forcor_nona$AQ)
 
-cor.test(scaled_all.data_asd2pcs_forkmean_forcor_nona$AQ, scaled_all.data_asd2pcs_forkmean_forcor_nona$PC1)
-
-cor.test(scaled_all.data_asd2pcs_forkmean_forcor_nona$AQ, scaled_all.data_asd2pcs_forkmean_forcor_nona$PC2)
-
 ppcor::pcor.test(scaled_all.data_asd2pcs_forkmean_forcor_nona$AQ, scaled_all.data_asd2pcs_forkmean_forcor_nona$PC1, scaled_all.data_asd2pcs_forkmean_forcor_nona$TAS) #not significanr
 
 # exclude 336
@@ -4146,96 +3441,7 @@ ppcor::pcor.test(scaled_all.data_asd2pcs_forkmean_forcor_nona1$AQ, scaled_all.da
 ppcor::pcor.test(AQ, PC1, TAS) 
 
 pcor(test_teoPi,method="spearman")$estimate
-
-
-# new.data3 %>%
-#   # subset(Group == "NT")%>%
-#   subset(ssid!=336)%>%
-#     group_by(ssid, Group)%>%
-#     summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-
-unique(scaled_all.data_asd2pcs_forkmean_forcor_nona1$ssid)
-
-selfrep_pc_plots<-list()
-selfrep_pc_plots$TASpc1<-
-scaled_all.data_asd2pcs_forkmean_forcor_nona1%>%
-  subset(ssid!=336)%>%
-  ggplot(aes( TAS, PC1))+
-  geom_point(aes(color = Group, shape = Group), alpha = .7, size = 2)+
-  geom_smooth(method = 'lm', se = F)+
-  # geom_text(aes(label = ssid))+
-  ggpubr::stat_cor()+
-  xlab("Autism")+
-  p$graphstyle+
-  scale_color_brewer(palette = "Dark2")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_y_continuous(limits = c(-1.5, 2.5))
-
-selfrep_pc_plots$TASpc1
-
-selfrep_pc_plots$AQpc1<-
-scaled_all.data_asd2pcs_forkmean_forcor_nona1%>%
-  subset(ssid!=336)%>%
-  ggplot(aes( AQ, PC1))+
-  geom_point(aes(color = Group, shape = Group), alpha = .7, size = 2)+
-  geom_smooth(method = 'lm', se = F)+
-  # geom_text(aes(label = ssid))+
-
-  xlab("Autsim")+
-  p$graphstyle+
-  scale_color_brewer(palette = "Dark2")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_y_continuous(limits = c(-1.5, 2.5))+
-    ggpubr::stat_cor()
-
-selfrep_pc_plots$AQpc1
-
-# PC2
- 
-
-selfrep_pc_plots$TASpc2<-
-scaled_all.data_asd2pcs_forkmean_forcor_nona1%>%
-  subset(ssid!=336)%>%
-  ggplot(aes( TAS, PC2))+
-  geom_point(aes(color = Group, shape = Group), alpha = .7, size = 2)+
-  geom_smooth(method = 'lm', se = F)+
-  # geom_text(aes(label = ssid))+
-  ggpubr::stat_cor()+
-  xlab("Alexithymia")+
-  p$graphstyle+
-  scale_color_brewer(palette = "Dark2")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_y_continuous(limits = c(-1.5, 2.5))
-
-selfrep_pc_plots$TASpc2
-
-selfrep_pc_plots$AQpc2<-
-scaled_all.data_asd2pcs_forkmean_forcor_nona1%>%
-  subset(ssid!=336)%>%
-  ggplot(aes( AQ, PC2))+
-  geom_point(aes(color = Group, shape = Group), alpha = .7, size = 2)+
-  geom_smooth(method = 'lm', se = F)+
-  # geom_text(aes(label = ssid))+
-
-  xlab("Alexithymia")+
-  p$graphstyle+
-  scale_color_brewer(palette = "Dark2")+
-    scale_fill_brewer(palette = "Dark2")+
-  scale_y_continuous(limits = c(-1.5, 2.5))+
-    ggpubr::stat_cor()
-
-selfrep_pc_plots$AQpc2   
-
-selfrep_clust_patchwork<- 
-  
-  # ((kmeanplots$valence_kmean|kmeanplots$arousal_kmean|kmeanplots$aq_kmeans|kmeanplots$tas_kmeans)/
-  ((selfrep_pc_plots$TASpc1|selfrep_pc_plots$AQpc1)/
-  (selfrep_pc_plots$TASpc2|selfrep_pc_plots$AQpc2))+
-  plot_layout(nrow = 2 )+
-  plot_annotation(tag_levels = 'A')
-
-ggsave("selfrep_clust_patchwork.tiff", selfrep_clust_patchwork, device = "tiff",
-       width = 10, height = 10, dpi = 800)
+      
 ```
       
       new.data3$Alex_median<- if_else(new.data3$TAS.x> median(new.data3$TAS.x, na.rm = TRUE), "High", "Low")
@@ -4257,7 +3463,7 @@ ggsave("selfrep_clust_patchwork.tiff", selfrep_clust_patchwork, device = "tiff",
   # stat_summary(geom = 'pointrange')+
       geom_jitter(alpha = .1, width = .1)+
   
-
+```
 
 
 ```{r}
@@ -4285,7 +3491,8 @@ new.data3 %>%
     ggpubr::stat_compare_means()
 
 ```
-
+    # geom_jitter(alpha = .1, width = .1)
+    facet_grid(Group~V2)
 
 ```{r}
 new.data3 %>%
@@ -4340,8 +3547,6 @@ new.data3 %>%
 ```
 
 
-
-
 new.data3%>%
   gather()
 ```{r}
@@ -4377,8 +3582,6 @@ gather(new.data3, key = "measurement", value = "value",
 
 ```
 
-
-
 ```{r}
 gather(new.data3, key = "measurement", value = "value",
        pup_basCor, Bio_Mean_HR_dif,log1p_BIO_CDA.PhasicMax, -ssid, - y_kmeans, -pca_v1_v2)%>%
@@ -4406,31 +3609,16 @@ unique(new.data3$ssid)
 
 gather(new.data3, key = "measurement", value = "value",
        PC1, PC2, -ssid, - y_kmeans, -pca_v1_v2)%>%
-  # subset(Group == "NT")%>%
-  group_by(ssid,y_kmeans)%>%
+  subset(Group == "NT")%>%
+  group_by(ssid,y_kmeans,measurement)%>%
   # mutate(value1 = scale(value))%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)%>%
   
-  ggplot(aes(as.factor(y_kmeans),valence))+
+  ggplot(aes(as.factor(y_kmeans),AQ.x))+
   geom_jitter(width = .1, alpha = .2)+
   stat_summary(geom = "pointrange")+
   geom_boxplot(alpha = .1)+
-  # facet_grid(~measurement)+
-  ggpubr::stat_compare_means()
-
-
-gather(new.data3, key = "measurement", value = "value",
-       PC1, PC2, -ssid, - y_kmeans, -pca_v1_v2)%>%
-  # subset(Group == "NT")%>%
-  group_by(ssid,y_kmeans)%>%
-  # mutate(value1 = scale(value))%>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  
-  ggplot(aes(as.factor(y_kmeans),arousal))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-  geom_boxplot(alpha = .1)+
-  # facet_grid(~measurement)+
+  facet_grid(~measurement)+
   ggpubr::stat_compare_means()
 
 
@@ -4448,15 +3636,13 @@ new.data3 %>%
   
 ```
 
+
 try and aggregate trials so we have less variables than
 
 also remove missing tas
 
-
-
 ```{r}
 
-unique(db_full6new_hr_fix_stim_select3$Group)
 db_full6new_hr_fix_stim_select3
 
 # create categories based on ground valence
@@ -4468,7 +3654,7 @@ colnames(db_full6new_hr_fix_stim_select3)
 # select only necessary columns
 
 db_full6new_hr_fix_stim_select4.1 <- select(db_full6new_hr_fix_stim_select3,
-                                                      c(ssid, Group,TAS, AQ, stimIAPS, stimIAPS2, stimDescription,ValenceGround_cut, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax, arousal, valence))
+                                                      c(ssid, Group, stimIAPS, stimIAPS2, stimDescription,ValenceGround_cut, TAS, pup_basCor, Bio_Mean_HR_dif, log1p_BIO_CDA.PhasicMax))
 
 # subset out missing stim descrioption and tas
 db_full6new_hr_fix_stim_select4.1<- db_full6new_hr_fix_stim_select4.1%>%
@@ -4516,22 +3702,23 @@ db_full6new_hr_fix_stim_select5.1 <- db_full6new_hr_fix_stim_select4.1 %>%
 nrow(db_full6new_hr_fix_stim_select5.1)
 
 library(data.table)
-# ?dcast
+?dcast
 db_full6new_hr_fix_stim_select5.2<- select(db_full6new_hr_fix_stim_select5.1, 
-                                           c(ssid, TAS,AQ, Group,ValenceGround_cut, stimIAPS2,
+                                           c(ssid, TAS, Group,ValenceGround_cut, stimIAPS2,
                                              pup_basCor_avg,
                                              Bio_Mean_HR_dif_avg,
-                                             log1p_BIO_CDA.PhasicMax_avg, arousal, valence))
+                                             log1p_BIO_CDA.PhasicMax_avg))
 
 db_full6new_hr_fix_stim_select5.3 <- db_full6new_hr_fix_stim_select5.2%>%
     group_by(ssid,Group, ValenceGround_cut)%>%
   summarise_if(is.numeric, mean, na.rm = TRUE)
   
-# 
+
+db_full6new_hr_fix_stim_select5.3$
 
 db_forBADA2.1 <- data.table::dcast(setDT(db_full6new_hr_fix_stim_select5.3), 
-                    ssid +TAS+AQ+ Group ~ ValenceGround_cut, value.var = c('pup_basCor_avg',
-                'Bio_Mean_HR_dif_avg', 'log1p_BIO_CDA.PhasicMax_avg', 'arousal', 'valence'),fun.aggregate = mean)
+                    ssid +TAS+ Group ~ ValenceGround_cut, value.var = c('pup_basCor_avg',
+                'Bio_Mean_HR_dif_avg', 'log1p_BIO_CDA.PhasicMax_avg'),fun.aggregate = mean)
 
 
 
@@ -4543,14 +3730,14 @@ db_forBADA2.2<- na.omit(db_forBADA2.1)
 
 # try to fill means rowwise
 colnames(db_forBADA2.2)
-db_forBADA2.2_pupil_ssid<- db_forBADA2.2[,1:4]
 
-db_forBADA2.2_pupil<- db_forBADA2.2[,6:19]
+db_forBADA2.2_pupil<- db_forBADA2.2[,4:6]
 
 
 # hr
 db_forBADA2.2_hr<- db_forBADA2.2[,c(7:9)]
 # table(is.na(db_forBADA1_pupil$TAS))
+
 
 # scr
 colnames(db_forBADA2)
@@ -4562,16 +3749,8 @@ db_badia2.1_nona <- bind_cols(db_forBADA2.2[,1:3], db_forBADA2.2_pupil, db_forBA
                               db_forBADA2.2_scr)
 
 
-db_badia2.1_nona<- db_forBADA2.2
-
 ```
 
-
-
-
-
-
-Aggregated data with TAS and asd
 ```{r}
 
 install.packages("TInPosition")
@@ -4584,66 +3763,36 @@ install.packages("prettyGraphs")
 library(TInPosition)
 library(MExPosition)
 
-colnames(db_badia2.1_nona)
-var.data_asd_agg<- db_badia2.1_nona[,5:13]
+ExPosition::epPCA()
 
-var.design_asd_agg<- as.factor(db_badia2.1_nona$Group)
+##PCA with Inference
+# all.data <- read.csv("PCA_Dataset_2.csv",header=TRUE)
+all.data_asd2.1 <- db_badia2.1_nona 
 
-all.data_asd2.1$tas_mediansplit<- if_else(db_badia2.1_nona$TAS> median(db_badia2.1_nona$TAS, na.rm = TRUE), "High", "Low")
-all.data_asd2.1$aq_mediansplit<- if_else(db_badia2.1_nona$AQ> median(db_badia2.1_nona$AQ, na.rm = TRUE), "High", "Low")
 
-var.design_asd_aq_agg<-as.factor(all.data_asd2.1$aq_mediansplit)
-var.design_asd_tas_agg<-as.factor(all.data_asd2.1$tas_mediansplit)
+var.design_tas2.1<- if_else(all.data_asd2.1$TAS> median(all.data_asd2.1$TAS, na.rm = TRUE), "High", "Low")
 
-# group
 
-colnames(var.data_asd_agg)
 
-var.data_asd_agg_2<- var.data_asd_agg
+var.design_tas2.1 <- as.factor(var.design_tas2.1)
+var.data_asd2.2 <- all.data_asd2.1[,c(4:12)]
 
-colnames(var.data_asd_agg_2)<- c("PUP_Neg", "PUP_Neu","PUP_Pos", "HR_Neg", "HR_Neu","HR_Pos",
-                                 "SC_Neg", "SCR_Neu","SCR_Pos")
-var.PCA.inf_asd2.2 <-InPosition::epPCA.inference.battery(var.data_asd_agg_2, 
+
+# original
+?InPosition::epPCA.inference.battery
+?correlationPlotter
+library(prettyGraphs)
+?InPosition::epPCA.inference.battery
+
+var.PCA.inf_asd2.2 <-InPosition::epPCA.inference.battery(var.data_asd2.2, 
                                        scale = TRUE, 
                                        center = TRUE, 
-                                       DESIGN = var.design_asd_agg,
+                                       DESIGN = var.design_tas2.1,
                                        make_design_nominal = TRUE, 
                                        graphs = TRUE, k = 0, 
                                        test.iters = 1000, 
                                        constrained = FALSE, critical.value = 2)
 
-InPosition::inGraphs(var.PCA.inf_asd2.2, y_axis = 2)
-
-var.PCA.inf_asd2.2
-# aq median split
-
-var.PCA.inf_agg_aq <-InPosition::epPCA.inference.battery(var.data_asd_agg_2, 
-                                       scale = TRUE, 
-                                       center = TRUE, 
-                                       DESIGN = var.design_asd_aq_agg,
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, critical.value = 2)
-
-InPosition::inGraphs(var.PCA.inf_agg_aq, y_axis = 2)
-
-# tas
-var.PCA.inf_agg_tas <-InPosition::epPCA.inference.battery(var.data_asd_agg_2, 
-                                       scale = TRUE, 
-                                       center = TRUE, 
-                                       DESIGN = var.design_asd_tas_agg,
-                                       make_design_nominal = TRUE, 
-                                       graphs = TRUE, k = 0, 
-                                       test.iters = 1000, 
-                                       constrained = FALSE, critical.value = 2)
-
-InPosition::inGraphs(var.PCA.inf_agg_tas, y_axis = 2)
-
-
-```
-
-```{r}
 # ?ExPosition::epPCA
 
 var.PCA.inf_asd2.2$Fixed.Data$Plotting.Data$fi.col
@@ -4734,56 +3883,30 @@ var.PCA.inf_asd2.2$Inference.Data$components$eigs
 
 plot(var.PCA.inf_asd2.2$Inference.Data$components$eigs)
 
-```
+# BADIA
 
-# BADIA  aggregated
+InPosition::epPCA.inference.battery(var.data_asd2.2, 
+                                       scale = TRUE, 
+                                       center = TRUE, 
+                                       DESIGN = var.design_tas2.1,
+                                       make_design_nominal = TRUE, 
+                                       graphs = TRUE, k = 0, 
+                                       test.iters = 1000, 
+                                       constrained = FALSE, critical.value = 2)
 
-```{r}
-# group
-var.BADA.inf_agg_asd_gr<- TInPosition::tepBADA.inference.battery(var.data_asd_agg, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
-                                                       DESIGN = var.design_asd_agg,
-                                                       make_design_nominal = TRUE, 
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = TRUE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
+?TInPosition::tepBADA.inference.battery
 
-# aq
-
-var.BADA.inf_agg_asd_aq<- TInPosition::tepBADA.inference.battery(var.data_asd_agg, 
-                                                       scale = FALSE, 
+var.BADA.inf_asd2.2 <- TInPosition::tepBADA.inference.battery(var.data_asd2.2, 
+                                                       scale = TRUE, 
                                                        center = TRUE, 
-                                                       DESIGN = var.design_asd_aq_agg,
+                                                       DESIGN = var.design_tas2.1,
                                                        make_design_nominal = TRUE, 
                                                        group.masses = NULL, 
                                                        weights = NULL, 
                                                        graphs = TRUE, 
                                                        k = 0, 
-                                                       test.iters = 1000, 
+                                                       test.iters = 100, 
                                                        critical.value = 2)
-
-# tas
-
-
-var.BADA.inf_agg_asd_tas<- TInPosition::tepBADA.inference.battery(var.data_asd_agg, 
-                                                       scale = FALSE, 
-                                                       center = TRUE, 
-                                                       DESIGN = var.design_asd_tas_agg,
-                                                       make_design_nominal = TRUE, 
-                                                       group.masses = NULL, 
-                                                       weights = NULL, 
-                                                       graphs = TRUE, 
-                                                       k = 0, 
-                                                       test.iters = 1000, 
-                                                       critical.value = 2)
-
-
-
-
 
 var.BADA.inf_asd2.2$Fixed.Data$TExPosition.Data$ci
 
@@ -5187,12 +4310,10 @@ colnames(var.data)
 
 ?TExPosition::tepBADA
 
-```
 
-```{r}
 test <- TExPosition::tepBADA(var.data_asd, 
-                                                       scale = FALSE, 
-                                                       center = FALSE, 
+                                                       scale = TRUE, 
+                                                       center = TRUE, 
                                                        DESIGN = var.design_asd, 
                                                        make_design_nominal = TRUE, 
                                                        group.masses = NULL, 
@@ -5202,8 +4323,6 @@ test <- TExPosition::tepBADA(var.data_asd,
                                                        # test.iters = 100, 
                                                        # critical.value = 2
                      )
-
-```
 
 
 test$Plotting.Data
