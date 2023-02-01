@@ -694,6 +694,7 @@ colnames(tmp.df4)
    # View(for_gazepath)
   
   for_gazepath$split_column<- paste0(for_gazepath$ssid, paste0(for_gazepath$screencontent))
+  
   splitcol<- unique(for_gazepath$split_column)
   splitcol
   # ssid<- unique(for_gazepath$ssid)
@@ -701,8 +702,7 @@ colnames(tmp.df4)
   split_df = split(for_gazepath, list(for_gazepath$split_column))
   
   
-  # setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/346_355")
-  
+
   setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/356_357_611_615")
   
   (sprintf("writing for gazepath"))
@@ -713,8 +713,8 @@ colnames(tmp.df4)
       write_csv(split_df[[splitcol]], paste0('gp_',paste0(splitcol),".csv"))
     }
 
+```
 gazepath settings
-
 
 left eye x coord: left_gaze_x_cor_pix
 left eye y coord: left_gaze_y_cor_pix
@@ -742,7 +742,7 @@ variables to keep: trial unq
 ```{r}
 
 
-# install.packages('gazepath')
+install.packages('gazepath')
 library(gazepath)
 GUI()
 
