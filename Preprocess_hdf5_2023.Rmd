@@ -1,0 +1,751 @@
+---
+title: "preprocess_hdf5_2023"
+author: "Helio"
+date: "2023-02-01"
+output: html_document
+---
+
+# Overview 
+In this file I aim to process all the gaze data, essentially read, clean and combines multiple files with gaze data and their metadata
+
+# Conventions
+For data: dta_
+Temporary files: tmp_
+Statistical summaries: sum_
+Models (such as lm models): mod_
+Custom functions: fn_
+Plots and visualization: plt_
+Lookup and referecne tables: lkp_
+Results and Analysis: rlt_
+Consistency and accuracy checks: chk_
+
+Set-up: where I load libraries and create objects for later use (such as color schemes etc).
+
+SETUP
+
+```{r}
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install(version = "3.10")
+# 
+# BiocManager::install("rhdf5")
+
+library(rhdf5)
+
+library(tidyverse)
+library(purrr)
+library(data.table)
+library(dplyr)
+library(tidyr)
+# library(gazer)
+
+```
+
+data import and cleaning
+
+```{r, gp extractor}
+
+hdf5FilesPath<- "~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/EYETRACKER" # edit to your data path
+
+
+gp.extractor = function(hdf5FilesPath) {
+  
+  setwd(hdf5FilesPath) #sets a path
+  
+  # return a list of hdf5 files in the path
+  hdfFilesList = list.files(hdf5FilesPath, pattern = "\\.hdf5$")
+  
+  if (length(hdfFilesList) == 0){
+    
+    return(message('No HDF5 files found in the directory provided.'))
+  }
+   # loop over the list and load each file to data
+  # f = 2
+  for (f in 1:length(hdfFilesList)) {
+    
+    message(sprintf("Extracting file %i / %i - %s", f, length(hdfFilesList), hdfFilesList[f]))
+    
+    
+    # the line below loads eyatracking and meatadata into different temporary datasets
+    #note that some r-studio bug sometimes causes this to fail when running from notebook, 
+    # in that case run it directly on command line
+    tmp.events =h5read(hdfFilesList[f], '/data_collection/events/experiment/MessageEvent') # metadata = what stimuli, start and end times, etc
+    
+    # check what we should expect in terms of numbers
+  # 56 trials + 1 rest period
+    # 57 (fixation, stim, valence, intensity)
+    # 57*(4*2)
+    # nrow(tmp.events)-456
+    
+    # unique(substr(tmp.events$text,1,6))
+    
+    # store the eyetracking data
+    tmp.eyetr  = h5read(hdfFilesList[f], '/data_collection/events/eyetracker/BinocularEyeSampleEvent') #contains eyetarckign data, gaze coordinates, etc
+    
+    # Get subject id from Events
+    ssid = sapply(strsplit(grep('SubjJID', tmp.events$text, value = TRUE), split = ": "), "[", 2)
+    date = sapply(strsplit(grep('DATE', tmp.events$text, value = TRUE), split = ": "), "[", 2)
+    session = sapply(strsplit(grep('Session:', tmp.events$text, value = TRUE), split = ":"), "[", 2)
+    cali<- subset(tmp.events, grepl('Cali', tmp.events$text) == TRUE)
+    
+    # Create DF for trials data
+    tmp.df = data.frame(matrix(ncol = ncol(tmp.eyetr)))
+    names(tmp.df) = names(tmp.eyetr) #
+    # colnames(tmp.df)
+    
+    # Prepare Events, keep only start/end messages
+    phrases = c('tStart', 'tEnd')
+    
+    # tmp.events_backup<- tmp.events
+    # tmp.events<-  tmp.events_backup
+    
+    tmp.events = subset(tmp.events, grepl(paste(phrases, collapse = "|"), tmp.events$text))
+    # currently 450
+    
+    # Create start/end references
+    tmp.events$tStart   = NA
+    tmp.events$tEnd     = NA
+    
+    # Trial number extraction 
+    tmp.events$tNo      = NA
+    tmp.df$tNo          = NA
+    tmp.df$Condition    = NA
+    
+    # Space for subject id
+    tmp.df$ssid         = NA
+    tmp.df$text<-NA
+    
+    # store times for start and end of triggers
+    for (l in 1:nrow(tmp.events)) {
+ 
+      message(sprintf("Grabing start messages %s", tmp.events$text[l]))
+      
+      if ((grepl('tStart', tmp.events$text[l])) == TRUE) {
+        tmp.events$tStart[l] = tmp.events$time[l]
+        
+        if ((grepl('tEnd', tmp.events$text[l+1])) == TRUE){
+          tmp.events$tEnd[l] = tmp.events$time[l+1]
+        }
+        
+        else {
+          message('trial start/end structure not valid')
+        }
+      }
+      
+    }
+    
+    message(sprintf("done grabbing messages"))
+    # readline(prompt="Press [enter] to continue")
+    
+    tmp.events$tNo<- as.numeric(as.character(gsub(".*_","",tmp.events$text)))
+
+     message(sprintf("making screencontent"))
+     
+     tmp.eventsbackup<- tmp.events
+    
+     tmp.events$screencontent<- if_else(grepl('fixation', tmp.events$text), 'fixation',
+                                       if_else(grepl('Valence', tmp.events$text), 'ValenceResp',
+                                               if_else(grepl('rest', tmp.events$text), 'rest1', 
+                                                       if_else(grepl('IntResp', tmp.events$text), 'IntResp','stim'))))
+    
+    # unique(tmp.events$screencontent)
+    
+    # create condition
+    
+    tmp.events$Condition<- if_else(grepl('IAPS', tmp.events$text), 'IAPS',
+                                   if_else(grepl('Example', tmp.events$text), 'Practice',
+                                           if_else(grepl('rest', tmp.events$text), 'Rest', NULL)))
+    
+    tmp.events$stim<- if_else(tmp.events$Condition == 'IAPS', sub(".*_ *(.*?) *jpg.*", "\\1", tmp.events$text),
+                              if_else(tmp.events$Condition == 'Practice', sub(".*_ *(.*?) *jpg.*", "\\1", tmp.events$text), 'REST'))
+    
+    # substitute periods
+    tmp.events$stim <- gsub('\\.', '.jpg', tmp.events$stim)
+    
+    # this is center trial numbers such that practice is below  1
+    tmp.events$tNo<- if_else(tmp.events$Condition == 'Practice', (tmp.events$tNo)-6,
+                             if_else(tmp.events$Condition == 'Rest',-7, tmp.events$tNo))
+    
+    # create trial number < 0 are practice trials
+    tmp.events$tNo<- if_else(tmp.events$tNo> -1, tmp.events$tNo+1, tmp.events$tNo) # avoid zeros
+    
+    # remove rows with trial end
+    tmp.events1 = subset(tmp.events, grepl('tStart',tmp.events$text))
+ 
+  # remove NAS if present
+    tmp.events1<- subset(tmp.events1, is.na(tmp.events1$tNo) == FALSE)
+  
+    # create some columns we need
+    tmp.df$screencontent<- NA
+    tmp.df$stim<- NA
+    
+    tmp.events1$tEnd<- if_else(tmp.events1$tNo == -7, tmp.events1$tStart+120, tmp.events1$tEnd)
+    
+    message(sprintf("subsetting eyetracking data"))
+    
+    # convert raw to double
+    tmp.eyetr<-tmp.eyetr %>%
+  mutate_if(is.raw, as.double)
+    
+    # e = 2
+    for(e in 1:nrow(tmp.events1)) {
+      
+      # Subset the EyeTracking data based on start/end
+      tmp.raw.trial = subset(tmp.eyetr, tmp.eyetr$time >= tmp.events1$tStart[e] & tmp.eyetr$time <= tmp.events1$tEnd[e])
+      
+      tmp.raw.trial$tNo = tmp.events1$tNo[e]
+      
+      tmp.raw.trial$Condition = tmp.events1$Condition[e]
+      tmp.raw.trial$screencontent = tmp.events1$screencontent[e]
+      tmp.raw.trial$stim = tmp.events1$stim[e]
+      # tmp.raw.trial$stim = tmp.events1$[e]
+      tmp.raw.trial$ssid = ssid
+      tmp.raw.trial$text = tmp.events1$text[e]
+      
+      message(sprintf("binding tmp.df"))
+      
+      tmp.df= rbind(tmp.raw.trial, tmp.df)
+    }
+     message(sprintf("done binding"))
+    
+    # Arrange the dataframe by time
+    tmp.df1<- tmp.df%>%
+      arrange(time)
+    
+    # Save file for the task with subject name
+    name = sprintf("ss%s_GPdata",ssid)
+    message(sprintf("saving data"))
+    write.csv(as.data.frame(tmp.df1), paste(name,".csv"))
+    # note in newer versions of r write_CSV throws an error so use write.csv
+
+    # write calibration file
+    name2 = sprintf("ss%s_GPdata_cali", ssid)
+    write.csv(as.data.frame(cali), paste(name2,".csv"))
+    
+    as
+  }
+  
+  
+  message("Processing Completed.")
+  tmp.df1
+}
+
+# run function
+tmp_full<- gp.extractor(hdf5FilesPath)
+
+unique(tmp_full$ssid)
+```
+
+
+
+Now cleaning gaze 
+
+```{r, cleaning}
+# function to read all the csvs into one dataframe
+# set directoty
+setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/Step1_GpExtractor_Output/356_357_611_616")
+
+# reads all individual gaze exported files into one big file
+read_plus <- function(flnm) {
+  data.table::fread(flnm, select = c("session_id","event_id", "time", "left_gaze_x", "left_gaze_y","right_gaze_x", "right_gaze_y","left_pupil_measure1",
+                                     "right_pupil_measure1","gsr", "gsrv", 'hr', "hrv", "hrp", "status", "tNo",  "Condition", "screencontent", "stim", "ssid", "text")) %>% 
+    mutate(filename = flnm)
+}
+
+# read all clean data 
+
+tmp.df2 <-
+  list.files(pattern = "*.csv", 
+             full.names = T) %>% 
+  map_df(~read_plus(.))
+
+# unique(tmp.df2$ssid)
+# check if we have NAs in ssid column
+table(is.na(tmp.df2$ssid))
+head(tmp.df2)
+# check we have all participants
+
+tmp.df2<- subset(tmp.df2, !is.na(ssid))
+
+unique(tmp.df2$ssid)
+```
+
+
+
+#####################################################################################
+# gp preprocessing funtion, checks for losses, averages gaze, pupil and pixelate
+#####################################################################################
+
+```{r, gppreprocessing}
+gp_preprocessing = function(tmp.df2) {
+  
+  message(sprintf("step1 left gaze validity"))
+  
+  # transform invalid gaze into NA based on validity codes
+  # to do: link the conventions file
+  tmp.df2$left_gaze_x_cor<- if_else(tmp.df2$status != '20', tmp.df2$left_gaze_x, NULL)
+  tmp.df2$left_gaze_x_cor<- if_else(tmp.df2$status != '22', tmp.df2$left_gaze_x_cor, NULL)
+  tmp.df2$left_gaze_y_cor<- if_else(tmp.df2$status != '20', tmp.df2$left_gaze_y, NULL)
+  tmp.df2$left_gaze_y_cor<- if_else(tmp.df2$status != '22', tmp.df2$left_gaze_y_cor, NULL)
+  
+  message(sprintf("step2 right gaze validity"))
+  
+  tmp.df2$right_gaze_x_cor<- if_else(tmp.df2$status != '2', tmp.df2$right_gaze_x, NULL)
+  #
+  tmp.df2$right_gaze_x_cor<- if_else(tmp.df2$status != '22', tmp.df2$right_gaze_x_cor, NULL)
+  tmp.df2$right_gaze_y_cor<- if_else(tmp.df2$status != '22', tmp.df2$right_gaze_y, NULL)
+  tmp.df2$right_gaze_y_cor<- if_else(tmp.df2$status != '22', tmp.df2$right_gaze_y_cor, NULL)
+
+  # pupil validity
+  
+  message(sprintf("step3 pupil validity"))
+  tmp.df2$left_pupil_measure1<- if_else(tmp.df2$status != '20', tmp.df2$left_pupil_measure1, NULL)
+  tmp.df2$left_pupil_measure1<- if_else(tmp.df2$status != '22', tmp.df2$left_pupil_measure1, NULL)
+  
+  tmp.df2$right_pupil_measure1<- if_else(tmp.df2$status != '2', tmp.df2$right_pupil_measure1, NULL)
+  tmp.df2$right_pupil_measure1<- if_else(tmp.df2$status != '22', tmp.df2$right_pupil_measure1, NULL)
+  table(is.na(tmp.df2$right_pupil_measure1))
+  
+  # check gazepoint out of bounds and repixelate 
+  # (1920/2 = 960 by 1200/2 = 600. add half to normalised coordinates from psychopy)
+  # update according to setup
+  
+  message(sprintf("step 4 cutting off screen in points and repixelate"))
+  
+  tmp.df2$left_gaze_x_cor<- if_else(tmp.df2$left_gaze_x_cor >= -960 & tmp.df2$left_gaze_x_cor <= 960, tmp.df2$left_gaze_x_cor, NULL)
+  tmp.df2$right_gaze_x_cor<- if_else(tmp.df2$right_gaze_x_cor >= -960 & tmp.df2$right_gaze_x_cor <= 960, tmp.df2$right_gaze_x_cor, NULL)
+  
+  tmp.df2$left_gaze_y_cor<- if_else(tmp.df2$left_gaze_y_cor >= -600 & tmp.df2$left_gaze_y_cor <= 600, tmp.df2$left_gaze_y_cor, NULL)
+  tmp.df2$right_gaze_y_cor<- if_else(tmp.df2$right_gaze_y_cor >= -600 & tmp.df2$right_gaze_y_cor <= 600, tmp.df2$right_gaze_y_cor, NULL)
+  
+  tmp.df2$left_gaze_x_cor_pix<- tmp.df2$left_gaze_x_cor+960
+  tmp.df2$right_gaze_x_cor_pix<- tmp.df2$right_gaze_x_cor+960
+  
+  tmp.df2$left_gaze_y_cor_pix<- tmp.df2$left_gaze_y_cor+600
+  tmp.df2$right_gaze_y_cor_pix<- tmp.df2$right_gaze_y_cor+600
+  
+  # is left or right an NA
+  
+  tmp.df2$left_na<- is.na(tmp.df2$left_gaze_x_cor) 
+  tmp.df2$right_na<- is.na(tmp.df2$right_gaze_x_cor)
+  tmp.df2$both_na<- if_else(tmp.df2$left_na == TRUE & tmp.df2$right_na == TRUE, TRUE, FALSE)
+  
+  message(sprintf("step5 gaze x  means"))
+  
+  tmp.df2$gaze_x_cor<-if_else(tmp.df2$left_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$right_gaze_x_cor,
+                              if_else(tmp.df2$right_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$left_gaze_x_cor,
+                                      ((tmp.df2$left_gaze_x_cor + tmp.df2$right_gaze_x_cor)/2)))
+  message(sprintf("step6 gaze y means"))
+  
+  tmp.df2$gaze_y_cor<-if_else(tmp.df2$left_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$right_gaze_y_cor,
+                              if_else(tmp.df2$right_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$left_gaze_y_cor,
+                                      ((tmp.df2$left_gaze_y_cor + tmp.df2$right_gaze_y_cor)/2)))
+  
+  message(sprintf("step6 repixelate gaze means"))
+  
+  tmp.df2$gaze_x_cor_pix<- tmp.df2$gaze_x_cor + 960
+  min(tmp.df2$gaze_x_cor_pix, na.rm = TRUE)
+  
+  tmp.df2$gaze_y_cor_pix<- tmp.df2$gaze_y_cor+600
+  min(tmp.df2$gaze_y_cor_pix, na.rm = TRUE)
+  
+  # clean_pupil
+  
+  message(sprintf("cleaning pupil"))
+  
+  max(tmp.df2$left_pupil_measure1)
+  
+  tmp.df2$pupil<- if_else(tmp.df2$left_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$right_pupil_measure1,
+                          if_else(tmp.df2$right_na == TRUE & tmp.df2$both_na == FALSE, tmp.df2$left_pupil_measure1,
+                                  ((tmp.df2$left_pupil_measure1 + tmp.df2$right_pupil_measure1)/2)))
+  
+  # tmp.df2$trackloss<- if_else(tmp.df2$status > 0, TRUE, FALSE)
+  tmp.df2$trialUnq<- paste(tmp.df2$tNo, paste(tmp.df2$screencontent, paste(tmp.df2$stim)))
+  tmp.df2$distance = 630
+  
+  # min(tmp.df2$pupil, na.rm = TRUE)
+  # max(tmp.df2$pupil, na.rm = TRUE)
+  # colnames(tmp.df2)
+  tmp.df2<- tmp.df2%>%
+    arrange(time)
+}
+
+tmp.df2_processed<- gp_preprocessing(tmp.df2)
+ colnames(tmp.df2) 
+ 
+min(tmp.df2_processed$pupil, na.rm = TRUE)
+range(tmp.df2_processed$gaze_y_cor_pix, na.rm = TRUE)
+range(tmp.df2_processed$gaze_x_cor_pix, na.rm = TRUE) 
+
+tmp.df2<- tmp.df2_processed
+  
+```
+
+
+# for gaze parsing
+
+```{r}
+
+(sprintf("preparing for gazepath"))
+  
+colnames(tmp.df4)
+  
+  for_gazepath<- select(tmp.df4, c(2:15,17:26, 39:40,42:43))
+  
+  for_gazepath<- subset(for_gazepath, ssid!= 616)
+  
+  for_gazepath$screencontent[for_gazepath$screencontent == 'rest1']<- 'fixation'
+  for_gazepath<- for_gazepath%>%
+    arrange(ssid, time, tNo)
+  
+  colnames(for_gazepath)
+  unique(for_gazepath$ssid)
+  
+  
+  for_gazepath<- subset(for_gazepath, is.na(for_gazepath$time) == FALSE)
+   # View(for_gazepath)
+  
+  for_gazepath$split_column<- paste0(for_gazepath$ssid, paste0(for_gazepath$screencontent))
+  splitcol<- unique(for_gazepath$split_column)
+  splitcol
+  # ssid<- unique(for_gazepath$ssid)
+  # ssid
+  split_df = split(for_gazepath, list(for_gazepath$split_column))
+  
+  
+  # setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/346_355")
+  
+  setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/356_357_611_615")
+  
+  (sprintf("writing for gazepath"))
+  # ssid = split(for_gazepath, list(for_gazepath$ssid))
+  # for (ssid in names(split_df)) {
+    for (splitcol in names(split_df)) {
+      # message( split_df[splitcol])
+      write_csv(split_df[[splitcol]], paste0('gp_',paste0(splitcol),".csv"))
+    }
+
+
+```
+
+
+
+# rezeroing times by trial, by participants
+
+```{r}
+tmp.df3 <- tmp.df2
+
+# create start at every screen content
+tmp.df3<- tmp.df3%>% 
+  arrange(ssid, time, tNo)%>%
+  group_by(ssid)%>%
+  mutate(firststart = duplicated(trialUnq))
+
+head(tmp.df3)
+
+# make zero-times
+tmp.df3$zero<- if_else(tmp.df3$firststart == FALSE, tmp.df3$time, NULL)
+
+# fill in the zeros
+tmp.df3<- tmp.df3%>%
+  group_by(ssid, Condition, tNo)%>%
+  # group_by(text)%>%
+  fill(zero)
+
+unique(tmp.df3$zero)
+
+# rezero
+tmp.df3<-tmp.df3%>%
+  arrange(ssid, time, tNo)%>%
+  group_by(ssid, tNo)%>%
+  mutate(timerezero = time - zero)
+
+min(tmp.df3$timerezero, na.rm = TRUE)
+max(tmp.df3$timerezero, na.rm = TRUE) # max shoudl be around 120s for 2 minutes
+
+
+# let's check to see if it looks fine
+ggplot(subset(tmp.df3, tmp.df3$tNo == -1), aes(timerezero, gaze_x_cor_pix, colour = as.factor(ssid)))+
+  geom_line()
+
+
+ggplot(subset(tmp.df3, tmp.df3$tNo == -1), aes(timerezero, pupil, colour = as.factor(ssid)))+
+  geom_line()
+
+```
+
+# create a new time rezero where before stim start, time is negative
+```{r}
+tmp.df3<- tmp.df3%>%
+  # arrange(time)%>%
+  group_by(ssid, Condition, screencontent)%>%
+  mutate(firststartSTIM = duplicated(tNo))
+
+#this will create a time in the stim start which we can use to do the a second rezeroing
+tmp.df3$zero_stim<- if_else(tmp.df3$firststartSTIM == FALSE & tmp.df3$screencontent == 'stim', tmp.df3$time, NULL)
+   
+    # fill down
+tmp.df3<- tmp.df3%>%
+      arrange(time)%>%
+      group_by(tNo, ssid)%>%
+      fill(zero_stim, .direction = c('updown'))
+
+   tmp.df3$timerezero2<- tmp.df3$time-tmp.df3$zero_stim
+   
+   # check timerezero2
+     range(tmp.df3$timerezero2, na.rm = TRUE)
+
+# time 3 including rest
+  # simply includes rest as is
+
+tmp.df3$timerezero3<- if_else(tmp.df3$Condition == 'Rest', tmp.df3$timerezero, tmp.df3$timerezero2)
+min(tmp.df3$timerezero3, na.rm = TRUE)
+
+
+# quick check that everything is fine
+
+ggplot(subset(tmp.df3, tmp.df3$tNo == 27 ) , aes(x = timerezero3, y= pupil, colour = as.factor(ssid)))+
+    geom_smooth()+
+    # geom_()+
+    geom_vline(aes(xintercept = 0), colour = 'red', linetype = 'dashed', size = 2)+
+    geom_vline(aes(xintercept = 4), colour = 'gray30', linetype = 'dotted', size = 2)+
+    geom_vline(aes(xintercept = 8), colour = 'gray30', linetype = 'dotted', size = 2)+
+    geom_vline(aes(xintercept = 6), colour = 'blue', linetype = 'dashed', size = 2)
+
+
+```
+
+# rest
+
+```{r}
+ggplot(subset(tmp.df3, tmp.df3$tNo == -7) , aes(x = timerezero3, y= pupil, colour = as.factor(ssid)))+
+  # geom_point()
+      geom_line() +
+    # geom_smooth(aes())+
+    geom_vline(aes(xintercept = 0), colour = 'red', linetype = 'dashed', size = 2)+
+    geom_vline(aes(xintercept = 4), colour = 'gray30', linetype = 'dotted', size = 2)+
+    geom_vline(aes(xintercept = 8), colour = 'gray30', linetype = 'dotted', size = 2)+
+    geom_vline(aes(xintercept = 6), colour = 'blue', linetype = 'dashed', size = 2)
+
+```
+
+
+
+to do
+```{r}
+install.packages("gazer")
+library(gazer)
+
+min(tmp.df3$pupil, na.rm = TRUE)
+max(tmp.df3$pupil, na.rm = TRUE)
+
+tmp.df3$pupil<- if_else(tmp.df3$pupil> 7.2, tmp.df3$pupil, NULL)
+
+tmp.df3$pupil<- if_else(tmp.df3$pupil< 45, tmp.df3$pupil, NULL)
+
+tmp.df3_backup <- tmp.df3
+
+
+# note that smothing and interpolating is order dependent so order by ssid, trial and time
+tmp.df3<- tmp.df3 %>%
+  arrange(ssid, time,tNo)%>%
+  group_by(ssid, trialUnq,tNo,screencontent) %>%
+  mutate(extendpupil=gazer::extend_blinks(pupil, fillback=100, fillforward=100, hz=150))
+
+min(tmp.df3$extendpupil, na.rm = TRUE)
+max(tmp.df3$pupil, na.rm = TRUE)
+
+# let's check
+
+ggplot(subset(tmp.df3, tmp.df3$tNo == 3), aes(x = timerezero3, y= extendpupil , colour = as.factor(ssid)))+
+      geom_line()
+  # geom_line(aes(y = extendpupil), linetype = 'dashed', colour = 'red')
+
+# Smooth and Interpolate
+tmp.df3$subject<- tmp.df3$ssid
+tmp.df3$trial <- tmp.df3$trialUnq
+
+# min(pup_extend$pupil, na.rm = TRUE)
+tmp.df3$extendpupil
+# ?smooth_interpolate_pupil
+
+# library(gazer)
+
+?smooth_interpolate_pupil
+
+# vert order dependent
+tmp.df3 <- gazer::smooth_interpolate_pupil(tmp.df3, pupil="pupil", extendpupil="extendpupil",
+                                    extendblinks=TRUE, step.first= 'smooth',
+                                    maxgap=Inf, 
+                                    filter = 'moving',
+                                    type="linear", hz=150, n = 30)
+
+# tmp.df3<- tmp.df3 %>%
+#   group_by(ssid, trialUnq,tNo,screencontent) %>%
+#   smooth_interpolate_pupil(pupil="pupil", extendpupil="extendpupil",
+#                                     extendblinks=TRUE, 
+#                            step.first= 'smooth',
+#                                     maxgap=10, 
+#                                     filter = 'moving',
+#                                     type="linear", hz=20, n = 10)
+# 
+# 
+# tmp.df3<-
+#   tmp.df3%>%
+#   arrange(ssid,tNo,time)
+#   # group_by(ssid, tNo, timerezero3)%>%
+# 
+# tmp.df3te<- tmp.df3 %>%
+#   group_by(ssid, Condition,tNo,screencontent) %>%
+#   smooth_interpolate_pupil(pupil="pupil", extendpupil="extendpupil",
+#                                     extendblinks=TRUE, 
+#                            step.first= 'smooth',
+#                                     maxgap=Inf, 
+#                                     filter = 'moving',
+#                                     type="linear", hz=100, n = 5)
+
+min(tmp.df3$pup_interp, na.rm = TRUE)
+max(tmp.df3$pup_interp, na.rm = TRUE)
+
+subset(tmp.df3, tNo == 20 & ssid == 357)%>%
+ggplot(aes(x = timerezero3, y= pup_interp))+
+  geom_line()+
+   geom_line(aes(y = extendpupil), color = 'red')+
+  geom_line(aes(y = pupil), colour = 'gray')
+  # facet_grid(~Condition)
+
+
+subset(tmp.df3, tNo == -7 & ssid == 357)%>%
+ggplot(aes(x = timerezero3, y= pupil))+
+  geom_line()
+
+
+subset(tmp.df3, tNo == 1)%>%
+ggplot(aes(x = timerezero3, y= pup_interp))+
+  geom_line()+
+   # geom_line(aes(y = extendpupil), color = 'red')+
+  # geom_line(aes(y = pup_interp), colour = 'gray')+
+    facet_grid(~ssid)
+  # facet_grid(~Condition)
+```
+
+process gazepath and ledalab
+
+
+
+```{r}
+tmp.df3$subject<- tmp.df3$ssid
+tmp.df3$trial <- tmp.df3$trialUnq
+tmp.df4<- select(tmp.df3, c("session_id", "event_id", "ssid", "subject", "text", "trial","trialUnq", "tNo", "Condition" ,"screencontent","stim",
+                            "time", "timerezero", "timerezero2", "timerezero3", "status","filename",
+                            "left_gaze_x_cor_pix","right_gaze_x_cor_pix","left_gaze_y_cor_pix","right_gaze_y_cor_pix",  "gaze_x_cor_pix",  "gaze_y_cor_pix",
+                            "pupil",
+                            "distance"))
+head(tmp.df4)
+
+
+
+
+tmp.df4$trackloss<- if_else(is.na(tmp.df4$gaze_x_cor_pix) == TRUE, 0, 
+                         if_else(is.na(tmp.df4$gaze_y_cor_pix) == TRUE, 0, 1))
+unique(tmp.df4$trackloss)
+
+# compute proportion of lost data
+
+tmp.df4$ssid
+tmp.df4 <- tmp.df4 %>%
+  group_by(ssid, tNo, trialUnq, text)%>%
+  mutate(gaze_valid_prop = sum(trackloss)/n())%>%
+  mutate(gaze_loss_prop = 1 - gaze_valid_prop)
+  # mutate(hr_valid_prop = sum(hr_trackloss)/n())%>%
+  # mutate(hr_loss_prop = 1 - hr_valid_prop)
+
+# check to see this is right
+ggplot(subset(tmp.df4, tmp.df3$ssid == 624) , aes(x = tNo, y= gaze_valid_prop))+
+    # geom_smooth(se = F)+
+  geom_line()+
+  geom_line(aes(y = gaze_valid_prop), linetype = 'dashed', colour = 'green', size = 0.3)
+   # geom_line(aes(y = hr), linetype = 'dotted', colour = 'blue', size = 0.4)
+```
+
+
+# for gaze parsing
+
+
+```{r}
+(sprintf("preparing for gazepath"))
+
+colnames(tmp.df4)
+  
+  for_gazepath<- select(tmp.df4, c(2:15,17:28))
+  
+  # for_gazepath<- subset(for_gazepath, ssid!= 616)
+  
+  for_gazepath$screencontent[for_gazepath$screencontent == 'rest1']<- 'fixation'
+  
+  for_gazepath<- for_gazepath%>%
+    arrange(ssid, time, tNo)
+  
+  colnames(for_gazepath)
+  unique(for_gazepath$ssid)
+  
+  
+  for_gazepath<- subset(for_gazepath, is.na(for_gazepath$time) == FALSE)
+   # View(for_gazepath)
+  
+  for_gazepath$split_column<- paste0(for_gazepath$ssid, paste0(for_gazepath$screencontent))
+  splitcol<- unique(for_gazepath$split_column)
+  splitcol
+  # ssid<- unique(for_gazepath$ssid)
+  # ssid
+  split_df = split(for_gazepath, list(for_gazepath$split_column))
+  
+  
+  # setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/346_355")
+  
+  setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/Eyetracking/GP_IAPS_for_gazepath/356_357_611_615")
+  
+  (sprintf("writing for gazepath"))
+  # ssid = split(for_gazepath, list(for_gazepath$ssid))
+  # for (ssid in names(split_df)) {
+    for (splitcol in names(split_df)) {
+      # message( split_df[splitcol])
+      write_csv(split_df[[splitcol]], paste0('gp_',paste0(splitcol),".csv"))
+    }
+
+gazepath settings
+
+
+left eye x coord: left_gaze_x_cor_pix
+left eye y coord: left_gaze_y_cor_pix
+
+didtance: distance (mm)
+
+right eye x coord: right_gaze_x_cor_pix
+right eye y coord: right_gaze_y_cor_pix
+didtance: distance (mm)
+
+trial index: trialnq
+
+
+sample rate: 150
+screen resolution height (pix): 1200
+screen resolution width (pix): 1920
+
+stimuli height (px): 768
+stimuli width (px): 1024
+variables to keep: trial unq
+
+203
+270
+
+```{r}
+
+
+# install.packages('gazepath')
+library(gazepath)
+GUI()
+
+```
+
+
