@@ -356,3 +356,20 @@ db_AQ4
 
 ```
 
+TAS
+
+```{r, TAS Alexithymia}
+
+library(readxl)
+dta_TAS_2022_23 <- read_excel("tas 20 data_exp_60619-v2_questionnaire-682g.xlsx")
+View(dta_TAS_2022_23)
+
+colnames(dta_TAS_2022_23)
+
+dta_TAS_2022_23_scored<- dta_TAS_2022_23%>%
+  janitor::clean_names()%>%
+  select(c(12,13,32:33))%>%
+  subset(!grepl("QUESTIONNAIRE|TAS",question_key))%>%
+  subset(!is.na(question_key))%>%
+  spread(question_key,response)
+```
