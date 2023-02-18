@@ -2841,7 +2841,7 @@ for_demog_new<- db_full6new_hr_fix_stim_select3_no_outl %>%
   ungroup()%>%
   # group_by(Group)%>%
   # summarise_if(is.numeric, mean, na.rm = TRUE)%>%
-  select(c(ssid,Group, TAS, AQ, DASSTotal,log1p_BIO_CDA.PhasicMax,Bio_Mean_HR_dif, pup_basCor, arousal, valence))
+  select(c(ssid,Group, TAS, AQ,log1p_BIO_CDA.PhasicMax,Bio_Mean_HR_dif, pup_basCor, arousal, valence))
 
 
 # grouped%>%
@@ -2861,7 +2861,7 @@ write_csv(for_demog_new2, "for_demog_new2.csv")
 for_demog_new3<- subset(for_demog_new2, ssid!= 600)
 for_demog_new4<- subset(for_demog_new3, Age< 51)
 
-write_csv(, "for_demog_new5.csv")
+write_csv(for_demog_new4, "for_demog_new5.csv")
 colnames(for_demog_new4)
 psych::describe.by(for_demog_new4[,3:11], for_demog_new4$Group)
 ```

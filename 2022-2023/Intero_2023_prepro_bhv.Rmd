@@ -1,0 +1,141 @@
+---
+title: "Intero_2023_preprocess_beh"
+author: "Helio"
+date: "2023-02-18"
+output: html_document
+---
+
+
+# this might be needed for temporal analisys
+write_csv(dta_gp_all_fix_sacc, 'dta_gp_all_fix_sacc.csv')
+
+
+
+
+Set-up: where I load libraries and create objects for later use (such as color schemes etc).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# store date
+current_date<- Sys.Date()
+
+# libraries
+require(tidyverse)
+require(data.table)
+require(readr)
+```
+
+
+Load behavioural data
+
+Behavioral data
+
+```{r}
+# colnames(X309_2019_Dec_11_1807_01)
+library(data.table) 
+library(purrr)
+
+# setwd("~/OneDrive - Nexus365/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/IAPSBehav/346_355")
+
+
+tmp_files <- list.files(pattern = "01.csv")
+
+dta_beh <-  rbindlist(sapply(tmp_files, read.csv, simplify = FALSE),
+                use.names = TRUE, idcol = "filename",fill=TRUE)
+
+colnames(dta_beh)
+
+# we have new columns here
+dta_beh$happiness_3.response
+dta_beh$mouse_3.clicked_text #categorical
+
+dta_beh1<- dta_beh%>%
+select("filename", "condition", "stimIAPS","stimDescription", "ValenceMean","ArousalMean","trigger",
+                                     "trialsPract.thisTrialN","trialIAPS.thisTrialN", "self_valence_4.response","self_valence_2.response","Self_intensity_2.response","Self_intensity_3.response", "self_valence_4.rt", "self_valence_2.rt", "Self_intensity_2.rt", "Self_intensity_3.rt",108,110,112,113,116,118,122,"mouse_3.clicked_text")
+# 
+# read_plus_beh <- function(flnm, select = c("condition", "stimIAPS","stimDescription", "ValenceMean","ArousalMean","trigger",
+#                                      "trialsPract.thisTrialN","trialIAPS.thisTrialN", "self_valence_4.response","self_valence_2.response","Self_intensity_2.response","Self_intensity_3.response", "self_valence_4.rt", "self_valence_2.rt", "Self_intensity_2.rt", "Self_intensity_3.rt")) {
+#   read.csv(flnm) %>% 
+#     mutate(filename = flnm)
+# }
+
+
+colnames(dta_beh1)
+
+dta_beh1$emotiion_cat_resp<- dta_beh1$mouse_3.clicked_text
+
+dta_beh1<- dta_beh1%>%
+  subset(!is.na(stimIAPS))
+
+# create ssid
+dta_beh1$ssid<- substr(dta_beh1$filename, 1,3)
+
+# for (i in 1:length(temp)) assign(temp[i], read.csv(temp[i]))
+
+View(dta_beh1)
+
+
+# crate vaklence rating
+dta_beh1$valence<- if_else(is.na(dta_beh1$self_valence_4.response) == FALSE, dta_beh1$self_valence_4.response,
+                          if_else(is.na(dta_beh1$self_valence_2.response) == FALSE, dta_beh1$self_valence_2.response, NULL))
+
+# create aropusal rating
+dta_beh1$Self_intensity_3.response<- as.double(dta_beh1$Self_intensity_3.response)                      
+
+dta_beh1$arousal<- if_else(is.na(dta_beh1$Self_intensity_2.response) == FALSE, as.numeric(dta_beh1$Self_intensity_2.response),
+                          if_else(is.na(dta_beh1$Self_intensity_3.response) == FALSE,
+                                  as.numeric(dta_beh1$Self_intensity_3.response), NULL))
+
+dta_beh1$arousal
+
+# reaction times
+dta_beh1$valence_rt<- if_else(is.na(dta_beh1$self_valence_4.rt) == FALSE, dta_beh1$self_valence_4.rt,
+                          if_else(is.na(dta_beh1$self_valence_2.rt) == FALSE, dta_beh1$self_valence_2.rt, NULL))
+                          
+dta_beh1$arousal_rt<- if_else(is.na(dta_beh1$Self_intensity_2.rt) == FALSE, dta_beh1$Self_intensity_2.rt,
+                          if_else(is.na(dta_beh1$Self_intensity_3.rt) == FALSE, dta_beh1$Self_intensity_3.rt, NULL))
+
+# trial number
+dta_beh1$trialsPract.thisTrialN<- dta_beh1$trialsPract.thisTrialN - 6
+
+dta_beh1$trialIAPS.thisTrialN<-dta_beh1$trialIAPS.thisTrialN +1 
+dta_beh1$tNo<- if_else(is.na(dta_beh1$Self_intensity_2.response) == FALSE, dta_beh1$trialsPract.thisTrialN, dta_beh1$trialIAPS.thisTrialN)
+unique(dta_beh1$tNo)
+
+dta_beh1<- subset(dta_beh1, is.na(dta_beh1$tNo) == FALSE)
+
+# sort
+dta_beh1<- dta_beh1%>%
+  arrange(ssid, tNo)
+
+ggplot(dta_beh1, aes(tNo, valence, colour = ssid))+
+  geom_point()+
+  geom_line()
+
+
+ggplot(dta_beh1, aes(x = valence, y = ValenceMean))+
+  geom_point()+
+  geom_smooth(method = lm, se = T)
+
+ggplot(dta_beh1, aes(x = arousal, y = ArousalMean))+
+  geom_point()+
+  geom_smooth(method = lm, se = T)
+
+unique(dta_beh1$trigger)
+
+dta_beh1$triggeracq <- dta_beh1$trigger
+unique(dta_beh1$ssid)
+colnames(dta_beh1)
+# dta_beh1<- select(dta_beh1, c(2:7, 18:23))
+# colnames(dta_beh1_301_309)
+
+dta_beh1$trigger<-NULL
+# dta_beh1_301_309$triggeracq<- NULL
+
+
+dta_beh1$condition[dta_beh1$condition == "Example Stimuli"]<- "Practice"
+
+unique(dta_beh1$condition)
+
+
+```
