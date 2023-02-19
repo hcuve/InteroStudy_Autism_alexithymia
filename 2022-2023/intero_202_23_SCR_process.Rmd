@@ -1,0 +1,213 @@
+---
+title: "Intero_2022_23_SCRprocess"
+author: "Helio"
+date: "2023-02-19"
+output: html_document
+---
+
+<!-- to do -->
+notes from eliza
+Files have occasional random extra events - the labels on these are not given to any actual stimuli so should be easy to filter out - (on inspection ive seen 2,8 and 97 but there may be more) . There are very occasional missing triggers too, probably nothing to be done about that
+
+There are duplicate events in 371, just get rid of the ones that say 2 in event.nid/event name
+
+
+```{r}
+setwd("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/Ledalab output")
+dta_bhv_quest
+colnames(dta_bhv_quest)
+
+# import
+tmp_files <- list.files(pattern = ".xls")
+
+
+# Load necessary packages
+library(readxl)
+library(purrr)
+
+# Set the path to the folder containing the xls files
+tmp_path <- getwd()
+
+# Get the list of all xls files in the folder
+tmp_file_list <- list.files(tmp_path, pattern = "\\.xls$", full.names = TRUE)
+
+# Read in all xls files and store them as a list of data frames
+df_list <- map(tmp_file_list,~ read_excel(.x, sheet = 2))
+
+# Add a new column to each data frame in the list containing the filename
+df_list <- map2(df_list, tmp_file_list, ~mutate(.x, filename = .y))
+
+# Combine all data frames in the list into a single dataframe
+combined_df <- do.call(rbind, df_list)
+
+dta_leda_bio<- combined_df
+
+unique(dta_leda_bio$Event.NID)
+
+unique(dta_leda_bio$Event.Name)
+
+unique(dta_leda_bio$Event.Nr)
+
+dta_leda_bio%>%
+  group_by(filename)%>%
+  table()
+
+table(dta_leda_bio$filename)
+
+dta_leda_bio<- dta_leda_bio%>%
+  janitor::clean_names()
+
+# load journals
+library(readxl)
+library(dplyr)
+library(purrr)
+
+# Set the directory where the XLS files are located
+setwd("path/to/xls/files")
+
+# Create a function to read XLS files and add filename as a column
+read_xls_file <- function(file) {
+  # Read the XLS file, skip the first row, and convert it to a dataframe
+  data <- read_excel(file, skip = 1)
+  # Add a column with the filename
+  data$filename <- basename(file)
+  return(data)
+}
+
+library(readxl)
+library(dplyr)
+library(purrr)
+# Get a list of all XLS files in the directory
+
+# Get a list of all XLS files in the directory
+# for some reasons there re problems with xls file in r
+tmp_files <- list.files(pattern = "*.xls")
+
+# Read all XLS files into a list of dataframes
+dta_journal_list <- map(tmp_files, read_xls_file)
+
+# Combine all dataframes into a single dataframe
+combined_data <- bind_rows(data_list)
+
+# View the resulting dataframe
+print(combined_data)
+
+```
+# now read them
+
+
+view(dta_leda_bio)
+
+write_csv(db_leda_bio, 'db_leda_bio.csv')
+write_csv(db_leda_bio, 'db_leda_bio_345_355_CDA.csv')
+write_csv(db_leda_bio, 'db_leda_bio_356_357_611_616 CDA.csv')
+
+# db_leda_bio <- read_csv("db_leda_bio.csv")
+
+colnames(db_leda_bio)
+
+db_leda_bio$BIO_Event.NID<- db_leda_bio$Event.NID
+db_leda_bio$BIO_filename <- db_leda_bio$filename
+
+
+
+db_leda_bio$ssid<- as.numeric(substr(db_leda_bio$BIO_filename, 3,5))
+
+unique(db_leda_bio$ssid)
+
+# unique(db_leda_bio$trigger)
+
+
+# subset out rest period
+db_leda_bio<- subset(db_leda_bio, Event.Nr>1)
+
+
+db_leda_bio<- subset(db_leda_bio, CDA.nSCR!= "NaN")
+range(db_leda_bio$Event.Nr)
+
+# transform NaNs into proper NA
+db_leda_bio[db_leda_bio == "NaN"] <- NA
+
+# move counter to 1
+range(db_leda_bio$Event.Nr-1)
+# range(db_leda_bio$Event.Nr)
+# trigger$Event.Nr<- NULL
+
+db_leda_bio$order <- db_leda_bio$Event.Nr-1
+# db_leda_bio$trigger<- NULL
+
+
+# merge trigger
+trigger$Event.NID<- NULL
+trigger$ssid<- NULL
+View(db_leda_bio)
+
+db_leda_bio$order
+# db_345_355$order
+
+trigger<- db_345_355 %>%
+  group_by(order,trigger, tNo)%>%
+  summarise_at(c('ssid'), mean, na.rm = TRUE)
+  # select(db_345_355, c(trigger, tNo, order))
+
+View(trigger)
+
+  trigger$ssid<- NULL
+
+  nrow(db_leda_bio)
+  
+  db_leda_bio_beforetrig<- db_leda_bio
+  
+  db_leda_bio<- left_join(db_leda_bio, trigger)
+
+
+tmp.df4_sum_full
+
+leda_bioames <- colnames(db_leda_bio)
+
+leda_bioames
+newnames<- c("Event.Nr", paste0("BIO_", paste(leda_bioames[2:16])),"BIO_Event.NID","BIO_filename"  ,"ssid","order","trigger")
+
+newnames
+
+db_leda_bio_backup_beforename<- db_leda_bio
+
+colnames(db_leda_bio_backup)
+
+names(db_leda_bio) <- newnames
+
+colnames(db_leda_bio)
+
+# db_leda_bio$ssid <- db_leda_bio$BIO_ssid
+
+# db_leda_bio$BIO_ssid<-NULL
+
+
+db_leda_bio
+
+db_leda_bio$ssid<- as.character(db_leda_bio$ssid)
+
+# db_leda_bio$order<- db_leda_bio$BIO_order
+
+unique(tmp.df4_sum_full$Event.Nr)
+
+db_leda_bio$BIO_Event.NID <- NULL
+db_leda_bio$BIO_filename <- NULL
+
+nrow(tmp.df4_sum_full)
+nrow(db_leda_bio)
+
+tmp.df4_sum_full_bio_backup<- tmp.df4_sum_full_bio
+tmp.df4_sum_full$ssid<- as.character(tmp.df4_sum_full$ssid)
+
+tmp.df4_sum_full_bio<- left_join(tmp.df4_sum_full,  db_leda_bio, by = c("ssid", "order"))
+
+colnames(tmp.df4_sum_full_bio)
+
+write_csv(db_leda_bio, "db_leda_bio_346_347_ledagsr.csv")
+
+write_csv(db_leda_bio, "db_leda_bio_346_355_ledagsr.csv")
+```
+
+
+```
