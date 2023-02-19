@@ -91,11 +91,9 @@ dta_journal_list <- map(tmp_files, read_xls_file)
 
 # Combine all dataframes into a single dataframe
 
-bind_rows()
-dta_journal <- bind_rows(dta_journal_list, coerce = TRUE)
 
 # dta_journal <- bind_rows(dta_journal_list, coerce = TRUE)
-dta_journal<- rbindlist(dta_journal_list)
+dta_journal<- rbindlist(dta_journal_list) # this coerces regardless of type
 
 dta_journal<- dta_journal%>%
   janitor::clean_names()
@@ -111,40 +109,292 @@ Files have occasional random extra events - the labels on these are not given to
 There are duplicate events in 371, just get rid of the ones that say 2 in event.nid/event name
 
 ```{r}
-dta_journal
+dta_journal$ssid<- substr(dta_journal$filename,1,3)
+table(dta_journal$ssid)
+table(dta_leda_bio$ssid)
+dta_leda_bio$event_nr
+
+
+range(dta_journal$index+1, na.rm = T)
+range(dta_leda_bio_nid1$event_nr+1, na.rm = T)
+tmp_bogus<- subset(dta_leda_bio_nid1, dta_leda_bio_nid1$event_nr>229)
+dta_leda_bio_nid1_below229 <- subset(dta_leda_bio_nid1, as.numeric(dta_leda_bio_nid1$event_nr)<=229)
+
+
+unique(dta_leda_bio_nid1_below229$event_nid)
+# unique(dta_leda_bio_nid1_below229$)
+
+dta_leda_bio_nid1_below229<-dta_leda_bio_nid1_below229%>%
+  group_by(ssid)%>%
+  mutate(event_nr_new = 1:n())
+
+
+dta_journal$index_1<- dta_journal$index+1
+
+table(dta_leda_bio_nid1$ssid)
+table(dta_journal$ssid)
+range(dta_journal$index+1, na.rm = T)
+range(dta_leda_bio_nid1$event_nr+1, na.rm = T)
+
+tmp_370<- dta_journal_1%>%subset(ssid == "370")
+tmp_370_bioleda<- dta_leda_bio%>%subset(ssid == "370")
+tmp_370$new_index
+
+tmp_370_bioleda$event_nr
+
+
+
+```
+
+
+```{r}
+table(dta_leda_bio_nid1_below229$ssid)
+table(dta_journal$ssid)
+
+dta_journal$new_index<-dta_journal$index_1
+
+unique(dta_journal$label)
+left_join()
+dta_leda_bio_nid1_below229
+
+
+tmp_jounal<- 
+dta_journal%>%
+  # subset(ssid == "359")%>%
+  mutate(trigger_label = as.numeric(label))%>%
+  subset(!is.na(label))
+  # subset(trigger_label!= 1)%>%
+  #  subset(trigger_label!= 2)%>%
+  # subset(trigger_label!= 8)%>% 
+  #  subset(trigger_label!= 97)%>%
+  #  subset(trigger_label!= 98)%>%
+    group_by(ssid)
+  # mutate(diff_label = trigger_label -lead(trigger_label))%>%
+
+  # mutate(remove_dup = if_else(trigger_label == 103 & diff_label !=2, "remove","keep")) %>%
+  # mutate(remove_dup = if_else(is.na(remove_dup),"keep",remove_dup))%>%
+
+# %>%  
+  subset(remove_dup == "keep")
+  # if we don't have 103 before 101 = 
+
+table(dta_leda_bio_nid1_below229$ssid)
+
+unique(dta_leda_bio_nid1_below229$event_nr)
+
+unique(tmp_jounal$index)
+table(tmp_jounal$ssid)
+
+
+# tmp_jounal$time_sec<- substr(tmp_jounal)
+
+
+tmp_jounal1<- tmp_jounal%>%
+    mutate(time_sec = str_remove(time," sec"))%>%
+mutate_at(c('index', 'time_sec','ssid'), as.numeric)%>%
+
+  arrange(ssid, index)%>%
+  group_by(ssid)%>%
+  subset(!is.na(date_created))%>%
+  mutate(new_index = 1:n())%>%
+  mutate(nrows = n())
+
+table(dta_leda_bio_nid1$ssid)
+# table(tmp_jounal$ssid)
+table(tmp_jounal1$ssid)
+# missing from bio 362,373
+tmp_sid<-tmp_jounal1%>%subset(ssid == "360")
+tmp_sid_bio<-dta_leda_bio_nid1%>%subset(ssid == "360")
+
+tmp_sid_bio$event_nr
+tmp_sid$new_index
+tmp_sid$trigger_label
+sort(tmp_sid$trigger_label)
+
+tmp_jounal2<- tmp_jounal1%>%
+  subset(as.numeric(trigger_label)!=8)%>% # 359
+    subset(as.numeric(trigger_label)!=2)%>% # 359
+ mutate(new_index = 1:n())%>%
+  mutate(nrows = n())
+
+tmp_sid_bio<-tmp_jounal2%>%subset(ssid == "360")
+# 8 for 359
+length(tmp_sid_bio$trigger_label)
+sort(tmp_sid_bio$trigger_label)
+
+table(dta_leda_bio_nid1$ssid)
+# table(dta_journal$ssid)
+# table(tmp_jounal1$ssid)
+table(tmp_jounal2$ssid)
+
+# run manually
+# 362,373
+
+events_362<-tmp_jounal2%>%
+  subset(ssid == "362")
+
+events_373<-tmp_jounal2%>%
+  subset(ssid == "373")
+
+write_csv(events_362, "events_362.csv")
+write_csv(events_373, "events_373.csv")
+```
+table(dta_journal$ssid)
 # trals 16 - 71
 # 71-16 = 55 +3
 #  55 +3 = 58 triggers we are expectng
-rest 100
+# rest 100
 # fix and response 101 - 103
 
 unique(dta_journal$label)
 as.numeric(dta_journal$label)
 as.numeric(unique(dta_journal$label))
-
-dta_journal_1<- dta_journal%>%
-  mutate(trigger_label = as.numeric(label))%>%
-  subset(!is.na(trigger_label))%>%
-  subset(trigger_label> 15 & trigger_label<104)%>%
-  subset(trigger_label < 71|trigger_label> 100)
-
 unique(dta_journal_1$trigger_label)
+
+
+dta_journal_1<-
+
+
+dta_journal%>%
+  # subset(ssid == "359")%>%
+  mutate(trigger_label = as.numeric(label))%>%
+  subset(!is.na(label))%>%
+  subset(trigger_label!= 1)%>%
+   subset(trigger_label!= 2)%>%
+  subset(trigger_label!= 8)%>% 
+   subset(trigger_label!= 97)%>%
+   subset(trigger_label!= 98)%>%
+    group_by(ssid)%>%
+  mutate(diff_label = trigger_label -lead(trigger_label))%>%
+
+  mutate(remove_dup = if_else(trigger_label == 103 & diff_label !=2, "remove","keep")) %>%
+  mutate(remove_dup = if_else(is.na(remove_dup),"keep",remove_dup))%>%
+
+# %>%  
+  subset(remove_dup == "keep")
+  # if we don't have 103 before 101 = 
 
 ```
 
-colnames(db_leda_bio)
+subset(label!= "1")%>%
+  subset(label!= "8")%>% 
+   subset(label!= "97")
+  # subset(trigger_label> 15 & trigger_label<104)
+  # this line below here seems to clean out 370 and 373
+  # subset(trigger_label < 71|trigger_label> 99)
 
-db_leda_bio$BIO_Event.NID<- db_leda_bio$Event.NID
-db_leda_bio$BIO_filename <- db_leda_bio$filename
+# unique(dta_journal_1$trigger_label)
+# length(unique(dta_journal_1$trigger_label))
+
+# colnames(dta_journal_1)
+
+```{r}
+# dta_journal_1$ssid<- substr(dta_journal_1$filename, 1,3)
+
+# range(as.numeric(dta_journal_1$index))
+
+table(dta_journal_1$ssid)
+
+# create a new index
+dta_journal_1<- dta_journal_1%>%
+  mutate(time_sec = str_remove(time," sec"))%>%
+  mutate_at(c('index', 'time_sec','ssid'), as.numeric)%>%
+  arrange(ssid, index)%>%
+  group_by(ssid)%>%
+  mutate(new_index = 1:n())%>%
+  mutate(nrows = n())
+
+unique(dta_journal_1$nrows)
+range(dta_journal_1$new_index)
+
+table(dta_journal_1$ssid)
+
+# tmp_missing<-subset(dta_journal_1, nrows == 18)
+# 
+# tmp_missing_223<-subset(dta_journal_1, nrows == 223)
+# 
+# dta_journal$ssid<- substr(dta_journal$filename,1,3)
+# 
+# tmp_370<- dta_journal%>%subset(ssid == "370")
+# tmp_370<- dta_journal%>%subset(ssid == "373")
+# tmp_365<- dta_journal_1%>%subset(ssid == "365")
+# 
+# tmp_370$
+# tmp_366<- dta_journal_1%>%subset(ssid == "366")
+# 
+# tmp_362$label
+# sort(tmp_365$label)
+# View(tmp_370)
+# sort(tmp_366$label)
+# sort(tmp_365$label)
+# length(tmp_365$label)
+# 67 duplicate
+
+```
+
+"100" "101" "16"  "102" "103" "101" "17"  "102" "103" "101" "18"  "102" "103" "101" "19" 
+ [16] "102" "103" "101" "20"  "102" "103" "101" "21"  "102" "103" "101" "22"  "102" "103" "101"
+ [31] "37"  "102" "103" "101" "25"  "102" "103" "101" "46"  "102" "103" "101" "62"  "102" "103"
+ [46] "101" "56"  "102" "103" "101" "40"  "102" "103" "101" "44"  "102" "103" "101" "31"  "102"
+ [61] "103" "101" "57"  "102" "103" "101" "32"  "102" "103" "101" "64"  "102" "103" "101" "33" 
+ [76] "102" "103" "101" "41"  "102" "103" "101" "49"  "102" "103" "101" "58"  "102" "103" "101"
+ [91] "67"  "102" "103" "101" "23"  "102" "103" "101" "54"  "102" "103" "101" "29"  "102" "103"
+[106] "101" "63"  "102" "103" "101" "43"  "102" "103" "101" "51"  "102" "103" "67"  "101" "42" 
+[121] "102" "103" "101" "71"  "102" "103" "101" "68"  "102" "103" "101" "45"  "102" "103" "101"
+[136] "27"  "102" "103" "101" "66"  "102" "103" "101" "59"  "102" "103" "101" "30"  "102" "103"
+[151] "101" "35"  "102" "103" "101" "48"  "102" "103" "101" "52"  "102" "103" "101" "65"  "102"
+[166] "103" "101" "24"  "102" "103" "101" "53"  "102" "103" "101" "70"  "102" "103" "101" "60" 
+[181] "102" "103" "101" "50"  "102" "103" "101" "61"  "102" "103" "101" "55"  "102" "103" "101"
+[196] "69"  "102" "103" "101" "38"  "102" "103" "101" "26"  "102" "103" "101" "36"  "102" "103"
+[211] "101" "34"  "102" "103" "101" "39"  "102" "103" "101" "28"  "102" "103" "101" "47"  "102"
+[226] "103"
+
+merge jiurnal and ledalab
+```{r}
+colnames(dta_leda_bio)
+dta_journal_1
+unique(dta_journal_1$ssid)
+
+length(unique(dta_leda_bio$filename))
+dta_leda_bio$filename
+dta_leda_bio$filename<-
+str_remove(dta_leda_bio$filename,"/Users/heliocuve/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/Ledalab output/")
+
+dta_leda_bio$ssid<- as.numeric(substr(dta_leda_bio$filename, 1,3))
+
+unique(dta_leda_bio$ssid)
+range(dta_leda_bio$event_nr)
+
+dta_leda_bio$event_nr
+
+
+length(unique(dta_leda_bio$ssid))
+length(unique(dta_journal_1$ssid))
+table(dta_leda_bio$ssid)
+table(dta_journal_1$ssid)
+left_join(dta_leda_bio, dta_journal_1)
+table((dta_leda_bio$event_nid))
+
+dta_leda_bio_nid1<- subset(dta_leda_bio, event_nid == "1")
+
+table(dta_journal_1$ssid)
+table((dta_leda_bio$ssid))
+table(dta_leda_bio_nid1$ssid)
+
+tmp_dta_leda_bio_nid1_365<- subset(dta_leda_bio_nid1,
+                                   ssid=="365")
+
+tmp_dta_journal_365 <- subset(dta_journal,
+                                   ssid=="365")
+
+
+subset(dta_journal_1,
+                                   ssid=="365")
+View(tmp_dta_leda_bio_nid1_365)
 
 
 
-db_leda_bio$ssid<- as.numeric(substr(db_leda_bio$BIO_filename, 3,5))
-
-unique(db_leda_bio$ssid)
-
-# unique(db_leda_bio$trigger)
-
+```
 
 # subset out rest period
 db_leda_bio<- subset(db_leda_bio, Event.Nr>1)
