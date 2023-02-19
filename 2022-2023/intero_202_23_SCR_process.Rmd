@@ -57,10 +57,14 @@ table(dta_leda_bio$filename)
 dta_leda_bio<- dta_leda_bio%>%
   janitor::clean_names()
 
+
+
+```
+
+Journals
+```{r}
 # load journals
-library(readxl)
-library(dplyr)
-library(purrr)
+
 
 # Set the directory where the XLS files are located
 setwd("path/to/xls/files")
@@ -74,35 +78,59 @@ read_xls_file <- function(file) {
   return(data)
 }
 
-library(readxl)
-library(dplyr)
-library(purrr)
+
 # Get a list of all XLS files in the directory
 
 # Get a list of all XLS files in the directory
 # for some reasons there re problems with xls file in r
-tmp_files <- list.files(pattern = "*.xls")
+# seems to be related to https://stackoverflow.com/questions/28325744/r-xlsx-package-error
+tmp_files <- list.files(pattern = "*.xlsx")
 
 # Read all XLS files into a list of dataframes
 dta_journal_list <- map(tmp_files, read_xls_file)
 
 # Combine all dataframes into a single dataframe
-combined_data <- bind_rows(data_list)
 
-# View the resulting dataframe
-print(combined_data)
+bind_rows()
+dta_journal <- bind_rows(dta_journal_list, coerce = TRUE)
+
+# dta_journal <- bind_rows(dta_journal_list, coerce = TRUE)
+dta_journal<- rbindlist(dta_journal_list)
+
+dta_journal<- dta_journal%>%
+  janitor::clean_names()
+```
+
+
+Now clean the nuisance
+
+<!-- to do -->
+notes from eliza
+Files have occasional random extra events - the labels on these are not given to any actual stimuli so should be easy to filter out - (on inspection ive seen 2,8 and 97 but there may be more) . There are very occasional missing triggers too, probably nothing to be done about that
+
+There are duplicate events in 371, just get rid of the ones that say 2 in event.nid/event name
+
+```{r}
+dta_journal
+# trals 16 - 71
+# 71-16 = 55 +3
+#  55 +3 = 58 triggers we are expectng
+rest 100
+# fix and response 101 - 103
+
+unique(dta_journal$label)
+as.numeric(dta_journal$label)
+as.numeric(unique(dta_journal$label))
+
+dta_journal_1<- dta_journal%>%
+  mutate(trigger_label = as.numeric(label))%>%
+  subset(!is.na(trigger_label))%>%
+  subset(trigger_label> 15 & trigger_label<104)%>%
+  subset(trigger_label < 71|trigger_label> 100)
+
+unique(dta_journal_1$trigger_label)
 
 ```
-# now read them
-
-
-view(dta_leda_bio)
-
-write_csv(db_leda_bio, 'db_leda_bio.csv')
-write_csv(db_leda_bio, 'db_leda_bio_345_355_CDA.csv')
-write_csv(db_leda_bio, 'db_leda_bio_356_357_611_616 CDA.csv')
-
-# db_leda_bio <- read_csv("db_leda_bio.csv")
 
 colnames(db_leda_bio)
 
