@@ -137,7 +137,7 @@ dta_beh1$condition[dta_beh1$condition == "Example Stimuli"]<- "Practice"
 
 unique(dta_beh1$condition)
 
-
+dta_beh1
 ```
 
 
@@ -373,3 +373,129 @@ dta_TAS_2022_23_scored<- dta_TAS_2022_23%>%
   subset(!is.na(question_key))%>%
   spread(question_key,response)
 ```
+
+
+merge with AQ to check if patterns are as expected
+
+```{r}
+
+left_join(dta_AQ_2022_23_spread1_scored,
+dta_TAS_2022_23_scored)%>%
+  ggplot(aes(AQ,TotalAlexScore))+
+  geom_point()
+
+```
+
+checks out
+
+now demographics
+
+
+```{r}
+library(readxl)
+dta_demog_20222_23 <- read_excel("age, eligibility, gender data_exp_60619-v2_questionnaire-8zto.xlsx")
+View(dta_demog_20222_23)
+
+
+colnames(dta_demog_20222_23)
+dta_demog_20222_23_pt1<- dta_demog_20222_23%>%
+  janitor::clean_names()%>%
+  select(c(12,13,32:33))%>%
+  subset(!grepl("QUESTIONNAIRE|quantised",question_key))%>%
+  subset(!is.na(question_key))%>%
+  spread(question_key,response)
+
+# 
+library(readxl)
+dta_demog_20222_23_v2gn <- read_excel("diagnosis data_exp_60619-v2_questionnaire-v2gn.xlsx")
+View(dta_demog_20222_23_v2gn)
+colnames(dta_demog_20222_23_v2gn)
+dta_demog_20222_23_v2gn
+
+ dta_demog_20222_23_v2gn_wide<-dta_demog_20222_23_v2gn%>%
+  janitor::clean_names()%>%
+  select(c(12,13,32:33))%>%
+  subset(!grepl("QUESTIONNAIRE|quantised",question_key))%>%
+  subset(!is.na(question_key))%>%
+  spread(question_key,response)%>%
+  select(-clinical_diagnosis)
+ 
+ 
+dta_demog_20222_23_pt1bind<- left_join(dta_demog_20222_23_pt1, dta_demog_20222_23_v2gn_wide)
+
+dta_demog_20222_23_pt1bind
+```
+to do merge mental health and IQ
+IQ: esh8
+
+```{r}
+library(readxl)
+dta_IQ_2022_23 <- read_excel("not sure what these are/data_exp_60619-v2_task-esh8.xlsx")
+
+View(dta_IQ_2022_23)
+
+
+
+dta_IQ_2022_23$Response
+
+dta_IQ_2022_23<- dta_IQ_2022_23%>%
+  janitor::clean_names()
+dta_IQ_2022_23<- subset(dta_IQ_2022_23, !is.na(response))
+
+
+
+colnames(dta_IQ_2022_23)
+
+dta_IQ_2022_23_score<- dta_IQ_2022_23%>%
+  select( c(12,13, 36,44,46,55,16))%>%
+  group_by(participant_private_id, participant_public_id,participant_completion_code)%>%
+  summarise_if(is.numeric, sum, na.rm = TRUE)
+
+dta_IQ_2022_23_score$Matrix_Total<- dta_IQ_2022_23_score$correct
+# dta_IQ_2022_23_score$IQ_matrix_sum<- NULL
+dta_IQ_2022_23_score$correct<-NULL
+dta_IQ_2022_23_score$completion_code<- dta_IQ_2022_23_score$participant_completion_code
+
+dta_IQ_2022_23_score$participant_completion_code<-NULL
+
+dta_demog_20222_23_pt1bind<-left_join(dta_demog_20222_23_pt1bind, dta_IQ_2022_23_score)
+
+colnames(dta_beh1)
+dta_quests<- left_join(dta_demog_20222_23_pt1bind,dta_AQ_2022_23_spread1_scored)
+dta_quests<-left_join(dta_quests,dta_TAS_2022_23_scored)
+dta_AQ_2022_23_spread1_scored
+
+colnames(dta_quests)
+# merge with behaviour
+
+# load logbook
+
+dta_logbook <- read_excel("Interoception Study Logbook (2).xlsx")
+View(dta_logbook)
+dta_logbook<- dta_logbook%>%
+  janitor::clean_names()
+
+dta_logbook$completion_code
+
+colnames(dta_logbook)
+
+dta_ssid_code<- select(dta_logbook, c(1:3))
+dta_ssid_code$completion_code
+
+dta_ssid_code$participant_no
+
+dta_ssid_code$ssid<- substr(dta_ssid_code$participant_no,1,3)
+dta_ssid_code$ssid
+temp_ssid_to_keep<- unique(dta_beh1$ssid)
+unique(dta_ssid_code$ssid)
+
+table(dta_ssid_code$ssid)
+
+dta_ssid_code<- dta_ssid_code%>%
+  subset(participant_no !="624 (FALSE START)")
+
+dta_beh1<-left_join(dta_beh1,dta_ssid_code)
+
+dta_bhv_quest<- left_join(dta_beh1,dta_AQ_2022_23_spread1_scored)
+```
+dta_bhv_quest = dataset with behavioura data and questionnaires/iq, demographics
