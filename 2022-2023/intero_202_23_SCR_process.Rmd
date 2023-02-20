@@ -210,13 +210,16 @@ tmp_sid_bio$event_nr
 tmp_sid$new_index
 tmp_sid$trigger_label
 sort(tmp_sid$trigger_label)
-
+# 
 tmp_jounal2<- tmp_jounal1%>%
   subset(as.numeric(trigger_label)!=8)%>% # 359
     subset(as.numeric(trigger_label)!=2)%>% # 359
+  # 360
  mutate(new_index = 1:n())%>%
   mutate(nrows = n())
+tmp_sid_journal$ssid
 
+tmp_sid_journal$new_index
 tmp_sid_bio<-tmp_jounal2%>%subset(ssid == "360")
 # 8 for 359
 length(tmp_sid_bio$trigger_label)
@@ -252,6 +255,8 @@ as.numeric(unique(dta_journal$label))
 unique(dta_journal_1$trigger_label)
 
 
+
+
 dta_journal_1<-
 
 
@@ -274,7 +279,6 @@ dta_journal%>%
   subset(remove_dup == "keep")
   # if we don't have 103 before 101 = 
 
-```
 
 subset(label!= "1")%>%
   subset(label!= "8")%>% 
@@ -349,7 +353,9 @@ table(dta_journal_1$ssid)
 [211] "101" "34"  "102" "103" "101" "39"  "102" "103" "101" "28"  "102" "103" "101" "47"  "102"
 [226] "103"
 
-merge jiurnal and ledalab
+merge journal and ledalab
+
+
 ```{r}
 colnames(dta_leda_bio)
 dta_journal_1
@@ -368,35 +374,351 @@ range(dta_leda_bio$event_nr)
 dta_leda_bio$event_nr
 
 
-length(unique(dta_leda_bio$ssid))
-length(unique(dta_journal_1$ssid))
-table(dta_leda_bio$ssid)
-table(dta_journal_1$ssid)
+
 left_join(dta_leda_bio, dta_journal_1)
 table((dta_leda_bio$event_nid))
+unique(dta_leda_bio$event_nid)
+
 
 dta_leda_bio_nid1<- subset(dta_leda_bio, event_nid == "1")
 
+
+colnames(dta_leda_bio_nid1)
+# load 362 and 373
+
+tmp_dta_362_IAPS_Physio_v3_era <- read_csv("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/SCR/362_IAPS_Physio_v3_era.csv")
+View(tmp_dta_362_IAPS_Physio_v3_era)
+
+
+library(readr)
+tmp_dta_373_IAPS_Physio_v3_era <- read_csv("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/SCR/373_IAPS_Physio_v3_era.csv")
+View(tmp_dta_373_IAPS_Physio_v3_era)
+
+tmp_dta_373_IAPS_Physio_v3_era$filename<- 373
+tmp_dta_373_IAPS_Physio_v3_era$ssid <-373
+
+tmp_dta_362_IAPS_Physio_v3_era$filename<- 362
+tmp_dta_362_IAPS_Physio_v3_era$ssid<- 362
+
+tmp_dta_362_373<- bind_rows(tmp_dta_362_IAPS_Physio_v3_era,tmp_dta_373_IAPS_Physio_v3_era)
+
+tmp_dta_362_373<- tmp_dta_362_373%>%
+  janitor::clean_names()
+
+colnames(dta_leda_bio_nid1)
+colnames(tmp_dta_362_373)
+
+tmp_dta_362_373
+tmp_dta_362_373$ssid<- as.numeric(tmp_dta_362_373$ssid)
+tmp_dta_362_373$filename<- as.character(tmp_dta_362_373$filename)
+
+colnames(dta_leda_bio_nid1)
+colnames(tmp_dta_362_373)
+
+tmp_dta_362_373<- tmp_dta_362_373[,c(1,14:15,2:13,16:17)]
+
+
+colnames(tmp_dta_362_373)<- colnames(dta_leda_bio_nid1)
+
+colnames(dta_leda_bio_nid1)
+dta_leda_bio_nid1.1<- bind_rows(dta_leda_bio_nid1, tmp_dta_362_373)
+
+dta_leda_bio_nid1$cda_amp_sum_mu_s
+tmp_dta_362_373$cda_amp_sum
+
+dta_leda_bio_nid1
+
+table(dta_leda_bio_nid1.1$ssid)
+
+# table(dta_journal$ssid)
 table(dta_journal_1$ssid)
-table((dta_leda_bio$ssid))
-table(dta_leda_bio_nid1$ssid)
-
-tmp_dta_leda_bio_nid1_365<- subset(dta_leda_bio_nid1,
-                                   ssid=="365")
-
-tmp_dta_journal_365 <- subset(dta_journal,
-                                   ssid=="365")
 
 
-subset(dta_journal_1,
-                                   ssid=="365")
-View(tmp_dta_leda_bio_nid1_365)
 
 
 
 ```
 
-# subset out rest period
+table(dta_journal_1$ssid)
+
+```{r}
+# table((dta_leda_bio$ssid))
+# table(dta_leda_bio_nid1$ssid)
+table(dta_leda_bio_nid1.1$ssid)
+# tmp_jounal1
+table(dta_journal_1$ssid)
+
+table(dta_journal$ssid)
+
+
+# 365 bio hs one extyra
+dta_journal_1
+tmp_sid_bio<- subset(dta_leda_bio_nid1.1, ssid == 365)
+tmp_sid_journal<- subset(dta_journal, ssid == 366)
+
+tmp_sid_bio<- subset(dta_leda_bio, ssid == 366)
+table(tmp_sid_bio$ssid)
+366
+621
+length(tmp_sid_journal$label)
+tmp_sid_journal$label
+sort(tmp_sid_journal$label)
+
+
+# check matches
+table(dta_leda_bio_nid1.1$ssid)
+# tmp_jounal1
+table(dta_journal_1$ssid)
+
+table(dta_journal$ssid)
+```
+"100" "101" "16"  "102" "103" "101" "17"  "102" "103" "101" "18"  "102" "103" "101" "19"  "102" "103" "101" "20"  "102" "103" "101" "21"  "102" "103" "101" "38" 
+ [28] "102" "103" "101" "70"  "102" "103" "101" "46"  "102" "103" "101" "33"  "102" "103" "101" "31"  "102" "103" "101" "45"  "102" "103" "101" "53"  "102" "103" "101"
+ [55] "55"  "102" "103" "101" "42"  "102" "103" "101" "35"  "102" "103" "101" "51"  "102" "103" "101" "58"  "102" "103" "101" "47"  "102" "103" "101" "26"  "102" "103"
+ [82] "101" "36"  "102" "103" "101" "27"  "102" "103" "101" "29"  "102" "103" "101" "48"  "102" "103" "101" "40"  "102" "103" "101" "28"  "102" "103" "101" "65"  "102"
+[109] "103" "101" "68"  "102" "103" "101" "63"  "102" "103" "101" "34"  "102" "103" "101" "24"  "102" "103" "101" "61"  "102" "103" "101" "41"  "102" "2"   "103" "101"
+[136] "67"  "102" "103" "101" "54"  "102" "103" "101" "25"  "102" "103" "101" "60"  "102" "103" "101" "37"  "102" "103" "101" "32"  "102" "98"  "103" "101" "59"  "102"
+[163] "103" "101" "71"  "102" "103" "101" "64"  "102" "103" "101" "62"  "102" "103" "101" "66"  "102" "103" "101" "57"  "102" "103" "101" "23"  "102" "103" "101" "69" 
+[190] "102" "103" "101" "43"  "102" "103" "101" "22"  "102" "103" "101" "49"  "102" "103" "101" "39"  "102" "103" "101" "30"  "102" "103" "101" "44"  "102" "103" "101"
+[217] "56"  "102" "103" "101" "52"  "102" "103" "101" "50"  "102" "103" NA   
+
+
+dta_journal_1
+
+# journal has one less for 365
+
+```{r}
+
+table(dta_journal$label == "8")
+
+table(dta_journal$label == "98")
+table(dta_journal$label == "97")
+
+table(dta_journal$label == "2")
+
+dta_journal_1<-
+dta_journal%>%
+
+   # subset( ssid == 366)%>%#bio has 226
+  # subset( ssid == 365)%>%
+  # subset(ssid == "359")%>%
+  mutate(trigger_label = as.numeric(label))%>%
+  subset(!is.na(label))%>%
+  subset(trigger_label!= 1) %>%
+  
+    mutate(xtra_359= if_else(ssid == "359" &trigger_label == 8, TRUE, FALSE ))%>%
+  subset(xtra_359 == FALSE)%>%
+    mutate(xtra_360= if_else(ssid == "360" &trigger_label == 2, TRUE, FALSE ))%>%
+   subset(xtra_360 == FALSE)%>%
+  
+   mutate(xtra_362= if_else(ssid == "362" &trigger_label == 2, TRUE,
+                         if_else(ssid == "362" &trigger_label == 1, TRUE,   
+                            FALSE )))%>%
+   subset(xtra_360 == FALSE)%>%
+   subset(xtra_362 == FALSE)%>%
+   mutate(xtra_368= if_else(ssid == "368" &trigger_label == 2, TRUE,
+                            FALSE ))%>%
+   subset(xtra_368 == FALSE)%>%
+    # subset(as.numeric(trigger_label)!=8)%>% # 359
+    # subset(as.numeric(trigger_label)!=2)%>% # 359
+  
+   # subset(trigger_label!= 2) %>% #366 consider  subset(ssid ==366 & trigger_label!= 2) 
+  mutate(xtra_366 = if_else(ssid == "366" &trigger_label == 98, TRUE, FALSE))%>%
+  subset(xtra_366== FALSE) %>%
+    mutate(xtra_369 = if_else(ssid == "369" &trigger_label == 2, TRUE, FALSE))%>%
+  subset(xtra_369== FALSE) %>%
+  
+   mutate(xtra_373 = if_else(ssid == "373" & time == "2768.910 sec", TRUE, FALSE))%>% # not sur about this one - [otemtial mimatch]
+  subset(xtra_373== FALSE) %>%
+  
+  mutate(xtra_374 = if_else(ssid == "374" & trigger_label == 2, TRUE, FALSE))%>% 
+  subset(xtra_374== FALSE) %>%
+  
+ mutate(xtra_376 = if_else(ssid == "376" & trigger_label == 2, TRUE, FALSE))%>% 
+  subset(xtra_376== FALSE) %>%
+
+   subset(trigger_label!= 97) %>%
+  # mutate()
+   # subset(ssid == "366" & trigger_label!= 98) %>%
+    group_by(ssid)%>%
+  mutate(diff_label = trigger_label -lead(trigger_label))%>%
+  mutate(remove_dup = if_else(trigger_label == 103 & diff_label !=2, "remove","keep")) %>%
+  mutate(remove_dup = if_else(is.na(remove_dup),"keep",
+                           if_else(ssid == 365,"keep",  
+                              remove_dup)))%>%
+# %>%
+    subset(remove_dup == "keep")%>%
+      group_by(ssid)%>%#
+   mutate(new_index = 1:n())
+
+
+  dta_journal_1$new_index
+# %>%  
+  
+#################  
+  # tmp_journal<- dta_journal_1%>%
+  #  subset( ssid == "370")
+    # tmp_journal%>%
+    # mutate(time_sec = as.numeric(str_remove(time," sec")))%>%
+    # mutate(lagdif = time_sec-lag(time_sec))
+  # i suspect that for 365 there are two cosnecutive numbers below 100
+
+  
+   #  tmp_journal<- dta_journal_1%>%
+   # subset( ssid == "373") #one potential mismatch
+   #  
+   #   tmp_journal%>%
+   #  mutate(time_sec = as.numeric(str_remove(time," sec")))%>%
+   #  mutate(lagdif = time_sec-lag(time_sec)) %>%subset(lagdif<2)
+     
+# 374
+#    tmp_journal<- dta_journal_1%>%
+#    subset( ssid == "374") 
+# # it just ahs a 2
+#      tmp_journal%>%
+#     mutate(time_sec = as.numeric(str_remove(time," sec")))%>%
+#     mutate(lagdif = time_sec-lag(time_sec)) 
+#      subset(lagdif<2)
+     
+     
+     
+     # 376
+  
+     tmp_journal<- dta_journal_1%>%
+   subset( ssid == "376") 
+# it just ahs a 2
+     tmp_journal%>%
+    mutate(time_sec = as.numeric(str_remove(time," sec")))%>%
+    mutate(lagdif = time_sec-lag(time_sec)) 
+     subset(lagdif<2)
+     
+     # 374
+     
+          tmp_journal<- dta_journal%>%
+   subset( ssid == "375") 
+  
+
+  table(tmp_journal$label)
+  
+  length(tmp_journal$label)
+  sort(as.numeric(tmp_journal$label))
+
+  
+  # check matches
+  
+  table(dta_leda_bio_nid1.1$ssid)
+# tmp_jounal1
+table(dta_journal_1$ssid)
+
+# table(dta_journal$ssid)
+
+# potential mismatches
+# 373,362,370
+```
+"100" "101" "16"  "102" "103" "101" "17"  "102" "103" "101" "18"  "102" "103" "101" "19"  "102" "103" "101" "20"  "102" "103" "101" "21"  "102" "103" "101" "46" 
+ [28] "102" "103" "101" "26"  "102" "103" "101" "60"  "102" "103" "101" "67"  "102" "103" "101" "58"  "102" "103" "101" "61"  "102" "103" "101" "54"  "102" "103" "101"
+ [55] "64"  "102" "103" "101" "57"  "102" "103" "101" "27"  "102" "103" "101" "68"  "102" "103" "101" "36"  "102" "103" "101" "40"  "102" "103" "101" "52"  "102" "103"
+ [82] "101" "42"  "102" "103" "101" "38"  "102" "103" "101" "63"  "102" "103" "101" "35"  "102" "103" "101" "56"  "102" "103" "101" "23"  "102" "103" "101" "70"  "102"
+[109] "103" "101" "32"  "102" "103" "101" "66"  "102" "103" "101" "71"  "102" "103" "101" "51"  "102" "103" "101" "53"  "102" "103" "101" "45"  "102" "103" "101" "28" 
+[136] "102" "103" "101" "30"  "102" "103" "101" "49"  "102" "103" "101" "43"  "102" "103" "101" "44"  "102" "103" "101" "34"  "102" "103" "101" "48"  "102" "103" "101"
+[163] "41"  "102" "103" "101" "65"  "102" "103" "101" "55"  "102" "103" "101" "33"  "102" "103" "101" "59"  "102" "103" "101" "47"  "103" "101" "39"  "102" "103" "101"
+[190] "29"  "102" "103" "101" "24"  "102" "103" "101" "62"  "102" "103" "101" "69"  "102" "103" "101" "37"  "102" "103" "101" "22"  "102" "103" "101" "31"  "102" "103"
+[217] "101" "25"  "102" "103" "101" "50"  "102" "103" NA   
+> 
+merge ledala lab and joural
+
+```{r}
+
+dta_leda_bio_nid1.1$event_nr
+
+dta_journal_1$event_nr<-
+dta_journal_1$new_index
+
+dta_leda_bio_nid1.1$ssid
+dta_journal_1$ssid<- as.numeric(dta_journal_1$ssid)
+
+
+dta_journal_1$event_nr<- as.double(dta_journal_1$event_nr)
+dta_journal_1<- dta_journal_1%>%
+  # subset(ssid == 375 & trigger_label == 47)%>%
+    # subset(ssid == 375 )%>%
+  # mutate(fla_375_misingfix = if_else(dta_scr_bio_w_events$trigger_label == 47, event_nr))
+  mutate(event_nr = if_else(ssid == 375& event_nr>183, event_nr+1, event_nr))
+
+dta_journal_1%>%
+  subset(ssid == 359)
+
+dta_journal_1%>%
+  subset(ssid == 375)
+
+dta_scr_bio_w_events<- left_join(dta_leda_bio_nid1.1, dta_journal_1, by = c("event_nr", "ssid"))
+table(dta_scr_bio_w_events$ssid)
+
+
+# 375 after 47, index needs to have +1 o match
+dta_scr_bio_w_events
+  
+table(is.na(dta_scr_bio_w_events$cda_n_scr))
+
+table(dta_scr_bio_w_events$ssid)
+
+dta_scr_bio_w_events1<-dta_scr_bio_w_events%>%
+  mutate(extra_365_2= if_else(ssid == 365 & time == "2169.551 sec", TRUE, FALSE))%>%
+mutate(extra_366_2= if_else(ssid == 366 & label == "2", TRUE, FALSE))%>%
+mutate(extra_621_2= if_else(ssid == 621 & label == "8", TRUE, FALSE))%>%
+
+mutate(extra_622_2= if_else(ssid == 622 & label == "2", TRUE, FALSE))%>%
+# 621
+  subset(extra_365_2 == FALSE)%>%
+   subset(extra_366_2 == FALSE)%>%
+  subset(extra_621_2 == FALSE)%>%
+   subset(extra_622_2 == FALSE)
+
+table(dta_scr_bio_w_events1$ssid)
+# tmp_sid<- subset(dta_scr_bio_w_events, ssid == 365 )
+# sort(as.numeric(tmp_sid$label))
+# table(as.numeric(tmp_sid$label))
+# sort(as.numeric(unique(dta_scr_bio_w_events$label)))
+  
+  # 366
+  
+#   tmp_sid<- subset(dta_scr_bio_w_events, ssid == 366 )
+# sort(as.numeric(tmp_sid$label))
+# table(as.numeric(tmp_sid$label))
+# sort(as.numeric(unique(dta_scr_bio_w_events$label)))
+
+# 621
+
+#       tmp_sid<- subset(dta_scr_bio_w_events, ssid == 622 )
+# sort(as.numeric(tmp_sid$label)) #8
+# table(as.numeric(tmp_sid$label))
+# sort(as.numeric(unique(dta_scr_bio_w_events$label)))
+  # 622
+      tmp_sid<- subset(dta_scr_bio_w_events, ssid == 622 )
+sort(as.numeric(tmp_sid$label)) #8
+table(as.numeric(tmp_sid$label))
+sort(as.numeric(unique(dta_scr_bio_w_events$label)))
+
+# 370,373 NO PROPERR LABELS
+table(dta_scr_bio_w_events1$ssid)
+     tmp_sid<- subset(dta_scr_bio_w_events, ssid == 362 )
+     tmp_sid
+  table(dta_leda_bio_nid1.1$ssid)
+  
+  # MOST FILES CAN BE MERGED BASED ON TRIGGERS/LABEL EXCEPT 370 AND 373, WHICH WE WILL NEED TO DO SOMETHING ABOUT IT
+  # MY CURRRNT THOUGH IS TO SELECT JUST TE STIM FROM BEHAVIOURAL DATA, USE STIM ORDER ADD SPACES FOR FIXATION ETC, AND USE THAT TO MATCH WITH EVENT ID
+  # 375_ IS MISSING ONE RESPNSE AFTER 184, 
+
+```
+
+
+length(tmp_sid_journal$new_index)
+sort(tmp_sid_journal$new_index)-lag(sort(tmp_sid_journal$new_index))
+# 373 bio has one less
+# 621 bio has one more
+# 622 bio has one more
+
+
 db_leda_bio<- subset(db_leda_bio, Event.Nr>1)
 
 

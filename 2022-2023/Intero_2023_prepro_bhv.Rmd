@@ -45,6 +45,10 @@ dta_beh <-  rbindlist(sapply(tmp_files, read.csv, simplify = FALSE),
 
 colnames(dta_beh)
 
+dta_beh$trigger
+
+dta_beh
+
 # we have new columns here
 dta_beh$happiness_3.response
 dta_beh$mouse_3.clicked_text #categorical
@@ -497,5 +501,60 @@ dta_ssid_code<- dta_ssid_code%>%
 dta_beh1<-left_join(dta_beh1,dta_ssid_code)
 
 dta_bhv_quest<- left_join(dta_beh1,dta_AQ_2022_23_spread1_scored)
+
+dta_bhv_quest$ssid
+dta_beh
+# dta_beh]
+
+dta_beh
+
+
+dta_beh_labels<- dta_beh%>%
+  select(filename,condition,stimIAPS,stimDescription,ValenceMean,ArousalMean,trigger)%>%
+  subset(!is.na(trigger))
+
+# dta_bhv_quest
+
+
+# CREATE FIXATION RESP RESPONSE
+
+dta_bhv_quest$trialIAPS.thisTrialN
+dta_bhv_quest$trialsPract.thisTrialN
+
+
+dta_bhv_quest$condition
+dta_bhv_quest$filename
+dta_beh_labels$filename
+dta_beh_labels$condition<- if_else(dta_beh_labels$condition == "Example Stimuli","Practice",dta_beh_labels$condition)
+
+
+left_join(dta_bhv_quest,dta_beh_labels)
+left_join(dta_beh_labels,dta_bhv_quest)
+dta_beh_labels
+
+dta_bhv_quest<- dta_bhv_quest%>%
+  group_by(ssid)%>%
+  mutate(new_index_stim = 1:n())
+
+dta_bhv_quest1<-dta_bhv_quest
+dta_bhv_quest2<- dta_bhv_quest
+dta_bhv_quest3<-dta_bhv_quest
+dta_bhv_quest4<-dta_bhv_quest
+
+dta_bhv_quest1$screen_content<- "fixation"
+dta_bhv_quest2$screen_content<- "stimuli"
+dta_bhv_quest3$screen_content<- "valence"
+dta_bhv_quest4$screen_content<- "intensity"
+
+dta_bhv_quest1$screen_content_no<- 1
+dta_bhv_quest2$screen_content_no<- 2
+dta_bhv_quest3$screen_content_no<- 3
+dta_bhv_quest4$screen_content_no<- 4
+
+dta_bhv_quest1
+
+bind_rows()
+
+ta_bhv_quest$screen
 ```
 dta_bhv_quest = dataset with behavioura data and questionnaires/iq, demographics
