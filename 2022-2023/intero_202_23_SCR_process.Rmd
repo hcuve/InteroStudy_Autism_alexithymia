@@ -709,6 +709,45 @@ table(dta_scr_bio_w_events1$ssid)
   # MY CURRRNT THOUGH IS TO SELECT JUST TE STIM FROM BEHAVIOURAL DATA, USE STIM ORDER ADD SPACES FOR FIXATION ETC, AND USE THAT TO MATCH WITH EVENT ID
   # 375_ IS MISSING ONE RESPNSE AFTER 184, 
 
+  # HERE
+  
+  dta_scr_bio_w_events1  #4,717
+  dta_scr_bio_w_events1%>%
+    subset(label !="100") #4,585 
+  dta_bhv_quest1.1_with_fix_resp_arranged #4,704
+  
+  range(dta_bhv_quest1.1_with_fix_resp_arranged$labels)
+  range(dta_bhv_quest1.1_with_fix_resp_arranged$new_index_stim)
+  
+  
+  dta_bhv_quest1.1_with_fix_resp_arranged<-dta_bhv_quest1.1_with_fix_resp_arranged%>%
+    group_by(ssid)%>%
+    mutate(new_index = 1:n())
+  
+  range(dta_bhv_quest1.1_with_fix_resp_arranged$new_index)
+  table(dta_scr_bio_w_events1$ssid)
+  
+  range(dta_scr_bio_w_events1$event_nr-1)
+  dta_scr_bio_w_events1_norest<- dta_scr_bio_w_events1%>%
+    subset(label!= "100")%>%
+    group_by(ssid)%>%
+    # mutate(new_index = new_index-1)
+    mutate(new_index = 1:n(),
+           event_nr =1:n()
+           )
+  
+dta_scr_bio_w_events1_norest$event_nr<- as.double(dta_scr_bio_w_events1_norest$event_nr)
+  dta_scr_bio_w_events1_norest1<-dta_scr_bio_w_events1_norest%>%
+  
+   mutate(event_nr = if_else(ssid == 375 & event_nr>183, event_nr+1, event_nr))
+  
+  range(dta_scr_bio_w_events1_norest$new_index)
+range(dta_scr_bio_w_events1_norest$event_nr)
+
+# merge with behav
+dta_bhv_quest1.1_with_fix_resp_arranged$ssid<-as.numeric(dta_bhv_quest1.1_with_fix_resp_arranged$ssid)
+
+left_join(dta_bhv_quest1.1_with_fix_resp_arranged,dta_scr_bio_w_events1_norest)
 ```
 
 

@@ -528,33 +528,51 @@ dta_beh_labels$filename
 dta_beh_labels$condition<- if_else(dta_beh_labels$condition == "Example Stimuli","Practice",dta_beh_labels$condition)
 
 
-left_join(dta_bhv_quest,dta_beh_labels)
-left_join(dta_beh_labels,dta_bhv_quest)
+dta_bhv_quest1<-left_join(dta_bhv_quest,dta_beh_labels)
+# left_join(dta_beh_labels,dta_bhv_quest)
 dta_beh_labels
 
-dta_bhv_quest<- dta_bhv_quest%>%
+dta_bhv_quest1$labels<- dta_bhv_quest1$trigger
+
+dta_bhv_quest1<- dta_bhv_quest1%>%
   group_by(ssid)%>%
   mutate(new_index_stim = 1:n())
 
-dta_bhv_quest1<-dta_bhv_quest
-dta_bhv_quest2<- dta_bhv_quest
-dta_bhv_quest3<-dta_bhv_quest
-dta_bhv_quest4<-dta_bhv_quest
+dta_bhv_quest1.1<-dta_bhv_quest1
+dta_bhv_quest1.2<- dta_bhv_quest1
+dta_bhv_quest1.3<-dta_bhv_quest1
+dta_bhv_quest1.4<-dta_bhv_quest1
 
-dta_bhv_quest1$screen_content<- "fixation"
-dta_bhv_quest2$screen_content<- "stimuli"
-dta_bhv_quest3$screen_content<- "valence"
-dta_bhv_quest4$screen_content<- "intensity"
+dta_bhv_quest1.1$screen_content<- "fixation"
+dta_bhv_quest1.2$screen_content<- "stimuli"
+dta_bhv_quest1.3$screen_content<- "valence"
+dta_bhv_quest1.4$screen_content<- "intensity"
 
-dta_bhv_quest1$screen_content_no<- 1
-dta_bhv_quest2$screen_content_no<- 2
-dta_bhv_quest3$screen_content_no<- 3
-dta_bhv_quest4$screen_content_no<- 4
+dta_bhv_quest1.1$screen_content_no<- 1
+dta_bhv_quest1.2$screen_content_no<- 2
+dta_bhv_quest1.3$screen_content_no<- 3
+dta_bhv_quest1.4$screen_content_no<- 4
 
-dta_bhv_quest1
+# create labels for fix, responses
+dta_bhv_quest1.1$labels <-101
+dta_bhv_quest1.3$labels <-102
+dta_bhv_quest1.4$labels <-103
 
-bind_rows()
+dta_bhv_quest1.1$trigger <-101
+dta_bhv_quest1.3$trigger <-102
+dta_bhv_quest1.4$trigger <-103
 
+dta_bhv_quest1.1
+
+dta_bhv_quest1.1_with_fix_resp<-
+bind_rows(dta_bhv_quest1.1,dta_bhv_quest1.2,dta_bhv_quest1.3,dta_bhv_quest1.4)
+
+dta_bhv_quest1.1_with_fix_resp$condition_no<- if_else(dta_bhv_quest1.1_with_fix_resp$condition == "Practice",1,2)
+
+dta_bhv_quest1.1_with_fix_resp_arranged<-
+dta_bhv_quest1.1_with_fix_resp %>%
+  arrange(ssid)%>%
+  arrange(ssid,condition_no,new_index_stim, screen_content_no)
 ta_bhv_quest$screen
 ```
 dta_bhv_quest = dataset with behavioura data and questionnaires/iq, demographics
