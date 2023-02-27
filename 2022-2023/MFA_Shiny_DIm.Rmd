@@ -1,0 +1,60 @@
+---
+title: "MFA, shiny and storing dimensions"
+author: "Helio"
+date: "2023-02-27"
+output: html_document
+---
+
+
+```{r}
+dta_all_merged_sel3.1_trial #dataset
+
+# you can run MFA in dashbopard by runing 
+Factoshiny::MFAshiny(dta_all_merged_sel3.1_trial)
+
+
+# subset for analysys (code below will be also gnefated on MFA shiny dashbopard)
+newDF1 <- dta_all_merged_sel3.1_trial[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_phasic_max_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_tonic_mu_s","mean_x","mean_y","fix_Dur_sum","fix_count","fix_Dur","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor","TAS_med_spli","AQ_med_spli")]
+
+# this inputs missing data where needed
+dfcompleted <- missMDA::imputeMFA(newDF1, 
+                                  ncp=2,
+                                  group=c(6,1,1,5,9,17,1,1), 
+                                  type=c("s","s","s","s","s","s","n","n"))
+
+
+# MFA analysis
+res.MFA<-MFA(newDF1,tab.comp=dfcompleted,
+             group=c(6,1,1,5,9,17,1,1),
+             type=c("s","s","s","s","s","s","n","n"),
+             name.group=c("emotion","valence","arousal","SCR","gaze","face","TASMed","AQMed"),
+             graph=TRUE)
+
+# some quick plots - might be easier to customise the plots in the dashboard
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,invisible= 'quali.sup',habillage='TAS_med_spli',title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+# Storing dimensions for futher analyses
+# res.MFA will contain a lot of ouputs including the dimensions 
+# check ??MFA for description of what's contained in results
+# e.g.
+# res.MFA$quanti.var
+# res.MFA$global.pca$quali.sup
+# res.MFA$global.pca$ind
+
+# access and store dimensions
+# decide the numbr of dimensions to store based on MFA results
+# below e are storing the first 3, but likelty thr fist 2 are enough
+dta_all_merged_sel3.1_trial$DIM1<- res.MFA$ind$coord[,1]
+dta_all_merged_sel3.1_trial$DIM2<- res.MFA$ind$coord[,2]
+dta_all_merged_sel3.1_trial$DIM3<- res.MFA$ind$coord[,3]
+
+# now you can export thid data to to additional statistical comaprisons on JASP
+write_csv(dta_all_merged_sel3.1_trial, "dta_all_merged_sel3.1_trial.csv")
+
+
+
+```

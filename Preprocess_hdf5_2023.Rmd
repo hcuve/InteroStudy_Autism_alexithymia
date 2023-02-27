@@ -749,3 +749,37 @@ GUI()
 ```
 
 
+```{r}
+colnames(for_gazepath)
+colnames(tmp.df4)
+tmp.df4$stim
+
+tmp.df4$trialUnq
+dta_pupil<- for_gazepath[,c(2,4,6:10,12:14,15,25,22)]
+
+dta_pupil
+
+library(tidyverse)
+
+unique(dta_pupil$screencontent)
+
+dta_pupil$timerezero3
+
+dta_pupil_stim<- dta_pupil%>%
+  subset(screencontent == "stim")
+
+range(dta_pupil_stim$timerezero3)
+diff(dta_pupil_stim$timerezero3)
+
+dta_pupil_stim_agg<- dta_pupil_stim %>%
+  group_by(ssid,text)%>%
+  # subset(screencontent == "stim")%>%
+  mutate(time_diff = abs(timerezero3 - lag(timerezero3)))%>%
+   mutate(pup_diff = abs(pupil - lag(pupil)))%>%
+  mutate(pupil_speed = pup_diff / time_diff)%>%
+    group_by(ssid,text, trialUnq, screencontent)%>%
+  summarise_if(is.numeric, mean,na.rm = T)
+
+write_csv(dta_pupil_stim_agg,"dta_pupil_stim_agg.csv")
+
+```

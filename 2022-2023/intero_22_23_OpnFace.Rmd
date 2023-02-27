@@ -40,27 +40,512 @@ data_list <- lapply(file_list, function(file) {
 # combine the data frames into a single data frame
 dta_OF_combined <- do.call(rbind, data_list)
 # View the resulting combined data frame
-head(combined_data)
+dta_OF_combined
 
-knitr::opts_chunk$set(echo = TRUE)
+unique(dta_OF_combined$filename)
+
+write_rds(dta_OF_combined, "dta_OF_combined_all.rds")
+
+colnames(dta_OF_combined)
+
+dta_OF_combined_select<- dta_OF_combined[,c(1:5, 680:715)]
+
+colnames(dta_OF_combined_select)
+
+# create variables
+dta_OF_combined_select$ssid<- substr(dta_OF_combined_select$filename, 1,3)
+
+unique(dta_OF_combined_select$ssid)
+
+dta_OF_combined_select<- dta_OF_combined_select%>%
+  subset(ssid != "IAP")
+
+dta_OF_combined_select$screencontent<- if_else(grepl("IAPSfix",dta_OF_combined_select$filename), "fixation", "stimuli")
+
+unique(dta_OF_combined_select$screencontent)
+
+dta_OF_combined_select$practice_stim <- if_else(grepl("Example",dta_OF_combined_select$filename), "practice", "trial")
+
+unique(dta_OF_combined_select$practice_stim)
+unique(dta_OF_combined_select$filename)
+
+dta_OF_combined_select$filename2<- substr(dta_OF_combined_select$filename,5,200)
+dta_OF_combined_select$filename2<- str_remove(dta_OF_combined_select$filename2, "IAPS|fix")
+unique(dta_OF_combined_select$filename2)
+
+dta_OF_combined_select$filename2<- substr(dta_OF_combined_select$filename2,6,200)
+dta_OF_combined_select$filename2
+dta_OF_combined_select$stimIAPS <- substr(dta_OF_combined_select$filename2,1,8)
+
+dta_OF_combined_select$filename2
+
+
+
+# [1] "world"
+# dta_OF_combined_select$trialIAPS.thisTrialN<- str_remove(sub(".*__", "", dta_OF_combined_select$filename2), ".csv")
+# dta_OF_combined_select$trialIAPS.thisTrialN
+# unique(dta_OF_combined_select$trialIAPS.thisTrialN)
+# doesn't work that we;;
+
+# dta_OF_combined_select$trialIAPS.thisTrialN<- NULL
+dta_OF_combined_select_stimuli<- subset(dta_OF_combined_select, screencontent == "stimuli")
+
+colnames(dta_OF_combined_select_stimuli)
+
+
+dta_OF_combined_select_stimuli_agg<- dta_OF_combined_select_stimuli%>%
+  group_by(ssid, practice_stim,stimIAPS)%>%
+  summarise_if(is.numeric, mean, na.rm = T)
+
+colnames(as.data.frame(dta_OF_combined_select_stimuli_agg))
+length(colnames(dta_OF_combined_select_stimuli_agg))
+
+tmp_AUnames
+
+tmp_AUnames<- c("ssid" ,         
+                "practice_stim", 
+                "stimIAPS"   ,   
+                "frame"    ,     
+                "face_id"      , 
+                "timestamp"   ,  
+                "confidence" ,   
+                "success",
+ "AU01_r_Inner_brow_raiser",   
+ "AU02_r_Outer_brow_raiser",   
+ "AU04_r_Brow_lowerer",       
+"AU05_r_Upper_lid_raiser",    
+"AU06_r_Cheek_raiser",        
+"AU07_r_Lid_tightener",       
+"AU09_r_Nose_wrinkler",      
+ "AU10_r_Upper_lip_raiser",    
+"AU12_r_Lip_corner_puller",   
+"AU14_r_Dimpler",             
+"AU15_r_Lip_corner_depressor",
+ "AU17_r_Chin_raiser",         
+"AU20_r_Lip_stretcher",       
+"AU23_r_Lip_tightener",      
+"AU25_r_Lips_part",          
+"AU26_r_Jaw_drop",            
+"AU45_r_Blink",               
+"AU01_c_Inner_brow_raiser",   
+"AU02_c_Outer_brow_raiser",  
+"AU04_c_Brow_lowerer",        
+"AU05_c_Upper_lid_raiser",    
+"AU06_c_Cheek_raiser",        
+"AU07_c_Lid_tightener",      
+"AU09_c_Nose_wrinkler",      
+"AU10_c_Upper_lip_raiser",    
+"AU12_c_Lip_corner_puller",   
+"AU14_c_Dimpler",            
+ "AU15_c_Lip_corner_depressor",
+"AU17_c_Chin_raiser",        
+"AU20_c_Lip_stretcher",       
+"AU23_c_Lip_tightener",      
+"AU25_c_Lips_part",          
+"AU26_c_Jaw_drop",    
+"AU28_c_Lip_suck",    
+"AU45_c_Blink")
+tmp_AUnames
+
+dta_OF_combined_select_stimuli_agg<- dta_OF_combined_select_stimuli_agg2
+dta_OF_combined_select_stimuli_agg2<- dta_OF_combined_select_stimuli_agg
+colnames(dta_OF_combined_select_stimuli_agg)<- tmp_AUnames
+
+dta_OF_combined_select_stimuli_agg
+# AU names
+
+# merge with the rest of the data
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze
+
+dta_OF_combined_select_stimuli_agg$stimIAPS<-as.character(dta_OF_combined_select_stimuli_agg$stimIAPS)
+dta_OF_combined_select_stimuli_agg$ssid<- as.double(dta_OF_combined_select_stimuli_agg$ssid)
+unique(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze$stimIAPS)
+
+unique(str_replace_all(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze$stimIAPS, " ",""))
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze$stimIAPS<-str_replace_all(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze$stimIAPS, " ","")
+
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze$stimIAPS
+
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF<-
+left_join(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze,dta_OF_combined_select_stimuli_agg)
+
+
+
+colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF)
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$self_valence_2.response
+# 
+# dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$valence_response<- if_else(is.na(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$self_valence_2.response) == TRUE,                                                                  dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$self_valence_4.response,
+#                                                                                     dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$self_valence_2.response)
+# 
+# dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$arousal_response <-
+#   if_else(is.na(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$Self_intensity_2.response) == TRUE, as.numeric(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$Self_intensity_3.response),                                                                        as.numeric(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$Self_intensity_2.response))
+
+
+colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF)
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF$valence
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF
+
+
+dta_all_merged_sel<- dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF[,c(26,2:6,31,33:41,45:47,17:19,21:22,25,27:28,52:63,90:102,109:143)]
+
+# missing alexiuthymia
+colnames(dta_all_merged_sel)
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze_OF
+
+dta_all_merged_sel
+
+# fto do ix questionnaire merging earlier - acidentally merged only AQ
+dta_quests
+
+left_join(dta_beh1,dta_quests)
+
+unique(dta_all_merged_sel$completion_code)
+unique(dta_beh1$completion_code)
+dta_quests$completion_code
+
+length(unique(dta_all_merged_sel$ssid))
+
+tmp_id_test<-
+dta_all_merged_sel%>%
+  group_by(ssid,completion_code)%>%
+  summarise_at("AQ", mean, na.rm = T)
+
+tmp_id_test$completion_code<- str_remove(tmp_id_test$completion_code,"\r")
+
+dta_all_merged_sel$completion_code<- str_remove(dta_all_merged_sel$completion_code,"\r")
+unique(str_remove(dta_all_merged_sel$completion_code,"\r"))
+dta_quests
+
+dta_quests$completion_code
+dta_all_merged_sel$participant_private_id
+unique(dta_quests$completion_code)
+unique(dta_all_merged_sel$completion_code)
+dta_all_merged_sel2<-left_join(dta_all_merged_sel, dta_quests,
+                               
+                               Joining, by = c("completion_code"))
+
+dta_all_merged_sel2.1<- subset(dta_all_merged_sel2, !is.na(dta_all_merged_sel2$TotalAlexScore))
+
+colnames(dta_all_merged_sel2)
+
+colnames(dta_all_merged_sel2)
+dta_all_merged_sel3<- dta_all_merged_sel2.1[,c(1:19,88:99,105:108, 20:87)]
+
+dta_all_merged_sel3.1<- subset(dta_all_merged_sel3, dta_all_merged_sel3$happiness_3.response != "None")
+
+
+dta_all_merged_sel3.1<- dta_all_merged_sel3.1 %>%
+  mutate(TAS_med_spli = if_else(TotalAlexScore> median(TotalAlexScore,na.rm = T), "high", "low"),
+         AQ_med_spli = if_else(AQ.x> median(AQ.x,na.rm = T), "high", "low")
+         
+         )
+
+colnames(dta_all_merged_sel3.1)
+
+dta_all_merged_sel3.1%>%
+  data.table::dcast(...~stimIAPS, mean, value.var = c(36:103))
+
+dta_all_merged_sel3.1
+
+# drop latency
+
+write_csv(dta_all_merged_sel3.1, "dta_all_merged_sel3.1.csv")
+
+FactoMineR
+install.packages("Factoshiny")
+library(Factoshiny)
+
+dta_all_merged_sel3.1$ha
+Factoshiny::MFAshiny(dta_all_merged_sel3.1)
+
+
+colnames(dta_all_merged_sel3.1)
+dta_all_merged_sel3.1<- dta_all_merged_sel3.1%>%
+  mutate(happiness_3.response = as.numeric(happiness_3.response),
+         sadness_3.response = as.numeric(sadness_3.response),
+           sadness_3.response = as.numeric(sadness_3.response),
+           surprise_3.response = as.numeric(surprise_3.response),
+          disgust_3.response = as.numeric(disgust_3.response),
+          fear_3.response = as.numeric(fear_3.response))
+
+
+table(is.na(dta_all_merged_sel3.1$happiness_3.response))
+
+table(is.na(dta_all_merged_sel3.1$fear_3.response))
+
+dta_all_merged_sel3.1$condition
+
+dta_all_merged_sel3.1_trial<-dta_all_merged_sel3.1%>%
+  subset(condition == "IAPS")
+
+
+dta_all_merged_sel3.1_trial
+
+table(is.na(dta_all_merged_sel3.1_trial$fear_3.response))
+table(is.na(dta_all_merged_sel3.1_trial$fear_3.response))
+table(is.na(dta_all_merged_sel3.1_trial$disgust_3.response))
+
+write_csv(dta_all_merged_sel3.1_trial, "dta_all_merged_sel3.1_trial.csv")
+
+# include anger
+dta_beh$anger_3.response
+
+dta_beh$ssid<- dta_beh$Participant
+
+dta_beh$stimIAPS
+dta_beh$condition
+
+dta_beh$anger_3.response<- as.numeric(dta_beh$anger_3.response)
+dta_beh$anger_3.response
+
+dta_anger<-dta_beh%>%
+  group_by(ssid, stimIAPS,condition)%>%
+  summarise_at(c("anger_3.response"), mean, na.rm = T)%>%
+  subset(!is.na(anger_3.response
+))
+  
+dta_anger_trial<- subset(dta_anger, condition == "IAPS")
+
+
+dta_anger_trial
+
+dta_anger_trial$stimIAPS<- str_remove_all(dta_anger_trial$stimIAPS, " ")
+unique(dta_anger_trial$stimIAPS)
+dta_all_merged_sel3.1_trial<- left_join(dta_all_merged_sel3.1_trial, dta_anger_trial)
+
+# load pupil
+library(readr)
+dta_pupil_stim_agg <- read_csv("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/dta_pupil_stim_agg.csv")
+View(dta_pupil_stim_agg)
+
+dta_pupil_stim_agg$tNo
+dta_pupil_stim_agg$text
+
+unique(substr(dta_pupil_stim_agg$text, 13,20))
+dta_pupil_stim_agg$stimIAPS<- substr(dta_pupil_stim_agg$text, 13,20)
+
+dta_all_merged_sel3.1_trial<- left_join(dta_all_merged_sel3.1_trial, dta_pupil_stim_agg)
+dta_pupil_stim_agg
+dta_all_merged_sel3.1_trial
+
+
+dta_all_merged_sel3.1_trial$AQ_med_spli
+
+dta_all_merged_sel3.1_trial$TAS_med_spli <- if_else(dta_all_merged_sel3.1_trial$TotalAlexScore > median(dta_all_merged_sel3.1_trial$TotalAlexScore), "high", "low")
+
+dta_all_merged_sel3.1_trial$AQ_med_spli <- if_else(dta_all_merged_sel3.1_trial$AQ.x > median(dta_all_merged_sel3.1_trial$AQ.x, na.rm = T), "high", "low")
+
+
+dta_all_merged_sel3.1_trial$AQ_mean_filled<- if_else(is.na(dta_all_merged_sel3.1_trial$AQ.x), mean(dta_all_merged_sel3.1_trial$AQ.x, na.rm = T), dta_all_merged_sel3.1_trial$AQ.x)
+
+
+dta_all_merged_sel3.1_trial$AQ_med_spli <- if_else(dta_all_merged_sel3.1_trial$AQ_mean_filled > median(dta_all_merged_sel3.1_trial$AQ_mean_filled, na.rm = T), "high", "low")
+
+
+unique(dta_all_merged_sel3.1_trial$TAS_med_spli)
+
+unique(dta_all_merged_sel3.1_trial$AQ_med_spli)
+                                                    
 ```
 
-## R Markdown
+MFA
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+dta_all_merged_sel3.1_trial
+Factoshiny::MFAshiny(dta_all_merged_sel3.1_trial)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+dta_all_merged_sel3.1_trial$ssid<- as.factor(as.character(dta_all_merged_sel3.1_trial$ssid))
 
-```{r cars}
-summary(cars)
+?MFA()
+
+Factoshiny::PCAshiny(dta_all_merged_sel3.1_trial)
+
+
+clustering_new_pre_PCA_2
+
+colnames(dta_all_merged_sel3.1_trial)
+
+dta_all_merged_sel3.1_trial[,c(1,3,42,43,36:40,46:50, 56:68,69:85)]
+
+length(c("n", "s", "s", 
+                        rep("s",5),
+                        # "s","s","s","s","s",]
+                        rep("s",12),
+                        rep("s",16)
+                        
+                        # "s","s","s","s","s","s","s","s","s","s","s","s",
+                        
+                        
+                        ))
+
+colnames(dta_all_merged_sel3.1_trial)
+dta_all_merged_sel3.1_trial_1<-
+dta_all_merged_sel3.1_trial[,c(1,3, 104:105, 42,43,36:40,106,46:50, 56:68,69:85,114,117)]
+
+colnames(dta_all_merged_sel3.1_trial_1)
+
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal")]
+res.MFA<-MFA(newDF,group=c(6,1,1), type=c("s","s","s"),name.group=c("emotioncat","valence","arousal"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+MFA(dta_all_merged_sel3.1_trial_1, 
+               group = c(2,1,1,6,5,13,17,2), 
+               type = c("n", 
+                        "s", 
+                        "s", 
+                        rep("s",6),
+                        rep("s",5),
+                       
+                        # "s","s","s","s","s",]
+                        rep("s",13),
+                        rep("s",17),
+                        rep("s",2)),
+                        
+                        # "s","s","s","s","s","s","s","s","s","s","s","s",
+                        
+                        
+                        # ),
+               name.group = c("pp_stim_cat","valence","arousal", "emotionratings",
+                              "SCR", "gaze", "face", "pupil"),
+               num.group.sup = c(1,2),
+               graph = TRUE)
+
+# 
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_tonic_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_phasic_max_mu_s")]
+res.MFA<-MFA(newDF,group=c(6,1,1,5), type=c("s","s","s","s"),name.group=c("emotioncat","valence","arousal","scr"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_tonic_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_phasic_max_mu_s","mean_x","mean_y","fix_Dur","fix_count","fix_Dur_sum","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum")]
+res.MFA<-MFA(newDF,group=c(6,1,1,5,9), type=c("s","s","s","s","s"),name.group=c("emotioncat","valence","arousal","scr","gaze"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_tonic_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_phasic_max_mu_s","mean_x","mean_y","fix_Dur","fix_count","fix_Dur_sum","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor")]
+res.MFA<-MFA(newDF,group=c(6,1,1,5,9,17), type=c("s","s","s","s","s","s"),name.group=c("emotioncat","valence","arousal","scr","gaze","face"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_tonic_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_phasic_max_mu_s","mean_x","mean_y","fix_Dur","fix_count","fix_Dur_sum","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor","pupil","pupil_speed")]
+res.MFA<-MFA(newDF,group=c(6,1,1,5,9,17,2), type=c("s","s","s","s","s","s","s"),name.group=c("emotioncat","valence","arousal","scr","gaze","face","pupil"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+Show graphs options
+Perform clustering after leaving MFA app?
+Get the MFA code
+Creation of groups
+Graphs
+Values
+Automatic description of axes
+Summary of dataset
+Data
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(factoextra)
+
+library(FactoMineR)
+library(FactoInvestigate)
+# install.packages("Factoshiny")
+library(Factoshiny)
+dta_all_merged_sel3.1_trial_1
+
+newDF <- dta_all_merged_sel3.1_trial_1[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_tonic_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_phasic_max_mu_s","mean_x","mean_y","fix_Dur","fix_count","fix_Dur_sum","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor","pupil","pupil_speed","TAS_med_spli", "AQ_med_spli" )]
+
+res.MFA<-MFA(newDF,group=c(6,1,1,5,9,17,2,1,1), type=c("s","s","s","s","s","s","s","n","n"),
+             name.group=c("emotioncat","valence","arousal","scr","gaze","face","pupil","TASMed", "AQMed"),
+             num.group.sup=c(8,9),
+             graph=FALSE)
+
+MFAshiny(newDF)
+
+
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+write_csv(dta_all_merged_sel3.1_trial_1, "dta_all_merged_sel3.1_trial_1.csv")
+
+# about the heart rate
+
+```
+
+
+
+newDF <- newDF[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_phasic_max_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_tonic_mu_s","mean_x","mean_y","fix_Dur_sum","fix_count","fix_Dur","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor","TAS_med_spli")]
+res.MFA<-MFA(newDF,group=c(6,1,1,5,9,17,1), type=c("s","s","s","s","s","s","n"),name.group=c("emotion","valence","arousal","SCR","gaze","face","TASMed"),graph=FALSE)
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+```{r}
+newDF1 <- newDF[,c("happiness_3.response","fear_3.response","anger_3.response","sadness_3.response","disgust_3.response","surprise_3.response","valence","arousal","cda_scr_mu_s","cda_phasic_max_mu_s","cda_iscr_mu_sxs","cda_amp_sum_mu_s","cda_tonic_mu_s","mean_x","mean_y","fix_Dur_sum","fix_count","fix_Dur","SacDur","SacAmpSac","Sac_count","Sac_Dur_sum","AU45_r_Blink","AU14_r_Dimpler","AU26_r_Jaw_drop","AU25_r_Lips_part","AU17_r_Chin_raiser","AU04_r_Brow_lowerer","AU06_r_Cheek_raiser","AU07_r_Lid_tightener","AU09_r_Nose_wrinkler","AU20_r_Lip_stretcher","AU23_r_Lip_tightener","AU05_r_Upper_lid_raiser","AU10_r_Upper_lip_raiser","AU01_r_Inner_brow_raiser","AU02_r_Outer_brow_raiser","AU12_r_Lip_corner_puller","AU15_r_Lip_corner_depressor","TAS_med_spli","AQ_med_spli")]
+
+
+dfcompleted <- missMDA::imputeMFA(newDF1, ncp=2,group=c(6,1,1,5,9,17,1,1), type=c("s","s","s","s","s","s","n","n"))
+
+
+res.MFA<-MFA(newDF1,tab.comp=dfcompleted,
+             group=c(6,1,1,5,9,17,1,1),
+             type=c("s","s","s","s","s","s","n","n"),
+             name.group=c("emotion","valence","arousal","SCR","gaze","face","TASMed","AQMed"),graph=FALSE)
+
+plot.MFA(res.MFA, choix="ind",lab.par=FALSE,invisible= 'quali.sup',habillage='TAS_med_spli',title="Individual factor map")
+plot.MFA(res.MFA, choix="var",habillage='group',title="Correlation circle")
+plot.MFA(res.MFA, choix="group")
+plot.MFA(res.MFA, choix="axes",habillage='group')
+
+
+# store dimensions
+res.MFA$quanti.var
+
+res.MFA$global.pca$quali.sup
+res.MFA$global.pca$ind
+
+
+newDF1$DIM1<- res.MFA$ind$coord[,1]
+newDF1$DIM2<- res.MFA$ind$coord[,2]
+
+
+dta_all_merged_sel3.1_trial
+dta_all_merged_sel3.1_trial$DIM1<- newDF1$DIM1
+dta_all_merged_sel3.1_trial$DIM2<- newDF1$DIM2
+dta_all_merged_sel3.1_trial$DIM3<- newDF1$DIM3
+
+newDF1$ssid<- newDF1$
+
+write_csv(dta_all_merged_sel3.1_trial_1, "dta_all_merged_sel3.1_trial_1.csv")
+
+```
