@@ -7,6 +7,14 @@ output: html_document
 
 
 ```{r}
+# load libraries
+# if you don't have these install fiest using
+# install.packages("nameofpackage")
+
+require(FactoMineR)
+require(Factoshiny)
+require(factoextra)
+
 dta_all_merged_sel3.1_trial #dataset
 
 # you can run MFA in dashbopard by runing 
