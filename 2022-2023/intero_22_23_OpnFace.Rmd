@@ -1,0 +1,66 @@
+---
+title: "intero_2022_23_OpenFaceprocesing"
+author: "Helio"
+date: "2023-02-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+
+# Set working directory to the folder containing subfolders with CSV files
+setwd("path/to/directory/")
+setwd("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/faces/processed")
+
+# Get a list of all CSV files within subfolders using list.files() and recursive = TRUE
+file_list <- list.files(pattern = "\\.csv$", recursive = TRUE)
+
+# Initialize an empty data frame to hold combined data
+combined_data <- data.frame()
+
+# Loop through each CSV file in the list and read it into a data frame using read.csv()
+
+grepl("IAPSfix", file_list)
+file_list[]
+unique(file_list)
+
+# set your working directory to the folder containing your CSV files
+setwd("path/to/folder")
+
+# get a list of all the CSV files in your folder and its subfolders
+file_list <- list.files(pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
+
+# read the CSV files into a list of data frames, and store the filename as a new column in each data frame
+data_list <- lapply(file_list, function(file) {
+  data <- read.csv(file)
+  data$filename <- file
+  data
+})
+
+# combine the data frames into a single data frame
+dta_OF_combined <- do.call(rbind, data_list)
+# View the resulting combined data frame
+head(combined_data)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
