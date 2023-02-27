@@ -4,3 +4,329 @@ author: "Helio"
 date: "2023-02-19"
 output: html_document
 ---
+
+
+```{r}
+
+unique(dta_bhv_quest1.1_with_fix_resp_arranged_scr$screen_content)
+
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim<-
+  library(readr)
+dta_gaze_stim<- read_csv("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/Preprocessed/eyetracker processed gazepath/stim all participants gp output.csv")
+View(dta_gaze_stim)
+
+subset(dta_bhv_quest1.1_with_fix_resp_arranged_scr, screen_content == "stimuli")
+
+colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim)
+
+
+```
+
+
+```{r}
+
+
+# let'ts do a quick visual inspection
+dta_gaze_stim$trialUnq
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim$stimIAPS
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim$tNo
+
+# get sting before pattern to cerate tNO
+library(stringr)
+dta_gaze_stim$tNo <-  as.numeric(word(dta_gaze_stim$trialUnq,1,sep = " stim"))
+
+dta_gaze_stim$tNo
+
+# ssid
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim$ssid
+dta_gaze_stim$Participant
+dta_gaze_stim$ssid<- as.numeric(substr(dta_gaze_stim$Participant,4,6))
+
+# # we expect fixation t data to cluster in the center
+dta_gaze_stim%>%
+  subset(Value == "f")%>%
+  ggplot(aes(mean_x, mean_y))+
+  geom_point(alpha= .1)+
+  # facet_grid(~screencontent)+
+  xlim(0,1920)+
+  ylim(1200,0)+
+  # geom_vline(xintercept = 640)+
+  #  geom_vline(xintercept = 640*2)+
+  #  geom_vline(xintercept = 640*3)+
+  # geom_vline(xintercept = 960)+
+  geom_vline(xintercept = 960-512) +
+  geom_vline(xintercept = 960-512+341.3333)+
+  geom_vline(xintercept = 960-512+(341.3333*2))+
+   geom_vline(xintercept = 960-512+(341.3333*3))+
+
+# now vertical dimension
+
+    geom_hline(yintercept = 600-384)+
+   geom_hline(yintercept = 600-384+384)+
+   geom_hline(yintercept = 600+384)
+# 1024/2 = 341.3333
+# stimuli height (px): 768
+# stimuli width (px): 1024
+
+# find centers
+ #  1920/2 = 960
+ #  1024/2 = 512
+ #  
+ # 512 needs to match 960
+    
+ # 768/2 = 384
+ # 1200/2 = 600
+   dta_gaze_stim_f<- subset(dta_gaze_stim, Value == "f")
+   
+  # kme 
+km.res <- kmeans(dta_gaze_stim_f[,7:8], 6, nstart = 10)
+
+# Visualize kmeans clustering
+# use repel = TRUE to avoid overplotting
+install.packages("factoextra")
+library(factoextra)
+factoextra::fviz_cluster(km.res, dta_gaze_stim_f[,7:8], ellipse.type = "norm")
+```
+
+# create screen content
+
+```{r}
+
+# let's quickly plot gaze metrics
+
+dta_gaze_stim%>%
+  ggplot(aes(Duration))+
+  geom_histogram(aes(y=..density..), nbins = 300) 
+   # geom_density(aes(y=..density..)) +
+
+
+
+# let's quickly plot gaze metrics
+dta_gaze_stim
+dta_gaze_stim%>%
+  subset(Value == "f")%>%
+  ggplot(aes(RMS))+
+  geom_histogram(aes(y=..density..), nbins = 300) + 
+   geom_density(aes(y=..density..)) 
+
+# we would expacet fopr the SD for gaze to be samlle than that of saccade
+dta_gaze_stim%>%
+  # subset(Value == "f")%>%
+  ggplot(aes(POGsdSacAmp, colour = Value, fill =Value))+
+  geom_histogram(aes(y=..density..), nbins = 300, alpha = .2) + 
+   geom_density(aes(y=..density..), alpha = .2) +
+  # facet_grid(~screencontent)+
+  scale_fill_brewer(palette = "Dark2")+
+   scale_color_brewer(palette = "Dark2")
+
+# All looks in order
+
+```
+
+now create averages for gaze
+
+```{r}
+
+colnames(dta_gaze_stim)
+??spread
+AOI_kmean<- as.data.frame(km.res$centers)%>%
+  mutate(AOI = rownames(as.data.frame(km.res$centers)))%>%
+  pivot_wider( names_from ="AOI", values_from =  c("mean_x","mean_y"))
+
+AOI_kmean<- as.numeric(AOI_kmean)
+dta_gaze_stim$AOI<- AOI_kmean
+# create AOI
+# 6 quadrants
+# 
+#   geom_vline(xintercept = 960-512) +
+#   geom_vline(xintercept = 960-512+341.3333)+
+#   geom_vline(xintercept = 960-512+(341.3333*2))+
+#    geom_vline(xintercept = 960-512+(341.3333*3))+
+# 
+# # now vertical dimension
+# 
+#     geom_hline(yintercept = 600-384)+
+#    geom_hline(yintercept = 600-384+384)+
+#    geom_hline(yintercept = 600+384)
+
+# compute euclidean distances
+
+dta_gaze_stim<- as.data.frame(dta_gaze_stim)
+
+dta_gaze_stim<- as.data.frame(as.matrix(dta_gaze_stim))
+
+
+# what do we do with saccade
+colnames(dta_gaze_stim)
+dta_gaze_stim$mean_x- dta_gaze_stim$AOI.mean_x_1
+
+
+dta_gaze_stim<- dta_gaze_stim%>%
+
+  mutate(AOI.mean_x_1 = as.numeric(AOI.mean_x_1),
+         AOI.mean_x_2 = as.numeric(AOI.mean_x_2),
+         AOI.mean_x_3 = as.numeric(AOI.mean_x_3),
+         AOI.mean_x_4 = as.numeric(AOI.mean_x_4),
+         AOI.mean_x_5 = as.numeric(AOI.mean_x_5),
+         AOI.mean_x_6 = as.numeric(AOI.mean_x_6),
+         
+         AOI.mean_y_1 = as.numeric(AOI.mean_y_1),
+         AOI.mean_y_2 = as.numeric(AOI.mean_y_2),
+         AOI.mean_y_3 = as.numeric(AOI.mean_y_3),
+         AOI.mean_y_4 = as.numeric(AOI.mean_y_4),
+         AOI.mean_y_5 = as.numeric(AOI.mean_y_5),
+         AOI.mean_y_6 = as.numeric(AOI.mean_y_6),
+         mean_x= as.numeric(mean_x),
+         mean_y= as.numeric(mean_y) 
+         )
+  
+
+
+  dta_gaze_stim<- dta_gaze_stim%>%
+group_by(ssid, trialUnq)%>%
+  mutate(AOI_1_eucl = sqrt(((mean_x- AOI.mean_x_1)^2) + ((mean_y - AOI.mean_y_1)^2)),
+         AOI_2_eucl = sqrt(((mean_x- AOI.mean_x_2)^2) + ((mean_y - AOI.mean_y_2)^2)),
+            AOI_3_eucl = sqrt(((mean_x- AOI.mean_x_3)^2) + ((mean_y - AOI.mean_y_3)^2)),
+          AOI_4_eucl = sqrt(((mean_x- AOI.mean_x_4)^2) + ((mean_y - AOI.mean_y_4)^2)),
+                AOI_5_eucl = sqrt(((mean_x- AOI.mean_x_5)^2) + ((mean_y - AOI.mean_y_5)^2)),
+                AOI_6_eucl = sqrt(((mean_x- AOI.mean_x_6)^2) + ((mean_y - AOI.mean_y_6)^2)))
+  
+  # aoi distances
+    # mutate(nose_eye_dist = sqrt(((x_33-x_41)^2) + (( y_33_rv-y_41_rv)^2)),
+    #      # left_eye_dist = sqrt(((mean_x- x_41)^2) + ((mean_y - y_41_rv)^2)),
+    #      nose_mouth_dist = sqrt(((x_33-x_66)^2) + (( y_33_rv-y_66_rv)^2)),
+    #      eye_mouth_dist = sqrt(((x_41- x_66)^2) + ((y_41 - y_66_rv)^2)))
+  
+  
+  dta_gaze_stim
+  
+  
+  
+
+colnames(dta_gaze_stim)
+dta_gaze_stim$minDistance <-with(dta_gaze_stim, pmin(AOI_1_eucl,AOI_2_eucl,AOI_3_eucl,AOI_4_eucl,AOI_5_eucl,AOI_6_eucl))
+
+
+# Example data frame
+df <- data.frame(x = c(1, 2, 3), y = c(4, 2, 1), z = c(2, 5, 3))
+
+# Function to return name of column with minimum value
+min_col <- function(row) {
+  colnames(row)[which.min(row)]
+}
+
+# Apply function to each row of data frame
+apply(dta_gaze_stim[,28:33], 1, min_col)
+
+dta_gaze_stim$AOI_kmean <- 
+  if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_1_eucl, "AOI_1",
+         if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_2_eucl, "AOI_2",
+if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_3_eucl, "AOI_3",
+if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_4_eucl, "AOI_4",
+       if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_5_eucl, "AOI_5",
+              
+ if_else(dta_gaze_stim$minDistance == dta_gaze_stim$AOI_6_eucl, "AOI_6", NULL))))))
+
+table(is.na(dta_gaze_stim$AOI_kmean ))
+
+
+# # Example data frame with 6 columns
+# df <- data.frame(a = c(2, 3, 1),
+#                  b = c(1, 2, 3),
+#                  c = c(3, 1, 2),
+#                  d = c(5, 4, 6),
+#                  e = c(4, 5, 2),
+#                  f = c(6, 2, 4))
+# 
+# # Function to return name of column with minimum value in a row
+# min_col <- function(row) {
+#   colnames(row)[which.min(row)]
+# }
+# 
+# # Apply function to each row and create new column
+# df$min_col <- apply(df, 1, min_col)
+# 
+# # Show the updated data frame
+# df
+
+colnames(dta_gaze_stim )
+
+# ignoring saccades for now
+dta_gaze_stim_f<- subset(dta_gaze_stim, Value == "f") 
+dta_gaze_stim_s<- subset(dta_gaze_stim, Value == "s")
+colnames(dta_gaze_stim_s)
+dta_gaze_stim_s<- dta_gaze_stim_s[,c(1:15)]
+dta_gaze_stim_s$SacAmpSac<- dta_gaze_stim_s$POGsdSacAmp
+dta_gaze_stim_s$SacDur<- dta_gaze_stim_s$Duration
+dta_gaze_stim_s$RMS<-NULL
+
+dta_gaze_stim_s<- dta_gaze_stim_s[,c(1:3,10,11,12:16)]
+dta_gaze_stim_s$Value<-NULL
+dta_gaze_stim_f$fix_Dur<- dta_gaze_stim_f$Duration
+dta_gaze_stim_f$Duration<-NULL
+dta_gaze_stim_f$POGsd<- dta_gaze_stim_f$POGsdSacAmp
+dta_gaze_stim_f$POGsdSacAmp<-NULL
+dta_gaze_stim_f
+
+# compute entropy
+
+dta_gaze_stim_f
+
+
+dta_gaze_stim_f$AOI_kmean
+dta_gaze_stim_f$AOI_kmean_num<- as.numeric(substr(dta_gaze_stim_f$AOI_kmean, 5,5))
+# igraph::entrop
+dta_gaze_stim_f<- dta_gaze_stim_f %>%
+  group_by(ssid, trialUnq, tNo)%>%
+  # mutate(AOI_num = as.numeric(as.factor(AOI)),
+         # AOI_2_num = as.numeric(as.factor(AOI_2))
+         # )%>%
+  mutate(entropy_AOI =entropy::entropy(AOI_kmean_num))%>%
+  group_by(ssid)%>%
+  mutate(entropy_AOI_maxnorm = entropy_AOI/max(entropy_AOI)
+         )
+
+colnames(dta_gaze_stim_f)
+
+dta_gaze_stim_f_2<- dta_gaze_stim_f[,c(1,6:13,34:35,37:38)]
+
+dta_gaze_stim_f_2<- dta_gaze_stim_f_2%>%
+  mutate(RMS = as.numeric(RMS),
+         fix_Dur = as.numeric(fix_Dur),
+         POGsd = as.numeric(POGsd))%>%
+   group_by(ssid, trialUnq, tNo)%>%
+  mutate(fix_Dur_sum = sum(fix_Dur),
+         fix_count = n())%>%
+  summarise_if(is.numeric,mean,na.rm =T)
+
+
+dta_gaze_stim_s<- dta_gaze_stim_s%>%
+  mutate(SacAmpSac = as.numeric(SacAmpSac),
+         SacDur = as.numeric(SacDur))%>%
+ group_by(ssid, trialUnq, tNo)%>%
+  mutate(Sac_Dur_sum = sum(SacDur),
+         Sac_count = n())%>%
+    group_by(ssid, trialUnq, tNo)%>%
+   summarise_if(is.numeric,mean,na.rm =T)
+  
+
+
+dta_gaze_stim_f_s_2<-left_join(dta_gaze_stim_f_2,dta_gaze_stim_s)
+
+
+dta_gaze_stim_f_s_2
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim$stimIAPS
+unique(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim$stimIAPS)
+dta_gaze_stim_f_s_2$stimIAPS<- substr(dta_gaze_stim_f_s_2$trialUnq)
+
+dta_gaze_stim_f_s_2$ssid<- as.double(dta_gaze_stim_f_s_2$ssid)
+dta_gaze_stim_f_s_2$tNo<- as.double(dta_gaze_stim_f_s_2$tNo)
+# dta_gaze_stim_f_s_2$t
+dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze<- left_join(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim,dta_gaze_stim_f_s_2)
+
+colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr_stim_gaze)
+
+
+```
