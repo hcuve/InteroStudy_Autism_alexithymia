@@ -15,6 +15,7 @@ setwd("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Pap
 # Get a list of all CSV files within subfolders using list.files() and recursive = TRUE
 file_list <- list.files(pattern = "\\.csv$", recursive = TRUE)
 
+
 # Initialize an empty data frame to hold combined data
 combined_data <- data.frame()
 
