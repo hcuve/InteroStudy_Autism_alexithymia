@@ -7,7 +7,7 @@ output: html_document
 
 ```{r}
 library(readr)
-dta_hr <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/heartrate.csv")
+dta_hr <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/heartrate v2.csv")
 View(dta_hr)
 
 unique(as.numeric(dta_hr$trigger))
@@ -16,45 +16,150 @@ unique(as.numeric(dta_hr$trigger))
 
 library(readr)
 tmp_bhv <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/BEHAVIOURAL/376_2022_Dec_06_1327_01.csv")
+
+
+
+colnames(dta_bhv_quest4)
+dta_bhv_quest4
+tmp_bhv<- dta_beh1[,c(26,1:6,31)]
+
+unique(dta_beh_labels$filename) 
+
+unique(tmp_bhv$filename) 
+
+unique(str_remove_all(dta_beh_labels$stimIAPS, " "))
+
+dta_beh_labels$stimIAPS<- (str_remove_all(dta_beh_labels$stimIAPS, " "))
+
+unique(tmp_bhv$stimIAPS)
+unique((tmp_bhv(dta_beh_labels$stimIAPS, " ")))
+tmp_bhv$stimIAPS<- (str_remove_all(tmp_bhv$stimIAPS, " "))
+colnames(dta_beh_labels)
+
+tmp_bhv$condition
+dta_beh_labels$condition
+
+
+tmp_bhv<-left_join(tmp_bhv, dta_beh_labels[,c(1:3,7)])
+
+tmp_bhv<- tmp_bhv%>%
+  arrange(ssid)%>%
+  arrange(ssid,tNo)%>%
+  group_by(ssid)%>%
+  mutate(tno2 = 1:n())
+
+range(tmp_bhv$tno2)
+```
+
+
+
+
 View(tmp_bhv)
 
 colnames(tmp_bhv)
 
+```{r}
 tmp_bhv$trigger
-
 colnames(tmp_bhv)
 
-tmp_bhv<- tmp_bhv[,c(1:6)]
+# tmp_bhv<- tmp_bhv[,c(1:6)]
 
 dta_hr$trigger<- dta_hr$stim
 
 require(tidyverse)
 
 tmp_bhv$trigger<- as.character(tmp_bhv$trigger)
-dta_hr2<-left_join(dta_hr,tmp_bhv)
 
 
+unique(dta_hr$`participant number`)
+
+dta_hr$ssid<- dta_hr$`participant number`
+
+dta_hr$tno2<- dta_hr$order
+
+dta_hr$tno2<- dta_hr$order
+dta_hr$ssid<- as.character(dta_hr$ssid)
+# 
+dta_hr2<- left_join(dta_hr,tmp_bhv, by = c('ssid', 'tno2'))
+
+# colna
+# dta_hr3<- dta_hr2%>%
+#   fill(condition:ArousalMean, .direction = "up")
+
+# dta_hr3$ssid<-dta_hr3$`participant number`
+
+unique(dta_hr2$ssid)
 dta_hr3<- dta_hr2%>%
-  fill(condition:ArousalMean, .direction = "up")
-
-dta_hr3$ssid<-dta_hr3$`participant number`
-dta_hr4<- dta_hr3%>%
+  group_by(ssid)%>%
   mutate(lag_hr = as.double(lag(mean)))%>%
   mutate(hr_mean = as.double(mean)) %>%
   # subset(!is.na(lag_hr))%>%
   mutate(hr_diff = hr_mean - lag_hr)%>%
   group_by(ssid)%>%
-  mutate(hr_mean_centered = scale(hr_mean))%>%
-  subset(as.numeric(trigger)<100)
+  mutate(hr_mean_centered = scale(hr_mean))
+  
+
+unique(dta_hr3$ssid)
+
+unique(as.numeric(dta_hr3$stim))
+
+unique(dta_hr3$trigger.x)
+
+unique(dta_hr3$trigger.y)
+
+dta_hr4<- dta_hr3%>%
+subset(stim!="101")%>%
+subset(stim!="fix")
+dta_hr4
+length(unique(dta_hr4$ssid))
+
+# merge with current data
+unique(dta_hr4$condition)
 
 
-dta_hr2$tr
-range(dta_hr2$trigger)
+dta_hr5<- dta_hr4%>%subset(condition == "IAPS")
 
-# 370 and 373 missing
+unique(dta_all_merged_sel3.1_trial$condition)
 
-length(unique(dta_hr$`participant number`))
-unique(dta_hr$`participant number`)
+
+unique(dta_all_merged_sel3.1_trial$stimIAPS)
+colnames(dta_hr5)
+
+dta_all_merged<- left_join(dta_all_merged_sel3.1_trial,dta_hr5[,c(1:2,6,7,9:11,14,16:19)], by =c('ssid','stimIAPS','tNo','stimDescription'))
+
+
+write.csv(dta_all_merged, "dta_all_merged.csv")
+colnames(dta_all_merged)
+
+
+colnames(dta_all_merged)
+
+dta_all_merged$DIM1<- NULL
+dta_all_merged$DIM2<- NULL
+
+dta_all_merged$DIM3<- NULL
+
+dta_all_merged
+
+Factoshiny::MFAshiny()
+```
+
+# 
+# 
+# range(dta_hr3$trigger.x)
+# 
+# # 370 and 373 missing
+# 
+# length(unique(dta_hr3$`participant number`))
+# unique(dta_hr$`participant number`)
+# uniqu
+# 
+# #  load 370 and 373 
+# unique(dta_beh1$tNo)
+# dta_beh_labels
+
+dta_hr3%>%
+  subset(condition == "IAPS")
 
 
 ```
