@@ -86,6 +86,8 @@ dta_beh1$valence<- if_else(is.na(dta_beh1$self_valence_4.response) == FALSE, dta
 # create aropusal rating
 dta_beh1$Self_intensity_3.response<- as.double(dta_beh1$Self_intensity_3.response)                      
 
+
+dta_beh1
 dta_beh1$arousal<- if_else(is.na(dta_beh1$Self_intensity_2.response) == FALSE, as.numeric(dta_beh1$Self_intensity_2.response),
                           if_else(is.na(dta_beh1$Self_intensity_3.response) == FALSE,
                                   as.numeric(dta_beh1$Self_intensity_3.response), NULL))
@@ -500,7 +502,9 @@ dta_ssid_code<- dta_ssid_code%>%
 
 dta_beh1<-left_join(dta_beh1,dta_ssid_code)
 
-dta_bhv_quest<- left_join(dta_beh1,dta_AQ_2022_23_spread1_scored)
+left_join(dta_quests,dta_ssid_code)
+
+dta_bhv_quest<- left_join(dta_beh1,dta_quests)
 
 dta_bhv_quest$ssid
 dta_beh
@@ -574,5 +578,9 @@ dta_bhv_quest1.1_with_fix_resp %>%
   arrange(ssid)%>%
   arrange(ssid,condition_no,new_index_stim, screen_content_no)
 ta_bhv_quest$screen
+dta_bhv_quest1.1_with_fix_resp_arranged
+
+
+dta_bhv_quest$alex
 ```
 dta_bhv_quest = dataset with behavioura data and questionnaires/iq, demographics

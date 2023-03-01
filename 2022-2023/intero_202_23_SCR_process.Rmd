@@ -748,6 +748,9 @@ range(dta_scr_bio_w_events1_norest$event_nr)
 dta_bhv_quest1.1_with_fix_resp_arranged$ssid<-as.numeric(dta_bhv_quest1.1_with_fix_resp_arranged$ssid)
 
 dta_bhv_quest1.1_with_fix_resp_arranged_scr<- left_join(dta_bhv_quest1.1_with_fix_resp_arranged,dta_scr_bio_w_events1_norest)
+
+dta_bhv_quest1.1_with_fix_resp_arranged_scr
+colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr)
 ```
 
 

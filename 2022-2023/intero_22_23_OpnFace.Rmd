@@ -538,14 +538,21 @@ res.MFA$global.pca$ind
 newDF1$DIM1<- res.MFA$ind$coord[,1]
 newDF1$DIM2<- res.MFA$ind$coord[,2]
 
+dta_all_merged_sel3.1_trial$DIM3<- res.MFA$ind$coord[,2]
 
 dta_all_merged_sel3.1_trial
 dta_all_merged_sel3.1_trial$DIM1<- newDF1$DIM1
 dta_all_merged_sel3.1_trial$DIM2<- newDF1$DIM2
 dta_all_merged_sel3.1_trial$DIM3<- newDF1$DIM3
 
-newDF1$ssid<- newDF1$
+newDF1$ssid<- newDF1
 
-write_csv(dta_all_merged_sel3.1_trial_1, "dta_all_merged_sel3.1_trial_1.csv")
+dta_all_merged_sel3.1_trial_1
+
+write_csv(dta_all_merged_sel3.1_trial, "dta_all_merged_sel3.1_trial.csv")
+
+dta_all_merged_sel3.1_trial
+
+write_c
 
 ```
