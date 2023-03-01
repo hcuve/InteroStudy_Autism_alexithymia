@@ -486,6 +486,7 @@ table(dta_journal$ssid)
 dta_journal_1
 
 # journal has one less for 365
+tmp_dta_362_373
 
 ```{r}
 
@@ -613,6 +614,7 @@ table(dta_journal_1$ssid)
 # table(dta_journal$ssid)
 
 # potential mismatches
+length(unique( dta_all_merged_sel3.1_trial$ssid))
 # 373,362,370
 ```
 "100" "101" "16"  "102" "103" "101" "17"  "102" "103" "101" "18"  "102" "103" "101" "19"  "102" "103" "101" "20"  "102" "103" "101" "21"  "102" "103" "101" "46" 
@@ -760,6 +762,8 @@ sort(tmp_sid_journal$new_index)-lag(sort(tmp_sid_journal$new_index))
 # 621 bio has one more
 # 622 bio has one more
 
+
+tmp_dta_362_373
 
 db_leda_bio<- subset(db_leda_bio, Event.Nr>1)
 

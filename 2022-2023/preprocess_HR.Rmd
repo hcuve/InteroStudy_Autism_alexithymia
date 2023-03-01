@@ -7,7 +7,54 @@ output: html_document
 
 ```{r}
 library(readr)
-heartrate <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/heartrate.csv")
-View(heartrate)
+dta_hr <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/heartrate.csv")
+View(dta_hr)
+
+unique(as.numeric(dta_hr$trigger))
+
+# behavioural with tags to merge
+
+library(readr)
+tmp_bhv <- read_csv("Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/Data Collection 2019- 2020/2022/iaps/BEHAVIOURAL/376_2022_Dec_06_1327_01.csv")
+View(tmp_bhv)
+
+colnames(tmp_bhv)
+
+tmp_bhv$trigger
+
+colnames(tmp_bhv)
+
+tmp_bhv<- tmp_bhv[,c(1:6)]
+
+dta_hr$trigger<- dta_hr$stim
+
+require(tidyverse)
+
+tmp_bhv$trigger<- as.character(tmp_bhv$trigger)
+dta_hr2<-left_join(dta_hr,tmp_bhv)
+
+
+dta_hr3<- dta_hr2%>%
+  fill(condition:ArousalMean, .direction = "up")
+
+dta_hr3$ssid<-dta_hr3$`participant number`
+dta_hr4<- dta_hr3%>%
+  mutate(lag_hr = as.double(lag(mean)))%>%
+  mutate(hr_mean = as.double(mean)) %>%
+  # subset(!is.na(lag_hr))%>%
+  mutate(hr_diff = hr_mean - lag_hr)%>%
+  group_by(ssid)%>%
+  mutate(hr_mean_centered = scale(hr_mean))%>%
+  subset(as.numeric(trigger)<100)
+
+
+dta_hr2$tr
+range(dta_hr2$trigger)
+
+# 370 and 373 missing
+
+length(unique(dta_hr$`participant number`))
+unique(dta_hr$`participant number`)
+
 
 ```
