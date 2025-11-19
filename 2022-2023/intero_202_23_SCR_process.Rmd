@@ -616,6 +616,8 @@ table(dta_journal_1$ssid)
 # potential mismatches
 length(unique( dta_all_merged_sel3.1_trial$ssid))
 # 373,362,370
+
+dta_journal_1
 ```
 "100" "101" "16"  "102" "103" "101" "17"  "102" "103" "101" "18"  "102" "103" "101" "19"  "102" "103" "101" "20"  "102" "103" "101" "21"  "102" "103" "101" "46" 
  [28] "102" "103" "101" "26"  "102" "103" "101" "60"  "102" "103" "101" "67"  "102" "103" "101" "58"  "102" "103" "101" "61"  "102" "103" "101" "54"  "102" "103" "101"
@@ -753,6 +755,68 @@ dta_bhv_quest1.1_with_fix_resp_arranged_scr<- left_join(dta_bhv_quest1.1_with_fi
 
 dta_bhv_quest1.1_with_fix_resp_arranged_scr
 colnames(dta_bhv_quest1.1_with_fix_resp_arranged_scr)
+
+dta_scr_bio_w_events1
+colnames(dta_scr_bio_w_events1)
+dta_scr_bio_w_events1
+
+unique(dta_scr_bio_w_events1$ssid)
+# elixas setr 359+, and 621+
+dta_scr_bio_w_events1
+colnames(dta_scr_bio_w_events1)
+
+dta_scr_bio_w_events1
+
+dta_scr_bio_359plus_621plus_eliza <- dta_scr_bio_w_events1[,1:27]
+
+# saveRDS(dta_scr_bio_359plus_621plus_eliza, "dta_scr_bio_359plus_621plus_eliza.rds")
+
+dta_scr_bio_359plus_621plus_eliza
+
+colnames(dta_all_merged_eliza)
+
+dta_all_merged_eliza_demog_quest<- dta_all_merged_eliza[,1:43]
+
+require(tidyverse)
+```
+
+
+```{r}
+
+# create tno for elizas dataset
+
+dta_scr_bio_359plus_621plus_eliza$ssid<- as.character(dta_scr_bio_359plus_621plus_eliza$ssid)
+
+dta_all_merged_eliza_demog_quest$ssid<- as.character(dta_all_merged_eliza_demog_quest$ssid)
+
+
+unique(dta_all_merged_eliza_demog_quest$tNo)
+unique(dta_scr_bio_359plus_621plus_eliza$event_nid)
+
+
+# trigger <- readRDS("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/EPS/trigger.rds")
+dta_scr_bio_359plus_621plus_eliza$event_nr
+trigger
+
+dta_scr_bio_359plus_621plus_eliza<- dta_scr_bio_359plus_621plus_eliza%>%
+  subset(event_nr>1)%>% # removes rest
+  mutate(order = event_nr-1)
+
+# merge with triggers
+
+dta_scr_bio_359plus_621plus_eliza<- left_join(dta_scr_bio_359plus_621plus_eliza, trigger)
+
+dta_all_merged_eliza_demog_quest
+
+dta_scr_bio_359plus_621plus_eliza<- left_join(dta_scr_bio_359plus_621plus_eliza,dta_all_merged_eliza_demog_quest)%>%
+  select(-type, - channel,-filename.y, -index_1, -new_index)
+
+
+dta_scr_bio_359plus_621plus_eliza<- dta_scr_bio_359plus_621plus_eliza%>%
+  select(-c(screen_content, screen_content_no, condition.x, condition_no))
+
+
+dta_scr_bio_359plus_621plus_eliza
 ```
 
 
@@ -762,7 +826,7 @@ sort(tmp_sid_journal$new_index)-lag(sort(tmp_sid_journal$new_index))
 # 621 bio has one more
 # 622 bio has one more
 
-
+```{r}
 tmp_dta_362_373
 
 db_leda_bio<- subset(db_leda_bio, Event.Nr>1)
@@ -850,6 +914,8 @@ tmp.df4_sum_full_bio<- left_join(tmp.df4_sum_full,  db_leda_bio, by = c("ssid", 
 
 colnames(tmp.df4_sum_full_bio)
 
+
+db_leda_bio
 write_csv(db_leda_bio, "db_leda_bio_346_347_ledagsr.csv")
 
 write_csv(db_leda_bio, "db_leda_bio_346_355_ledagsr.csv")
