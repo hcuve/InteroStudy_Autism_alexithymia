@@ -82,6 +82,9 @@ colnames(dta_2023_eps_no_dup_cln)
 
 mixed models in specific signals
 ```{r}
+dta_2023_eps_no_dup_cln
+
+
 ```
 
 Alexithymia and autism influences on autonomic space
@@ -151,6 +154,11 @@ dta_2023_eps_no_dup_cln_no_na<- dta_2023_eps_no_dup_cln%>%
   subset(!is.na(aq_approx)) 
 
 table(dta_2023_eps_no_dup_cln_no_na$ssid)
+
+
+table(dta_2023_eps_no_dup_cln_no_na$asd_sid)
+
+table(dta_2023_eps_no_dup_cln_no_na$tas_med_split)
 
 ```
 
@@ -444,6 +452,43 @@ pca_vardim_agg_wid<- pca_vardim_agg %>%
 ```
 
 
+
+
+Approach 2
+- the approach above needs aligning dimensions, etc
+- Global PCA then project each individual and derive metrics
+
+
+```{r}
+
+pca_by_subject <- dta_2023_eps_no_dup_cln_no_na_4pca %>%
+  dplyr::group_by(ssid) %>%
+  dplyr::group_modify(~ pca_metrics_one_2(.x)) %>%
+  dplyr::ungroup()
+
+
+
+
+dta_vars_4pca<- dta_2023_eps_no_dup_cln_no_na_4pca%>%
+    dplyr::select(dplyr::all_of(vars_pca)) %>%
+    tidyr::drop_na()
+
+
+
+    # keep original settings (no centering/scaling in prcomp)
+  fit <- try(stats::prcomp(X, center = FALSE, scale. = FALSE), silent = TRUE)
+  if (inherits(fit, "try-error")) {
+    return(tibble::tibble(metrics = list(na_metrics), vardim = list(na_vardim)))
+  }
+```
+    
+
+
+```{r}
+
+
+
+```
 
 ```{r}
 # final table: metrics + per-variable columns
@@ -986,4 +1031,4 @@ left_join(pca_metrics_loso_al)%>%
 rm(pca_metrics_loso_al)
 ```
 
-check if we need tio take off some pairs to reduce the pairwise stuff
+check if we need to take off some pairs to reduce the pairwise stuff
