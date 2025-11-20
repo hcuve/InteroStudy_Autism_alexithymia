@@ -468,15 +468,20 @@ pca_by_subject <- dta_2023_eps_no_dup_cln_no_na_4pca %>%
 
 
 
+setwd("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/2025 - autism and alexithymia")
 
 dta_vars_4pca<- dta_2023_eps_no_dup_cln_no_na_4pca%>%
     dplyr::select(dplyr::all_of(vars_pca)) %>%
     tidyr::drop_na()
 
 
+dta_vars_4pca
+# don't scale here as the data is already scaled by SID
+require(FactoMineR)
+??FactoMineR::PCA
 
-    # keep original settings (no centering/scaling in prcomp)
-  fit <- try(stats::prcomp(X, center = FALSE, scale. = FALSE), silent = TRUE)
+
+FactoMineR::PCAprcomp(X, center = FALSE, scale. = FALSE), silent = TRUE)
   if (inherits(fit, "try-error")) {
     return(tibble::tibble(metrics = list(na_metrics), vardim = list(na_vardim)))
   }
