@@ -323,7 +323,7 @@ K_keep <- 3
 dta_2023_eps_no_dup_cln_no_na_4pca<- dta_2023_eps_no_dup_cln_no_na %>%
    dplyr::select(dplyr::all_of(vars_pca), ssid) %>%
     tidyr::drop_na()
-
+length(unique(dta_2023_eps_no_dup_cln_no_na_4pca$ssid))
 
 dta_2023_eps_no_dup_cln_no_na_4pca<-left_join(dta_2023_eps_no_dup_cln_no_na_4pca,
           dta_2023_eps_no_dup_cln_no_na)
@@ -342,7 +342,10 @@ pca_summary <- pca_by_subject %>%select(-vardim)%>% tidyr::unnest_wider(metrics)
 
 pca_summary
 
+pca_by_subject
+
 # tidy variable–dimension table (per subject)
+length(unique(pca_by_subject$ssid))
 pca_vardim <- pca_by_subject %>% select(-metrics)%>% tidyr::unnest(vardim)
 pca_vardim
 
@@ -414,7 +417,7 @@ pca_vardim%>%
          corr_f_z = fn_safe_fisher_z(correlation),
          contrib_logit = safe_logit(contribution))
    
-pca_vardim_agg
+pca_vardim_agg<-
 
 pca_vardim%>%
     subset(dimension< 4)%>%
@@ -424,7 +427,7 @@ pca_vardim%>%
          corr_f_z = fn_safe_fisher_z(correlation),
          contrib_logit = safe_logit(contribution))%>%
   group_by(ssid, dimension,variable)%>%
-  summarise_if(is.numeric, mean, na.rm = T)%>%
+  summarise_if(is.numeric, mean, na.rm = T)
   ungroup()%>%
   
 
@@ -449,6 +452,10 @@ pca_vardim_agg_wid<- pca_vardim_agg %>%
     values_from = c(cos2, contribution, cos2_logit,contrib_logit ),
     names_glue = "{.value}_PC{dimension}"
   )
+
+length(unique(dta_vars_4pca$ssid))
+
+length(unique(pca_vardim_agg_wid$ssid))
 ```
 
 
@@ -461,17 +468,21 @@ Approach 2
 
 ```{r}
 
-pca_by_subject <- dta_2023_eps_no_dup_cln_no_na_4pca %>%
-  dplyr::group_by(ssid) %>%
-  dplyr::group_modify(~ pca_metrics_one_2(.x)) %>%
-  dplyr::ungroup()
+# install.packages("tidyverse")
+# install.packages("FactoMineR")
+# install.packages("factoextra")
 
+require(tidyverse)
+require(FactoMineR)
+
+require(factoextra)
 
 
 setwd("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/2025 - autism and alexithymia")
 
+colnames(dta_2023_eps_no_dup_cln_no_na_4pca)
 dta_vars_4pca<- dta_2023_eps_no_dup_cln_no_na_4pca%>%
-    dplyr::select(dplyr::all_of(vars_pca)) %>%
+    dplyr::select(dplyr::all_of(vars_pca), ssid) %>%
     tidyr::drop_na()
 
 
@@ -481,19 +492,461 @@ require(FactoMineR)
 ??FactoMineR::PCA
 
 
-FactoMineR::PCAprcomp(X, center = FALSE, scale. = FALSE), silent = TRUE)
-  if (inherits(fit, "try-error")) {
-    return(tibble::tibble(metrics = list(na_metrics), vardim = list(na_vardim)))
-  }
+colnames(dta_vars_4pca)
+
+pca_long_k5<- FactoMineR::PCA(dta_vars_4pca, scale.unit = FALSE,
+                ncp = 5)
+
+fviz_screeplot(pca_long_k5, ncp=5)
+?fviz_contrib
+fviz_pca_contrib(pca_long_k5, "var", axes = 1)
+fviz_pca_contrib(pca_long_k5, "var", axes = 2)
+fviz_pca_contrib(pca_long_k5, "var", axes = 3)
+fviz_pca_contrib(pca_long_k5, "var", axes = 4)
+
+# okay lets keep the first 2
+
+pca_long_k2<- FactoMineR::PCA(dta_vars_4pca, scale.unit = FALSE,
+                ncp = 3)
+
+fviz_screeplot(pca_long_k5, ncp=2)
+
+?fviz_contrib
+
+fviz_pca_contrib(pca_long_k5, "var", axes = 1)
+fviz_pca_contrib(pca_long_k5, "var", axes = 2)
+fviz_pca_contrib(pca_long_k5, "var", axes = 3)
+fviz_pca_contrib(pca_long_k5, "var", axes = 4)
+# keep 3
+
+pca_long_k3<- FactoMineR::PCA(dta_vars_4pca[,1:5], scale.unit = FALSE,
+                ncp = 3)
+
+fviz_screeplot(pca_long_k5, ncp=3)
+
+?fviz_contrib
+
+fviz_pca_contrib(pca_long_k5, "var", axes = 1)
+fviz_pca_contrib(pca_long_k5, "var", axes = 2)
+fviz_pca_contrib(pca_long_k5, "var", axes = 3)
+fviz_pca_contrib(pca_long_k5, "var", axes = 4)
+
+# okay lets do MFA 
+
+pca_long_k3<- FactoMineR::PCA(dta_vars_4pca, scale.unit = FALSE,
+                ncp = 3)
+
+fviz_screeplot(pca_long_k5, ncp=3)
+
+?fviz_contrib
+
+fviz_pca_contrib(pca_long_k3, "var", axes = 1)
+fviz_pca_contrib(pca_long_k3, "var", axes = 2)
+fviz_pca_contrib(pca_long_k3, "var", axes = 3)
+
+
+colnames(dta_vars_4pca)
+mod_res<- list() 
+
+# this one is not really informative, its the same as PCA theorethically
+
+mod_res$mfa_long_k3 <- MFA(dta_vars_4pca[,1:5],
+                           group=c(1,1,1,1,1),
+                           type=c("s","s","s","s","s"),
+                           name.group=c("scr","hr","pup", "val","arousal"),
+                           # num.group.sup=c(1),
+                           ncp = 3,
+                           graph=TRUE)
+
+
+fviz_pca_contrib(pca_long_k3, "var", axes = 1)
+fviz_pca_contrib(pca_long_k3, "var", axes = 2)
+fviz_pca_contrib(pca_long_k3, "var", axes = 3)
+fviz_contrib(mod_res$mfa_long_k3, "quanti.var", axes = 1)
+fviz_contrib(mod_res$mfa_long_k3, "quanti.var", axes = 2)
+fviz_contrib(mod_res$mfa_long_k3, "quanti.var", axes = 3)
+
+
+# vs group subjective and physilogical
+
+mod_res$mfa_long_k3_2grps <- MFA(dta_vars_4pca[,1:5],
+                                 # MFA(dta_vars_4pca[,c(1:2, 4:5)],
+                                    # group=c(2,2),
+                           group=c(3,2),
+                           type=c("s","s"),
+                           name.group=c("physio","subjective"),
+                           # num.group.sup=c(1),
+                           ncp = 3,
+                           graph=TRUE)
+
+
+fviz_contrib(mod_res$mfa_long_k3_2grps, "quanti.var", axes = 1)
+fviz_contrib(mod_res$mfa_long_k3_2grps, "quanti.var", axes = 2)
+fviz_contrib(mod_res$mfa_long_k3_2grps, "quanti.var", axes = 3)
+
+# okay, now lets project each individual do thimfa_long_k3_2grps and derive metrics like variance for weach dimension etc
+dta_vars_4pca$ssid
+
+mod_res$mfa_long_k3_2grps$ind$coord.partiel
+mod_res$mfa_long_k3_2grps$ind$within.partial.inertia
+
+test<- as.data.frame(mod_res$mfa_long_k3_2grps$ind$coord.partiel)
+
+test$phys_subj <- rownames(test)
+
+test<- as.data.frame(test)%>%
+  mutate(phys_subj = sub("^[0-9]+\\.", "", phys_subj))
+
+
+phys_part<- as.data.frame(test)%>%
+  subset(phys_subj == "physio")
+
+subj_part<- as.data.frame(test)%>%
+  subset(phys_subj != "physio")
+
+# 7708/2 = 3854
+
+coh_trial <- sqrt(rowSums((phys_part[,1:3] - subj_part[,1:3])^2))
+
+
+dta_trial <- data.frame(
+  ssid = dta_vars_4pca$ssid,
+  coh  = coh_trial
+)
+
+library(dplyr)
+
+dta_tria_coh_ssid <- dta_trial %>%
+  group_by(ssid) %>%
+  summarise(
+    mean_coh = mean(coh, na.rm = TRUE),
+    sd_coh   = sd(coh, na.rm = TRUE),
+    n_trials = n()
+  )
+
+
+
+dta_2023_eps_agg_sid
+
+dta_2023_eps_no_dup_cln_no_na_agg<- dta_2023_eps_no_dup_cln_no_na%>%
+  group_by(ssid, tas_med_split, aq_med_split,asd_sid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_agg_sid)
+
+dta_tria_coh_ssid%>%
+  ggplot(aes(x = mean_coh))+
+  geom_histogram()
+
+
+
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = mean_coh, colour = tas_med_split))+
+  geom_histogram()+
+  facet_grid(~asd_sid)
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = mean_coh, colour = aq_med_split))+
+  geom_histogram()+
+  facet_grid(~asd_sid)
+
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+  subset(ssid!= 605)%>%
+    ggplot(aes(x = mean_coh, tas_approx_z))+
+  geom_point()+
+  geom_text(aes(label = ssid))+
+  geom_smooth(method = "lm" )+
+  # facet_grid(~asd_sid)+
+      ggpubr::stat_cor()
+
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = mean_coh, aq))+
+  geom_point()+
+  geom_smooth(method = "lm" )+
+    ggpubr::stat_cor()
+
+
+# check mixed models
+mfa_long_k3_2grps
+
+
+dta_2023_eps_no_dup_cln_no_na_4pca
+dta_vars_4pca$mfa_pc1_coord<- mod_res$mfa_long_k3_2grps$ind$coord[,1]
+dta_vars_4pca$mfa_pc2_coord<- mod_res$mfa_long_k3_2grps$ind$coord[,2]
+dta_vars_4pca$mfa_pc3_coord<- mod_res$mfa_long_k3_2grps$ind$coord[,3]
+
+dta_vars_4pca$mfa_pc1_contrib<- mod_res$mfa_long_k3_2grps$ind$contrib[,1]
+dta_vars_4pca$mfa_pc2_contrib<- mod_res$mfa_long_k3_2grps$ind$contrib[,2]
+dta_vars_4pca$mfa_pc3_contrib<- mod_res$mfa_long_k3_2grps$ind$contrib[,3]
+
+colnames(dta_2023_eps_no_dup_cln_no_na_4pca)
+
+dta_vars_4pca%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split, aq_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas_med_split, mfa_pc1_coord))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = "pointrange")
+
+dta_vars_4pca%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split, aq_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas_med_split, mfa_pc2_coord))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = "pointrange")
+
+dta_vars_4pca%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split, aq_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas_med_split, mfa_pc3_coord))+
+  geom_jitter(width = .1, alpha = .1)+
+  stat_summary(geom = "pointrange")
+
+install.packages("lmerTest")
+# insta
+require(lmerTest)
+
+ dta_vars_4pca_2<- dta_vars_4pca%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_4pca)
+
+mod_res$lmer_mfa_coord<- lmer(mfa_pc3_coord ~ tas_approx_z + (1|stimiaps), REML = FALSE,
+     dta_vars_4pca_2)
+anova(mod_res$lmer_mfa_coord)
+mod_res$lmer_mfa_coord_aq<- lmer(mfa_pc1_coord ~ aq2_approx_z + (1|stimiaps), REML = FALSE,
+     dta_vars_4pca_2)
+
+anova(mod_res$lmer_mfa_coord)
+anova(mod_res$lmer_mfa_coord_aq)
+
+mod_res$lmer_mfa_cntrb <- lmer(mfa_pc3_contrib ~ tas_approx_z + (1|ssid)+ (1|stimiaps), REML = FALSE,
+     dta_vars_4pca_2)
+
+anova(mod_res$lmer_mfa_cntrb )
+
+mod_res$lmer_mfa_cntrb_aq<- lmer(mfa_pc1_contrib ~ aq2_approx_z + (1|ssid)+ (1|stimiaps), REML = FALSE,
+     dta_vars_4pca_2)
+
+anova(mod_res$lmer_mfa_cntrb_aq )
+
+
+
+```
+  # facet_grid(~asd_sid)
+
+
+# install.packages("ggside")
+# install.packages("ggpubr")
+
+```{r}
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = tas_med_split, y = log1p(mean_coh+.1), colour = tas_med_split))+
+  # geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+
+
+dta_tria_coh_ssid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = aq_med_split, y = log1p(mean_coh+.1), colour =aq_med_split ))+
+  # geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+  
 ```
     
 
 
+
+“How much of a subject’s variability lies along dimension 1, 2, 3…?”
+
+You already have each trial’s coordinates:
+
+```{r}
+scores<-  mod_res$mfa_long_k3_2grps$ind$coord   # trials × dimensions
+
+dta_scores <- cbind(ssid = dta_vars_4pca$ssid, as.data.frame(scores))
+library(dplyr)
+
+dta_var_by_sid <- dta_scores %>%
+  group_by(ssid) %>%
+  summarise(across(starts_with("Dim"),
+                   ~var(.x, na.rm = TRUE),
+                   .names = "var_{col}"))
+
+dta_var_by_sid <- dta_var_by_sid %>%
+  mutate(total = var_Dim.1 + var_Dim.2 + var_Dim.3,
+         p1 = var_Dim.1 / total,
+         p2 = var_Dim.2 / total,
+         p3 = var_Dim.3 / total)
+
+
+dta_var_by_sid%>%
+  ggplot(aes(x = var_Dim.1))+
+  geom_histogram()
+
+
+
+
+dta_var_by_sid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+  subset(var_Dim.1> 0.75)%>%
+    ggplot(aes(x = tas_med_split, y = (var_Dim.1), colour = tas_med_split))+
+  geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+
+
+dta_var_by_sid%>%
+  left_join(dta_2023_eps_no_dup_cln_no_na_agg)%>%
+    ggplot(aes(x = aq_med_split, y = (var_Dim.1), colour =aq_med_split ))+
+  geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+```
+
+
+use the score
+
 ```{r}
 
+mod_res$mfa_long_k3_2grps$eig
+
+
+mod_res$mfa_long_k3_2grps$ind$cos2
+mod_res$mfa_long_k3_2grps$ind$contrib
+mod_res$mfa_long_k3_2grps$ind$coord
+
+
+dta_cos<- as.data.frame(mod_res$mfa_long_k3_2grps$ind$cos2)
+
+names(dta_cos)<- paste0(colnames(dta_cos), "_cos")
+
+bind_cols(dta_cos,dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  
+    ggplot(aes(x = tas_med_split, y = (Dim.1_cos), colour = tas_med_split))+
+  # geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+
+
+
+
+
+bind_cols(dta_cos,dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  
+    ggplot(aes(x = tas_med_split, y = (Dim.2_cos), colour = tas_med_split))+
+  # geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+
+
+
+  
+bind_cols(dta_cos,dta_2023_eps_no_dup_cln_no_na_4pca)%>%
+  group_by(ssid, tas_med_split)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  
+    ggplot(aes(x = tas_med_split, y = (Dim.3_cos), colour = tas_med_split))+
+  # geom_jitter(aes(shape = asd_sid), width = .1)+
+  stat_summary(geom = "pointrange")+
+
+  ggside::geom_ysidedensity()+
+  ggpubr::stat_compare_means()
+
+# coord and contrib
+mod_res$mfa_long_k3_2grps$ind$cos2
+
+dmod_res$mfa_long_k3_2grps$ind$contrib
+
+dta_contrib <- as.data.frame(mod_res$mfa_long_k3_2grps$ind$contrib)
+names(dta_contrib) <- paste0(colnames(dta_contrib), "_contrib")
+
+bind_cols(dta_contrib, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.1_contrib, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
+
+bind_cols(dta_contrib, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.2_contrib, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
+
+bind_cols(dta_contrib, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.3_contrib, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
+
+# 
+
+mod_res$mfa_long_k3_2grps$ind$coord
+
+dta_coord <- as.data.frame(mod_res$mfa_long_k3_2grps$ind$coord)
+names(dta_coord) <- paste0(colnames(dta_coord), "_coord")
+
+bind_cols(dta_coord, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  # group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.1_coord, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
+
+bind_cols(dta_coord, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.2_coord, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
+
+bind_cols(dta_coord, dta_2023_eps_no_dup_cln_no_na_4pca) %>%
+  group_by(ssid, tas_med_split) %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+  ggplot(aes(x = tas_med_split, y = Dim.3_coord, colour = tas_med_split)) +
+  stat_summary(geom = "pointrange") +
+  ggside::geom_ysidedensity() +
+  ggpubr::stat_compare_means()
 
 
 ```
+
 
 ```{r}
 # final table: metrics + per-variable columns
@@ -584,456 +1037,151 @@ left_join(pca_subject_wide)%>%
 ```
 
 
-correlation approach
+
+one row one subject analysis
+MFA
 
 ```{r}
-# ---- packages ----
-library(dplyr)
-library(tidyr)
-library(tibble)
-library(purrr)
-library(janitor)
+colnames(dta_2023_eps_no_dup_cln_no_na_4pca)
 
-# ---------------- correlation-only metrics (with Fisher z) ----------------
-corr_metrics_one <- function(df, eps = 1e-6,
-                             abs_r_thresholds = c(0.3, 0.5, 0.7)) {
-  X <- df %>%
-    dplyr::select(dplyr::all_of(vars_pca)) %>%
-    tidyr::drop_na()
 
-  # Fisher z with NA passthrough, clamp |r| < 1
-  safe_fisher_z <- function(r) {
-    r <- pmin(pmax(r, -1 + eps), 1 - eps)
-    atanh(r)
-  }
+dta_2023_eps_no_dup_cln_no_na_4pca
 
-  na_metrics <- tibble(
-    n_obs = NA_integer_,
-    n_vars = NA_integer_,
-    mean_abs_r = NA_real_,
-    median_abs_r = NA_real_,
-    mean_r2 = NA_real_,
-    mean_r = NA_real_,
-    mean_fisher_z = NA_real_,
-    mean_r_from_z = NA_real_
+dta_2023_eps_no_dup_cln_no_na_4pca
+dta_vars_4mfa_2<- dta_2023_eps_no_dup_cln_no_na_4pca%>%
+    dplyr::select(dplyr::all_of(vars_pca), ssid,stimiaps2,arousal,valence,bio_mean_hr_dif,pup_bascor,bio_cda_phasicmax,
+                 tas,aq, tas_approx_z,aq2_approx_z,tas_med_split,aq_med_split,asd_sid,valencemean,arousalmean)
+
+# length(unique(dta_vars_4mfa_2$ssid))
+
+dta_vars_4mfa_2_wide <- dta_vars_4mfa_2 %>%
+  pivot_wider(
+    id_cols = c(ssid, tas, aq,tas_approx_z , aq2_approx_z,tas_med_split,aq_med_split, asd_sid),
+    names_from = stimiaps2,
+    values_from = matches("z_sid|hr|cda|pup|valence|arousal")
   )
 
-  na_pairwise <- tibble(
-    var_i = character(),
-    var_j = character(),
-    r = numeric(),
-    abs_r = numeric(),
-    r2 = numeric(),
-    fisher_z = numeric()
-  )
+table(dta_vars_4mfa_2$ssid)
 
-  na_var_summ <- tibble(
-    variable = character(),
-    mean_r = numeric(),
-    mean_fisher_z = numeric(),
-    mean_r_from_z = numeric(),
-    mean_abs_r = numeric(),
-    median_abs_r = numeric(),
-    mean_r2 = numeric()
-  )
-
-  if (nrow(X) < 2 || ncol(X) < 2) {
-    return(tibble(metrics = list(na_metrics),
-                  pairwise = list(na_pairwise),
-                  var_summ = list(na_var_summ)))
-  }
-
-  # correlation matrix
-  R <- try(stats::cor(X, use = "pairwise.complete.obs"), silent = TRUE)
-  if (inherits(R, "try-error") || any(!is.finite(R))) {
-    return(tibble(metrics = list(na_metrics),
-                  pairwise = list(na_pairwise),
-                  var_summ = list(na_var_summ)))
-  }
-
-  vars <- colnames(R)
-  idx <- which(upper.tri(R), arr.ind = TRUE)
-  r_vals <- R[idx]
-
-  pairwise <- tibble(
-    var_i = vars[idx[, 1]],
-    var_j = vars[idx[, 2]],
-    r = r_vals
-  ) %>%
-    mutate(
-      abs_r   = abs(r),
-      r2      = r^2,
-      fisher_z = safe_fisher_z(r)
-    )
-
-  # per-variable summaries
-  var_summ <- bind_rows(
-    pairwise %>% transmute(variable = var_i, r, abs_r, r2, fisher_z),
-    pairwise %>% transmute(variable = var_j, r, abs_r, r2, fisher_z)
-  ) %>%
-    group_by(variable) %>%
-    summarise(
-      mean_r         = mean(r, na.rm = TRUE),
-      mean_fisher_z  = mean(fisher_z, na.rm = TRUE),
-      mean_r_from_z  = tanh(mean_fisher_z),
-      mean_abs_r     = mean(abs_r, na.rm = TRUE),
-      median_abs_r   = median(abs_r, na.rm = TRUE),
-      mean_r2        = mean(r2, na.rm = TRUE),
-      .groups = "drop"
-    )
-
-  # per-subject summaries
-  base_metrics <- pairwise %>%
-    summarise(
-      n_obs = nrow(X),
-      n_vars = ncol(X),
-      mean_r        = mean(r, na.rm = TRUE),
-      mean_abs_r    = mean(abs_r, na.rm = TRUE),
-      median_abs_r  = median(abs_r, na.rm = TRUE),
-      mean_r2       = mean(r2, na.rm = TRUE),
-      mean_fisher_z = mean(fisher_z, na.rm = TRUE),
-      mean_r_from_z = tanh(mean_fisher_z)
-    )
-
-  thr_metrics <- map_dfc(abs_r_thresholds, function(t) {
-    nm <- paste0("prop_abs_r_ge_", gsub("\\.", "", as.character(t)))
-    tibble(!!nm := mean(pairwise$abs_r >= t, na.rm = TRUE))
-  })
-
-  metrics <- bind_cols(base_metrics, thr_metrics)
-
-  tibble(
-    metrics  = list(metrics),
-    pairwise = list(pairwise),
-    var_summ = list(var_summ)
-  )
-}
-
-# ---------------- apply per subject & build outputs ----------------
-corr_by_subject <- dta_2023_eps_no_dup_cln_no_na %>%
-  group_by(ssid) %>%
-  group_modify(~ corr_metrics_one(.x,
-                                  abs_r_thresholds = c(0.3, 0.5, 0.7))) %>%
-  ungroup()
-
-# per-subject summary (one row each)
-corr_summary <- corr_by_subject %>% unnest_wider(metrics)
-
-# tidy pairwise correlations
-corr_pairwise <- corr_by_subject %>% unnest(pairwise)
-
-
-# per-variable summaries
-corr_var_summ <- corr_by_subject %>% unnest(var_summ)
-
-
-
-  
-  
-  corr_summary
-
-dta_2023_eps_no_dup_cln_no_na%>%
-left_join(corr_summary) %>%
-  subset(!is.na(tas))%>%
-  mutate(tas_med_split = if_else(tas> median(tas), "high", "low"))%>%
-  group_by(ssid, tas_med_split)%>%
-  summarise_if(is.numeric, mean, na.rm = T)%>%
-  ggplot(aes(tas_med_split, mean_abs_r, colour = tas_med_split))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-
-   ggside::geom_ysidedensity(
-    aes(x = after_stat(density),fill = tas_med_split),       # density of PC1
-    position = "identity",
-    alpha    = 0.3,
-    size     = 0,
-    adjust   = 1.2,                     # smoothing
-    show.legend = FALSE)+
-  scale_fill_brewer(palette = "Dark2")+
-   scale_colour_brewer(palette = "Dark2")+
-  ggpubr::stat_compare_means(method = "t.test")
-
-
-
-
-corr_pairwise$r2
-corr_pairwise%>%
-  subset((var_i == "valence_z_sid" & var_j == "arousal_z_sid") == FALSE) %>%
-  subset((var_i == "bio_cda_phasicmax_log_z_sid" & var_j == "bio_mean_hr_dif_z_sid") == FALSE) %>%
-  
-  left_join(dta_2023_eps_no_dup_cln_no_na) %>%
-  subset(!is.na(tas))%>%
-  subset(!is.na(aq))%>% 
-  subset(asd_sid == "NT")%>%
-  mutate(tas_med_split = if_else(tas> median(tas, na.rm = T), "high", "low"))%>%
-    mutate(aq_med_split = if_else(aq> median(aq, na.rm = T), "high", "low"))%>%
-  group_by(ssid, tas_med_split,aq_med_split)%>%
-  summarise_if(is.numeric, mean, na.rm = T)%>%
-  ggplot(aes(tas_med_split, fisher_z^2, colour = tas_med_split))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-
-   ggside::geom_ysidedensity(
-    aes(x = after_stat(density),fill = tas_med_split),       # density of PC1
-    position = "identity",
-    alpha    = 0.3,
-    size     = 0,
-    adjust   = 1.2,                     # smoothing
-    show.legend = FALSE)+
-  scale_fill_brewer(palette = "Dark2")+
-   scale_colour_brewer(palette = "Dark2")+
-  ggpubr::stat_compare_means(method = "t.test")
-
-
-
-corr_pairwise%>%
-  subset((var_i == "valence_z_sid" & var_j == "arousal_z_sid") == FALSE) %>%
-  subset((var_i == "bio_cda_phasicmax_log_z_sid" & var_j == "bio_mean_hr_dif_z_sid") == FALSE) %>%
-  
-  left_join(dta_2023_eps_no_dup_cln_no_na) %>%
-  subset(!is.na(tas))%>%
-  subset(!is.na(aq))%>% 
-  # subset(asd_sid == "NT")%>%
-  mutate(tas_med_split = if_else(tas> median(tas, na.rm = T), "high", "low"))%>%
-    mutate(aq_med_split = if_else(aq> median(aq, na.rm = T), "high", "low"))%>%
-  group_by(ssid, tas_med_split,aq_med_split,asd_sid)%>%
-  summarise_if(is.numeric, mean, na.rm = T)%>%
-  ggplot(aes(tas_med_split, fisher_z, colour = tas_med_split))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-
-   ggside::geom_ysidedensity(
-    aes(x = after_stat(density),fill = asd_sid),       # density of PC1
-    position = "identity",
-    alpha    = 0.3,
-    size     = 0,
-    adjust   = 1.2,                     # smoothing
-    show.legend = FALSE)+
-  scale_fill_brewer(palette = "Dark2")+
-   scale_colour_brewer(palette = "Dark2")+
-  ggpubr::stat_compare_means(method = "t.test")
-
-
-
-
-corr_pairwise%>%
-  subset((var_i == "valence_z_sid" & var_j == "arousal_z_sid") == FALSE) %>%
-  subset((var_i == "bio_cda_phasicmax_log_z_sid" & var_j == "bio_mean_hr_dif_z_sid") == FALSE) %>%
-  
-  left_join(dta_2023_eps_no_dup_cln_no_na) %>%
-  subset(!is.na(tas))%>%
-  subset(!is.na(aq))%>% 
-  # subset(asd_sid == "NT")%>%
-  mutate(tas_med_split = if_else(tas> median(tas, na.rm = T), "high", "low"))%>%
-    mutate(aq_med_split = if_else(aq> median(aq, na.rm = T), "high", "low"))%>%
-  group_by(ssid, tas_med_split,aq_med_split)%>%
-  summarise_if(is.numeric, mean, na.rm = T)%>%
-  ggplot(aes(tas, (fisher_z^2)))+
-  geom_point()+
- geom_smooth(method = "lm")+
-
-   
-  scale_fill_brewer(palette = "Dark2")+
-   scale_colour_brewer(palette = "Dark2")+
-  ggpubr::stat_cor()
+dta_vars_4mfa_2_wide
 ```
+
+
+just for MFA
 ```{r}
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(psych)   # Procrustes, factor.congruence
+# complete the daatset gvia imputation
+colnames(dta_vars_4mfa_2_wide)
+dta_vars_4mfa_2_wide_sel<- dta_vars_4mfa_2_wide[,c(1,4:8,9:358)]
 
-# ---- Assumes: vars_pca is defined and data has column `ssid` ----
-# e.g., vars_pca <- c("bio_cda_phasicmax_log_z_sid","bio_mean_hr_dif_z_sid","valence_z_sid","arousal_z_sid")
+colnames(dta_vars_4mfa_2_wide_sel)
+colnames(dta_vars_4mfa_2_wide_sel[,c(7:256)])
+install.packages("missMDA")
 
-# Helpers ----------------------------------------------------------
-
-safe_logit <- function(p, eps = 1e-6) {
-  ifelse(is.na(p), NA_real_, qlogis(pmin(pmax(p, eps), 1 - eps)))
-}
-
-pca_point_metrics <- function(X, kmax = 3) {
-  # X: n x p (already within-subject z-scored in your pipeline)
-  if (nrow(X) < 2) return(rep(NA_real_, 10))
-  fit <- try(prcomp(X, center = FALSE, scale. = FALSE), silent = TRUE)
-  if (inherits(fit, "try-error")) return(rep(NA_real_, 10))
-
-  eig  <- unname(fit$sdev^2)
-  prop <- eig / sum(eig)
-
-  get <- function(v, i) if (length(v) >= i) v[i] else NA_real_
-  prop1 <- get(prop, 1); prop2 <- get(prop, 2); prop3 <- get(prop, 3)
-  cum12 <- if (!is.na(prop1) && !is.na(prop2)) prop1 + prop2 else prop1
-  cum123 <- if (!is.na(prop3)) prop1 + prop2 + prop3 else cum12
-
-  c(
-    # eigenvalues (absolute variance)
-    eigen_pc1       = get(eig, 1),
-    eigen_pc2       = get(eig, 2),
-    eigen_pc3       = get(eig, 3),
-    total_variance  = sum(eig),
-
-    # proportions
-    prop_pc1        = prop1,
-    prop_pc2        = prop2,
-    prop_pc3        = prop3,
-    cumu_pc1_pc2    = cum12,
-    cumu_pc1_to_pc3 = cum123
-  )
-}
-rm(project_to_loadings)
-project_to_loadings <- function(X, L) {
-  # X: n x p, L: p x K loadings (template)
-  if (nrow(X) < 2) return(c(NA_real_, NA_real_, NA_real_, NA_real_, NA_real_))
-  S <- as.matrix(X) %*% L
-  Xhat <- S %*% t(L)
-  mse <- mean((as.matrix(X) - Xhat)^2)
-
-  eig_proj <- diag(var(S))
-  tot      <- sum(diag(var(as.matrix(X))))
-  prop_proj <- eig_proj / tot
-
-  get <- function(v, i) if (length(v) >= i) v[i] else NA_real_
-  c(
-    mse_loso        = mse,
-    eigen_proj_pc1  = get(eig_proj, 1),
-    eigen_proj_pc2  = get(eig_proj, 2),
-    prop_proj_pc1   = get(prop_proj, 1),
-    prop_proj_pc2   = get(prop_proj, 2)
-  )
-}
-rm(align_and_congruence)
-align_and_congruence <- function(L_subj, L_tpl) {
-  # sign fix then Procrustes; return congruence & RMS
-  if (is.null(L_subj) || any(dim(L_subj) == 0)) {
-    return(c(cong_pc1 = NA_real_, cong_pc2 = NA_real_, procrustes_RMS = NA_real_))
-  }
-  K <- min(ncol(L_subj), ncol(L_tpl))
-  Ls <- L_subj[, 1:K, drop = FALSE]
-  Lt <- L_tpl[, 1:K, drop = FALSE]
-
-  for (j in seq_len(K)) if (cor(Ls[, j], Lt[, j]) < 0) Ls[, j] <- -Ls[, j]
-  pro <- psych::Procrustes(Lt, Ls)
-  cong <- psych::factor.congruence(pro$loadings, Lt) # KxK
-  c(cong_pc1 = cong[1, 1],
-    cong_pc2 = if (K >= 2) cong[2, 2] else NA_real_,
-    procrustes_RMS = pro$RMS)
-}
-
-# Main: per-subject metrics + LOSO to handle dimension drift --------
-get_metrics_with_loso <- function(data, vars = vars_pca, K = 2) {
-  subjects <- unique(data$ssid)
-
-  map_dfr(subjects, function(sid) {
-    train <- data %>% filter(ssid != sid)
-    test  <- data %>% filter(ssid == sid)
-
-    X_train <- train %>% select(all_of(vars)) %>% drop_na()
-    X_test  <- test  %>% select(all_of(vars)) %>% drop_na()
-
-    # Template from training subjects
-    if (nrow(X_train) < 2) {
-      L_tpl <- matrix(numeric(0), ncol = 0)
-    } else {
-      fit_tpl <- try(prcomp(X_train, center = FALSE, scale. = FALSE), silent = TRUE)
-      L_tpl <- if (inherits(fit_tpl, "try-error")) matrix(numeric(0), ncol = 0)
-               else unclass(fit_tpl$rotation)[, 1:min(K, ncol(fit_tpl$rotation)), drop = FALSE]
-    }
-
-    # Subject's own PCA (native)
-    native <- pca_point_metrics(X_test)  # returns 10 numbers
-    names(native) <- c("eigen_pc1","eigen_pc2","eigen_pc3","total_variance",
-                       "prop_pc1","prop_pc2","prop_pc3","cumu_pc1_pc2","cumu_pc1_to_pc3")
-
-    # Logits for bounded metrics
-    native_logits <- c(
-      prop_pc1_logit        = safe_logit(native["prop_pc1"]),
-      prop_pc2_logit        = safe_logit(native["prop_pc2"]),
-      prop_pc3_logit        = safe_logit(native["prop_pc3"]),
-      cumu_pc1_pc2_logit    = safe_logit(native["cumu_pc1_pc2"]),
-      cumu_pc1_to_pc3_logit = safe_logit(native["cumu_pc1_to_pc3"])
-    )
-
-    # LOSO projection metrics (shared coordinate system)
-    loso_proj <- if (ncol(L_tpl) > 0) project_to_loadings(X_test, L_tpl) else
-      c(mse_loso = NA_real_, eigen_proj_pc1 = NA_real_, eigen_proj_pc2 = NA_real_,
-        prop_proj_pc1 = NA_real_, prop_proj_pc2 = NA_real_)
-
-    # Subject loadings vs template congruence
-    subj_L <- try({
-      fit_subj <- prcomp(X_test, center = FALSE, scale. = FALSE)
-      unclass(fit_subj$rotation)
-    }, silent = TRUE)
-    if (inherits(subj_L, "try-error")) subj_L <- NULL
-
-    align <- if (ncol(L_tpl) > 0 && !is.null(subj_L)) align_and_congruence(subj_L, L_tpl) else
-      c(cong_pc1 = NA_real_, cong_pc2 = NA_real_, procrustes_RMS = NA_real_)
-
-    # Count PCs to reach 50% (native)
-    ncomp50 <- NA_integer_
-    if (!any(is.na(native[c("prop_pc1","prop_pc2","prop_pc3")]))) {
-      cumprops <- cumsum(na.omit(as.numeric(native[c("prop_pc1","prop_pc2","prop_pc3")])))
-      w <- which(cumprops >= 0.50)
-      if (length(w)) ncomp50 <- w[1]
-    }
-
-    tibble(
-      ssid = sid,
-      # native PCA (subject-specific)
-      !!!as.list(native),
-      !!!as.list(native_logits),
-      n_components_50 = ncomp50,
-
-      # LOSO projection (shared axes)
-      mse_loso          = loso_proj["mse_loso"],
-      eigen_proj_pc1    = loso_proj["eigen_proj_pc1"],
-      eigen_proj_pc2    = loso_proj["eigen_proj_pc2"],
-      prop_proj_pc1     = loso_proj["prop_proj_pc1"],
-      prop_proj_pc2     = loso_proj["prop_proj_pc2"],
-      prop_proj_pc1_logit = safe_logit(loso_proj["prop_proj_pc1"]),
-      prop_proj_pc2_logit = safe_logit(loso_proj["prop_proj_pc2"]),
-
-      # alignment diagnostics
-      cong_pc1          = align["cong_pc1"],
-      cong_pc2          = align["cong_pc2"],
-      procrustes_RMS    = align["procrustes_RMS"]
-    )
-  })
-}
-
-# ---- Run it -------------------------------------------------------
-
-pca_metrics_loso_al <- get_metrics_with_loso(dta_2023_eps_no_dup_cln_no_na, vars = vars_pca, K = 2)
-# `metrics` has, for each subject:
-# - Native PCA: eigen & proportion (PC1–PC3) + logits, cumulative, n_components_50
-# - LOSO: projected eigen/prop on shared axes + logits, reconstruction error (mse_loso)
-# - Alignment: congruence and Procrustes RMS vs. LOSO template
-
-pca_metrics_loso_al%>%
-  mutate()
+dta_vars_4mfa_2_wide_sel_complet <- missMDA::imputeMFA(dta_vars_4mfa_2_wide_sel[,c(7:256)],
+                                               ncp=2,
+                                               group=c(50,50,50,50,50),
+                                        type=c( "s","s","s","s","s"))
 
 
-dta_2023_eps_no_dup_cln_no_na%>%
-left_join(pca_metrics_loso_al)%>%
-  group_by(ssid, asd_sid)%>%summarise_if(is.numeric, mean, na.rm =T)%>%
-  subset(as.numeric(ssid)< 700)%>%
-  ggplot(aes(tas,prop_pc1_logit.prop_pc1, colour =asd_sid))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  ggpubr::stat_cor()
-
-
-
-dta_2023_eps_no_dup_cln_no_na%>%
-left_join(pca_metrics_loso_al)%>%
-  group_by(ssid,tas_med_split)%>%summarise_if(is.numeric, mean, na.rm =T)%>%
-    subset(as.numeric(ssid)< 700 & !is.na(tas))%>%
-  ggplot(aes(tas_med_split,prop_pc1_logit.prop_pc1,colour =tas_med_split))+
-  # geom_point()+
-  stat_summary(geom = "pointrange")+
-  ggpubr::stat_compare_means()
-
-rm(pca_metrics_loso_al)
+# dta_vars_4mfa_2_wide_sel_complet<- bind_cols(dta_vars_4mfa_2_wide_sel[,1:6], 
+# dta_vars_4mfa_2_wide_sel_complet$completeObs)
+# 
+# dta_vars_4mfa_2_wide_sel_complet
+# colnames(dta_vars_4mfa_2_wide_sel_complet)
 ```
 
-check if we need to take off some pairs to reduce the pairwise stuff
+mfa
+```{r}
+
+dta_vars_4mfa_2_wide_sel_complet
+
+dta_vars_4mfa_2_wide_sel_complet
+require(FactoMineR)
+
+mod_res$mfa_z_sid<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel[,c(7:256)],
+             tab.comp=dta_vars_4mfa_2_wide_sel_complet,
+              group=c(50,50,50,50,50),
+             # type=c( "c","c","c","c","c"),
+              type=c("s","s","s","s","s"),
+             name.group=c( "scr","hr","pupil","valence","arousal"),
+             ncp = 3,
+             # num.group.sup=c(1,2),
+             graph=TRUE)
+
+mod_res$mfa_z_sid
+
+plot.MFA(resMFA_justvars)
+
+
+# correlation circle
+plot.MFA(mod_res$mfa_z_sid, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8)
+
+
+
+
+
+
+```
+
+
+```{r}
+mod_res$mfa_z_sid
+
+fviz_screeplot(mod_res$mfa_z_sid, ncp=5)
+
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 1, top = 10)
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 2,top = 10)
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 3,top = 10)
+
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_1<- mod_res$mfa_z_sid$ind$coord[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_2<- mod_res$mfa_z_sid$ind$coord[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_3<- mod_res$mfa_z_sid$ind$coord[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_1<- mod_res$mfa_z_sid$ind$cos2[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_2<- mod_res$mfa_z_sid$ind$cos2[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_3<- mod_res$mfa_z_sid$ind$cos2[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_1<- mod_res$mfa_z_sid$ind$contrib[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_2<- mod_res$mfa_z_sid$ind$contrib[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_3<- mod_res$mfa_z_sid$ind$contrib[,3]
+```
+
+
+```{r}
+# correlation with dimensiuon 1
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,mfa_z_sid_coord_1 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_1 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_contrib_1 )))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,mfa_z_sid_contrib_1 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")
+
+```

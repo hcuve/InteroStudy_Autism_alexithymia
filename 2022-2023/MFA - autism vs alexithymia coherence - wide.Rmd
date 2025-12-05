@@ -1,0 +1,327 @@
+---
+title: "MFA - autism vs alexithymia coherence - wide "
+output: html_document
+date: "2025-12-04"
+---
+
+
+just for MFA
+```{r}
+# complete the daatset gvia imputation
+colnames(dta_vars_4mfa_2_wide)
+dta_vars_4mfa_2_wide_sel$tas<-
+dta_vars_4mfa_2_wide$tas
+
+
+
+dta_vars_4mfa_2_wide_sel<- dta_vars_4mfa_2_wide[,c(1,4:8,9:358)]
+
+dta_vars_4mfa_2_wide_sel$tas_approx<-
+dta_vars_4mfa_2_wide$
+
+colnames(dta_vars_4mfa_2_wide_sel)
+colnames(dta_vars_4mfa_2_wide_sel[,c(7:256)])
+install.packages("missMDA")
+
+dta_vars_4mfa_2_wide_sel_complet <- missMDA::imputeMFA(dta_vars_4mfa_2_wide_sel[,c(7:256)],
+                                               ncp=2,
+                                               group=c(50,50,50,50,50),
+                                        type=c( "s","s","s","s","s"))
+
+
+# dta_vars_4mfa_2_wide_sel_complet<- bind_cols(dta_vars_4mfa_2_wide_sel[,1:6], 
+# dta_vars_4mfa_2_wide_sel_complet$completeObs)
+# 
+# dta_vars_4mfa_2_wide_sel_complet
+# colnames(dta_vars_4mfa_2_wide_sel_complet)
+```
+
+mfa
+```{r}
+
+dta_vars_4mfa_2_wide_sel_complet
+
+dta_vars_4mfa_2_wide_sel_complet
+require(FactoMineR)
+
+mod_res$mfa_z_sid<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel[,c(7:256)],
+             tab.comp=dta_vars_4mfa_2_wide_sel_complet,
+              group=c(50,50,50,50,50),
+             # type=c( "c","c","c","c","c"),
+              type=c("s","s","s","s","s"),
+             name.group=c( "scr","hr","pupil","valence","arousal"),
+             ncp = 2,
+             # num.group.sup=c(1,2),
+             graph=TRUE)
+
+mod_res$mfa_z_sid
+
+plot.MFA(resMFA_justvars)
+
+
+# correlation circle
+plot.MFA(mod_res$mfa_z_sid, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8)
+
+
+
+
+mod_res$mfa_z_sid$global.pca$eig
+
+```
+
+
+```{r}
+mod_res$mfa_z_sid
+
+fviz_screeplot(mod_res$mfa_z_sid, ncp=5)
+
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 1, top = 10)
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 2,top = 10)
+fviz_contrib(mod_res$mfa_z_sid, "quanti.var", axes = 3,top = 10)
+
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_1<- mod_res$mfa_z_sid$ind$coord[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_2<- mod_res$mfa_z_sid$ind$coord[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_3<- mod_res$mfa_z_sid$ind$coord[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_1<- mod_res$mfa_z_sid$ind$cos2[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_2<- mod_res$mfa_z_sid$ind$cos2[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_3<- mod_res$mfa_z_sid$ind$cos2[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_1<- mod_res$mfa_z_sid$ind$contrib[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_2<- mod_res$mfa_z_sid$ind$contrib[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_3<- mod_res$mfa_z_sid$ind$contrib[,3]
+```
+
+
+```{r}
+
+dta_vars_4mfa_2_wide_sel$asd_sid_2<- if_else(dta_vars_4mfa_2_wide_sel$asd_sid != "ASD", "CONTROL",  "ASD")
+# correlation with dimensiuon 1
+dta_vars_4mfa_2_wide_sel
+
+dta_vars_4mfa_2_wide_sel$aq<- dta_vars_4mfa_2_wide$aq
+ 
+predict(model_tas, newdata = dta_vars_4mfa_2_wide_sel[is.na(dta_vars_4mfa_2_wide_sel$tas), ])
+dta_vars_4mfa_2_wide_sel%>%
+  subset(asd_sid != "ALEX")%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_1^2))+
+  geom_point(aes(colour = asd_sid))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+  # geom_text(aes(label = ssid))
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  subset(asd_sid != "ALEX")%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(tas_approx_z,mfa_z_sid_coord_1^2))+
+  geom_point(aes(colour = asd_sid))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+  # geom_text(aes(label = ssid))
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+  # subset(ssid != 623)%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point(aes(colour = asd_sid_2))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+  # geom_text(aes(label = ssid))
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+   subset(ssid != 623)%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point(aes(colour = asd_sid_2))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+
+
+
+# dim 2
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+  # subset(ssid != 623)%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(aq2_approx_z,(mfa_z_sid_contrib_2+.1)))+
+  geom_point(aes(colour = asd_sid_2))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+  # geom_text(aes(label = ssid))
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  subset(asd_sid != "ALEX")%>%
+   subset(ssid != 623)%>%
+    subset(ssid != 356)%>%
+  group_by(asd_sid)%>%
+  mutate(tas_approx_z2 = scale(tas))%>%
+  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
+  ggplot(aes(tas_approx_z,(mfa_z_sid_contrib_2)))+
+  geom_point(aes(colour = asd_sid_2))+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()+
+    geom_text(aes(label = ssid))
+
+```
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_1 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_contrib_1+.1 )))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_contrib_1+.1 ) ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")
+  facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_cos2_1+.1 )))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_cos2_1+.1 ) ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,mfa_z_sid_coord_2 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_2 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(tas_approx_z,mfa_z_sid_coord_3 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_3 ))+
+  geom_point()+
+  ggpubr::stat_cor()+
+  geom_smooth(method = "lm")+
+  facet_grid(~asd_sid_2)
+  
+
+
+```{r}
+cluster
+
+colnames(dta_vars_4mfa_2_wide_sel)
+mod_res$kmeans_res_mfa = kmeans(x = dta_vars_4mfa_2_wide_sel[,357:359], centers = 2)
+
+
+dta_vars_4mfa_2_wide_sel$kmeans_clust<- mod_res$kmeans_res_mfa $cluster
+
+
+# install.packages("factoextra")
+
+
+
+library(cluster)
+cluster::clusplot(dta_vars_4mfa_2_wide_sel[,357:359],
+         dta_vars_4mfa_2_wide_sel$kmeans_clust,
+         lines = 2,
+         shade = TRUE,
+         color = TRUE,
+         labels = 1,
+         plotchar = FALSE,
+         span = TRUE
+         # label = 
+         # main = paste('Clusters of customers'),
+         # xlab = 'Annual Income',
+         # ylab = 'Spending Score'
+         )
+
+table(dta_MFA_tas_aq_splits)
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(factor(kmeans_clust), mfa_z_sid_contrib_1))+
+  geom_jitter(width = .1, alpha = .2)+
+  stat_summary(geom = "pointrange")
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(factor(kmeans_clust), tas_approx_z))+
+  geom_jitter(width = .1, alpha = .2)+
+  stat_summary(geom = "pointrange")+
+  ggpubr::stat_compare_means()+
+    facet_grid(~asd_sid_2)
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(factor(kmeans_clust), aq2_approx_z))+
+  geom_jitter(width = .1, alpha = .2)+
+  stat_summary(geom = "pointrange")+
+  ggpubr::stat_compare_means()+
+  facet_grid(~asd_sid_2)
+
+```

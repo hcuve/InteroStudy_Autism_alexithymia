@@ -1,0 +1,210 @@
+---
+title: "Mixed models - alex vs autism on physiology, subjective and their relationship"
+output: html_document
+date: "2025-12-04"
+---
+
+Mixed models
+
+Some pre-processing
+<!-- - we need to cut data and impute data -->
+
+first get some understanding of how much data  is missing per ppt per signal
+
+```{r}
+
+require(tidyverse)
+
+
+table(dta_4_lmms$ssid)
+table(is.na(dta_4_lmms$arousal))
+dta_4_lmms%>%
+  subset(is.na(arousal))
+
+unique(dta_4_lmms$ssid)
+
+dta_4_lmms
+colnames(dta_4_lmms)
+
+dta_4_lmms_sel<- dta_4_lmms[, 1:21]
+
+# first code how mnay trials are there out of 50
+length(unique(dta_4_lmms_sel$ssid)) #87
+
+# compute proportion of valid data
+dta_4_lmms_sel<- dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  mutate(prop_trials_o50 = n()/50)%>%
+  mutate(scr_na = sum(is.na(bio_cda_phasicmax))/50,
+         hr_na = sum(is.na(bio_cda_phasicmax))/50,
+         pup_na = sum(is.na(pup_bascor))/50,
+         arousal = sum(is.na(arousal)/50))%>%
+           mutate(na_prop_avg = (scr_na+hr_na+pup_na+arousal)/4)%>%
+           
+  ungroup()
+
+# quick checks
+
+dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = prop_trials_o50))+
+  geom_histogram()+
+   geom_vline(xintercept = .8, linetype = "dashed")
+
+
+dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = na_prop_avg))+
+  geom_histogram()+
+  geom_vline(xintercept = .05, linetype = "dashed")
+
+dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = pup_na))+
+  geom_histogram()+
+  geom_vline(xintercept = .2, linetype = "dashed")
+
+
+dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = hr_na))+
+  geom_histogram()+
+  geom_vline(xintercept = .2, linetype = "dashed")
+
+dta_4_lmms_sel%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = scr_na))+
+  geom_histogram()+
+  geom_vline(xintercept = .2, linetype = "dashed")
+
+
+
+
+dta_4_lmms_sel %>%
+  filter(na_prop_avg > .2) %>%
+  distinct(ssid)
+# ssid
+# <chr>
+# 371
+
+
+dta_4_lmms_sel %>%
+  filter(prop_trials_o50 < .60) %>%
+  distinct(ssid)
+
+# 328
+
+dta_4_lmms_sel_1<- dta_4_lmms_sel%>%
+# participant exclusion%>%
+  subset(ssid!= 371)%>%
+  subset(ssid!= 328)
+
+
+dta_4_lmms_sel_1%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = na_prop_avg))+
+  geom_histogram()+
+  geom_vline(xintercept = .2, linetype = "dashed")
+
+
+dta_4_lmms_sel_1%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(x = prop_trials_o50))+
+  geom_histogram()+
+  geom_vline(xintercept = .8, linetype = "dashed")
+
+dta_4_lmms_sel_1
+#trial exclusions
+dta_4_lmms_sel_1<- dta_4_lmms_sel_1%>%
+  group_by(ssid)%>%
+  mutate(bio_cda_phasicmax_log = log1p(bio_cda_phasicmax+.01),
+         bio_cda_iscr_log = log1p(bio_cda_iscr+.01),
+         bio_cda_scr_log = log1p(bio_cda_scr+.01))%>%
+
+  mutate(
+ pup_bascor_z_sid = scale(pup_bascor)[, 1],
+  pup_bascor_z_sid_pot_outl = abs(pup_bascor_z_sid) >= 3,
+         bio_mean_hr_dif_z_sid = scale(bio_mean_hr_dif)[, 1],
+         hr_z_sid_pot_outl = abs(bio_mean_hr_dif_z_sid) >= 3,
+         bio_cda_phasicmax_log_z_sid = scale(bio_cda_phasicmax_log)[, 1],
+         scr_z_sid_pot_outl = abs(bio_cda_phasicmax_log_z_sid) >= 4
+         )%>%
+  select(-bio_mean_hr_dif_z_sid,-pup_bascor_z_sid,,-bio_cda_phasicmax_log_z_sid, -bio_cda_phasicmax_log,-bio_cda_iscr_log,-bio_cda_scr_log)%>%
+#TRUE is exclusion
+  ungroup()
+table(dta_4_lmms_sel_1$pup_bascor_z_sid_pot_outl)
+table(dta_4_lmms_sel_1$hr_z_sid_pot_outl)
+table(dta_4_lmms_sel_1$scr_z_sid_pot_outl)
+# FALSE  TRUE 
+#  4145     9 
+# 
+# FALSE  TRUE 
+#  4124    34 
+# 
+# FALSE  TRUE 
+#  4182    34 
+
+# remove outliers
+
+dta_4_lmms_sel_1<- dta_4_lmms_sel_1%>%
+ # replace outliers with NA
+  mutate(
+    pup_bascor_no_outl              = ifelse(pup_bascor_z_sid_pot_outl, NA, pup_bascor),
+    bio_mean_hr_dif_no_outl         = ifelse(hr_z_sid_pot_outl, NA, bio_mean_hr_dif),
+    bio_cda_phasicmax_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_phasicmax),
+     bio_cda_iscr_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_iscr),
+      bio_cda_scr_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_scr)
+  )
+  
+```
+
+for now keep these in just fill in the dataset
+
+```{r}
+colnames(dta_4_lmms_sel_1[,c(3:5,9:10,30:34)])
+ # [1] "age"                       "tas"                       "aq"                        "arousal"                  
+ # [5] "valence"                   "pup_bascor_no_outl"        "bio_mean_hr_dif_no_outl"   "bio_cda_phasicmax_no_outl"
+ # [9] "bio_cda_iscr_no_outl"      "bio_cda_scr_no_outl"
+
+chk_missing <- as.matrix(sapply(dta_4_lmms_sel_1[,c(3:5,9:10,30:34)], function(x) sum(is.na(x))))
+chk_missing
+# Show in New Window
+#                           [,1]
+# age                        247
+# tas                        247
+# aq                         296
+# arousal                      0
+# valence                      0
+# pup_bascor_no_outl          72
+# bio_mean_hr_dif_no_outl     93
+# bio_cda_phasicmax_no_outl   35
+# bio_cda_iscr_no_outl        35
+# bio_cda_scr_no_outl         35
+
+# mputation
+
+
+
+# install.packages("missMDA")
+library(missMDA)
+
+?missMDA::imputeMultilevel()
+
+# get an estimate for the ncp value
+tmp<- dta_4_lmms_sel_1[,c(1,3:5,9:10,30:34)]
+tmp1<- na.omit(tmp)
+
+estim_ncpPCA(tmp1) # 5
+tmp$ssid<- factor(tmp$ssid)
+res <- missMDA::imputePCA(tmp[,4:11])
+
+
+
+```
