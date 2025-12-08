@@ -21,12 +21,16 @@ table(is.na(dta_4_lmms$arousal))
 dta_4_lmms%>%
   subset(is.na(arousal))
 
+cor.test(dta_4_lmms$arousal_0_1, dta_4_lmms$arousal)
+cor.test(dta_4_lmms$valence_0_1, dta_4_lmms$valence)
+
 unique(dta_4_lmms$ssid)
 
 dta_4_lmms
-colnames(dta_4_lmms)
+colnames(dta_4_lmms_sel_1)
 
-dta_4_lmms_sel<- dta_4_lmms[, 1:21]
+dta_4_lmms_sel<- dta_4_lmms[, c(1:8,11:23)]
+colnames(dta_4_lmms_sel)
 
 # first code how mnay trials are there out of 50
 length(unique(dta_4_lmms_sel$ssid)) #87
@@ -38,8 +42,8 @@ dta_4_lmms_sel<- dta_4_lmms_sel%>%
   mutate(scr_na = sum(is.na(bio_cda_phasicmax))/50,
          hr_na = sum(is.na(bio_cda_phasicmax))/50,
          pup_na = sum(is.na(pup_bascor))/50,
-         arousal = sum(is.na(arousal)/50))%>%
-           mutate(na_prop_avg = (scr_na+hr_na+pup_na+arousal)/4)%>%
+         arousal_na = sum(is.na(arousal_0_1)/50))%>%
+           mutate(na_prop_avg = (scr_na+hr_na+pup_na+arousal_na)/4)%>%
            
   ungroup()
 
@@ -104,6 +108,7 @@ dta_4_lmms_sel_1<- dta_4_lmms_sel%>%
   subset(ssid!= 371)%>%
   subset(ssid!= 328)
 
+colnames(dta_4_lmms_sel_1)
 
 dta_4_lmms_sel_1%>%
   group_by(ssid)%>%
@@ -121,6 +126,7 @@ dta_4_lmms_sel_1%>%
   geom_vline(xintercept = .8, linetype = "dashed")
 
 dta_4_lmms_sel_1
+
 #trial exclusions
 dta_4_lmms_sel_1<- dta_4_lmms_sel_1%>%
   group_by(ssid)%>%
@@ -132,13 +138,20 @@ dta_4_lmms_sel_1<- dta_4_lmms_sel_1%>%
  pup_bascor_z_sid = scale(pup_bascor)[, 1],
   pup_bascor_z_sid_pot_outl = abs(pup_bascor_z_sid) >= 3,
          bio_mean_hr_dif_z_sid = scale(bio_mean_hr_dif)[, 1],
-         hr_z_sid_pot_outl = abs(bio_mean_hr_dif_z_sid) >= 3,
+         hr_z_sid_pot_outl = abs(bio_mean_hr_dif_z_sid) >= 4,
          bio_cda_phasicmax_log_z_sid = scale(bio_cda_phasicmax_log)[, 1],
-         scr_z_sid_pot_outl = abs(bio_cda_phasicmax_log_z_sid) >= 4
+         bio_cda_phasicmax_log_z_sid_pot_outl = abs(bio_cda_phasicmax_log_z_sid) >= 4,
+  bio_cda_iscr_log_z_sid = scale(bio_cda_iscr_log)[, 1],
+         bio_cda_iscr_log_z_sid_pot_outl = abs(bio_cda_iscr_log_z_sid) >= 4,
+ 
+   bio_cda_scr_log_z_sid = scale(bio_cda_scr_log)[, 1],
+        bio_cda_scr_log_z_sid_pot_outl = abs(bio_cda_scr_log_z_sid) >= 5,
+ 
          )%>%
-  select(-bio_mean_hr_dif_z_sid,-pup_bascor_z_sid,,-bio_cda_phasicmax_log_z_sid, -bio_cda_phasicmax_log,-bio_cda_iscr_log,-bio_cda_scr_log)%>%
+  select(-bio_mean_hr_dif_z_sid,-pup_bascor_z_sid,,-bio_cda_phasicmax_log_z_sid,-bio_cda_iscr_log_z_sid,-bio_cda_scr_log_z_sid, -bio_cda_phasicmax_log,-bio_cda_iscr_log,-bio_cda_scr_log)%>%
 #TRUE is exclusion
   ungroup()
+
 table(dta_4_lmms_sel_1$pup_bascor_z_sid_pot_outl)
 table(dta_4_lmms_sel_1$hr_z_sid_pot_outl)
 table(dta_4_lmms_sel_1$scr_z_sid_pot_outl)
@@ -158,22 +171,30 @@ dta_4_lmms_sel_1<- dta_4_lmms_sel_1%>%
   mutate(
     pup_bascor_no_outl              = ifelse(pup_bascor_z_sid_pot_outl, NA, pup_bascor),
     bio_mean_hr_dif_no_outl         = ifelse(hr_z_sid_pot_outl, NA, bio_mean_hr_dif),
-    bio_cda_phasicmax_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_phasicmax),
-     bio_cda_iscr_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_iscr),
-      bio_cda_scr_no_outl   = ifelse(scr_z_sid_pot_outl, NA, bio_cda_scr)
-  )
+    bio_cda_phasicmax_no_outl   = ifelse(bio_cda_phasicmax_log_z_sid_pot_outl, NA, bio_cda_phasicmax),
+     bio_cda_iscr_no_outl   = ifelse(bio_cda_iscr_log_z_sid_pot_outl, NA, bio_cda_iscr),
+     bio_cda_scr_no_outl   = ifelse(bio_cda_scr_log_z_sid_pot_outl, NA, bio_cda_scr))
+
+dta_4_lmms_sel_1
+
+colnames(dta_4_lmms_sel_1)
+dta_4_lmms_sel_1%>%
+  group_by(ssid)%>%
+  mutate(na_count = sum(is.na(bio_cda_scr_no_outl)))%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  select(ssid, na_count)
   
 ```
 
 for now keep these in just fill in the dataset
 
 ```{r}
-colnames(dta_4_lmms_sel_1[,c(3:5,9:10,30:34)])
+colnames(dta_4_lmms_sel_1[,c(1,3:5,9:10,30:34)])
  # [1] "age"                       "tas"                       "aq"                        "arousal"                  
  # [5] "valence"                   "pup_bascor_no_outl"        "bio_mean_hr_dif_no_outl"   "bio_cda_phasicmax_no_outl"
  # [9] "bio_cda_iscr_no_outl"      "bio_cda_scr_no_outl"
 
-chk_missing <- as.matrix(sapply(dta_4_lmms_sel_1[,c(3:5,9:10,30:34)], function(x) sum(is.na(x))))
+chk_missing <- as.matrix(sapply(dta_4_lmms_sel_1[,c(3:5,9:10,34:37)], function(x) sum(is.na(x))))
 chk_missing
 # Show in New Window
 #                           [,1]
@@ -198,13 +219,682 @@ library(missMDA)
 ?missMDA::imputeMultilevel()
 
 # get an estimate for the ncp value
-tmp<- dta_4_lmms_sel_1[,c(1,3:5,9:10,30:34)]
-tmp1<- na.omit(tmp)
 
-estim_ncpPCA(tmp1) # 5
-tmp$ssid<- factor(tmp$ssid)
-res <- missMDA::imputePCA(tmp[,4:11])
+# data(ozone)
 
+dta_4_lmms_sel_1$ssid<- factor(dta_4_lmms_sel_1$ssid)
+colnames(dta_4_lmms_sel_1)
+dta_4_lmms_sel_1[,c(1,9:10,30:34)]
+# ozone
+imputeMultilevel(ozone, ifac=12, ncpB=2, ncpW=2)
+
+options(scipen = 999)
+colnames(dta_4_lmms_sel_1[,c(1,3:4,20:21,34:37)])
+
+
+dta_4_lmms_sel_1_impute<- imputeMultilevel(dta_4_lmms_sel_1[,c(1,3:5,20:21,33:37)], ifac=1, ncpB=2, ncpW=2)
+
+dta_4_lmms_sel_1_impute$completeObs%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas,aq))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  ggpubr::stat_cor()
+
+
+dta_4_lmms_sel_1[,c(1,3:5,20:21,34:37)]%>%
+  group_by(ssid)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas,aq))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  ggpubr::stat_cor()
+
+
+# install.packages("GGally")
+dta_4_lmms_sel_1[,c(1,3:5,20:21,34:37)] %>%
+  group_by(ssid) %>%
+   summarise_if(is.numeric, mean, na.rm = T)%>%
+  ungroup()%>%
+  select(-ssid)%>%
+GGally::ggpairs(.)
+
+table(is.na(dta_4_lmms_sel_1$age))
+table(is.na(dta_4_lmms_sel_1_impute$completeObs))
+
+
+cor.test(dta_4_lmms_sel_1_impute$completeObs$valence_0_1,dta_4_lmms_sel_1$valence_0_1)
+
+colnames(dta_4_lmms_sel_1_impute$completeObs)
+
+dta_4_lmms_sel_1_impute_only<- dta_4_lmms_sel_1_impute$completeObs[,c(2:4,7:11)]
+
+names(dta_4_lmms_sel_1_impute_only)<- paste0(colnames(dta_4_lmms_sel_1_impute_only),"_imptd")
+
+
+dta_4_lmms_sel_1_w_impt<-bind_cols(dta_4_lmms_sel_1,dta_4_lmms_sel_1_impute_only)
+
+dta_4_lmms_sel_1_w_impt
+
+```
+
+mixed models
+
+```{r}
+dta_4_lmms_sel_1_w_impt
+require(lmerTest)
+
+options(contrasts = c("contr.sum", "contr.poly"))
+# Type III F-tests for fixed effects
 
 
 ```
+
+Models on each signal
+```{r}
+mod_lmer<- list()
+unique(dta_4_lmms_sel_1_w_impt$ssid)
+
+dta_4_lmms_sel_1_w_impt%>%
+  subset(ssid == 324)
+
+dta_4_lmms_sel_1_w_impt$tas_imptd_z<- scale(dta_4_lmms_sel_1_w_impt$tas_imptd)[,1]
+dta_4_lmms_sel_1_w_impt$aq_imptd_z<- scale(dta_4_lmms_sel_1_w_impt$aq_imptd)[,1]
+dta_4_lmms_sel_1_w_impt$ssid<- factor(dta_4_lmms_sel_1_w_impt$ssid)
+dta_4_lmms_sel_1_w_impt$stimiaps2<- factor(dta_4_lmms_sel_1_w_impt$stimiaps2)
+
+
+mod_lmer$arousal_0 <- lmer(arousal_0_1 ~ 1+ (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+mod_lmer$arousal_1 <- lmer(arousal_0_1 ~ tas_imptd_z + (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$arousal_1, type = 3)
+anova(mod_lmer$arousal_1, type = 3)
+summary(mod_lmer$arousal_1)
+
+# nothing - as expected
+mod_lmer$arousal_2 <- lmer(arousal_0_1 ~ aq_imptd_z + (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$arousal_2, type = 3)
+anova(mod_lmer$arousal_2, type = 3)
+summary(mod_lmer$arousal_2)
+# nothing - as expected
+
+# valence
+mod_lmer$val_0 <- lmer(valence_0_1 ~ 1 + (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+mod_lmer$val_1 <- lmer(valence_0_1 ~ tas_imptd_z + (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$val_1, type = 3)
+anova(mod_lmer$val_1, type = 3)
+summary(mod_lmer$val_1)
+
+# nothing - as expected
+mod_lmer$val_2 <- lmer(valence_0_1 ~ aq_imptd_z + (1 | stimiaps2)  + (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$val_2, type = 3)
+anova(mod_lmer$val_2, type = 3)
+summary(mod_lmer$val_2)
+# nothing - as expected
+
+
+```
+
+now physiology models 
+
+```{r}
+dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax_no_outl_imptd
+dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax
+
+table(is.na((dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax_no_outl_imptd+.1)))
+table(is.na(log(dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax+1.1)))
+
+dta_4_lmms_sel_1_w_impt$arousal_0_1_z<- scale(dta_4_lmms_sel_1_w_impt$arousal_0_1)[,1]
+
+mod_lmer$cda_phasmax_0 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+mod_lmer$cda_phasmax_0 
+car::Anova(mod_lmer$cda_phasmax_0 , type = 3)
+anova(mod_lmer$cda_phasmax_0 , type = 3)
+summary(mod_lmer$cda_phasmax_0 )
+
+
+# now test direct effects
+mod_lmer$cda_phasmax_1 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+tas_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_1 , type = 3)
+anova(mod_lmer$cda_phasmax_1 , type = 3)
+summary(mod_lmer$cda_phasmax_1 )
+
+#alexithymia effects
+#and arousal effects
+# 
+mod_lmer$cda_phasmax_2 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+aq_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_2 , type = 3)
+anova(mod_lmer$cda_phasmax_2 , type = 3)
+summary(mod_lmer$cda_phasmax_2 )
+# borderline significant model for autism
+anova(mod_lmer$cda_phasmax_0, mod_lmer$cda_phasmax_1, mod_lmer$cda_phasmax_2)
+# alex model is best except for BIC
+
+
+dta_4_lmms_sel_1_w_impt
+# tas centred by group
+dta_4_lmms_sel_1_w_impt$nt_asd<- if_else(dta_4_lmms_sel_1_w_impt$asd_sid == "ASD", "ASD", "NON ASD")
+  # now new z score
+dta_4_lmms_sel_1_w_impt<-  dta_4_lmms_sel_1_w_impt%>%
+    group_by(nt_asd)%>%
+    mutate(tas_imptd_z_asid = scale(tas_imptd)[,1],
+           aq_imptd_z_asid = scale(aq_imptd)[,1]
+           
+           )%>%
+  ungroup()
+  
+
+# now test direct effects
+mod_lmer$cda_phasmax_3 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+tas_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_3 , type = 3)
+anova(mod_lmer$cda_phasmax_3 , type = 3)
+summary(mod_lmer$cda_phasmax_3 )
+
+#alexithymia effects hold
+#and arousal effects ho0ld
+# 
+
+mod_lmer$cda_phasmax_4 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+aq_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_4 , type = 3)
+anova(mod_lmer$cda_phasmax_4 , type = 3)
+summary(mod_lmer$cda_phasmax_4 )
+# borderline significant model for autism; autism and arousal effect hold
+anova(mod_lmer$cda_phasmax_0, mod_lmer$cda_phasmax_1, mod_lmer$cda_phasmax_2,mod_lmer$cda_phasmax_3,mod_lmer$cda_phasmax_4)
+# alex model is the best model
+
+##############
+# now just NT
+dta_4_lmms_sel_1_w_impt_nt<- dta_4_lmms_sel_1_w_impt%>%subset(nt_asd!= "ASD")%>%
+  mutate(tas_imptd_z = scale(tas_imptd)[,1],
+         aq_imptd_z = scale(aq_imptd)[,1],
+         arousal_0_1_z = scale(arousal_0_1)[,1]
+         )
+
+mod_lmer$cda_phasmax_0_nt <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt_nt)
+
+mod_lmer$cda_phasmax_0.1_nt <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt_nt)
+
+
+mod_lmer$cda_phasmax_5 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+tas_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt_nt)
+
+car::Anova(mod_lmer$cda_phasmax_5 , type = 3)
+anova(mod_lmer$cda_phasmax_5 , type = 3)
+summary(mod_lmer$cda_phasmax_5 )
+
+#alexithymia effects
+#and arousal effects
+# replicates full group analysis
+
+mod_lmer$cda_phasmax_6 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+aq_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                    data = dta_4_lmms_sel_1_w_impt_nt)
+
+car::Anova(mod_lmer$cda_phasmax_2 , type = 3)
+anova(mod_lmer$cda_phasmax_2 , type = 3)
+summary(mod_lmer$cda_phasmax_2 )
+# aq is also significant in addition to arousal
+anova(mod_lmer$cda_phasmax_0_nt, mod_lmer$cda_phasmax_0.1_nt, mod_lmer$cda_phasmax_5, mod_lmer$cda_phasmax_6)
+
+```
+
+hr
+```{r}
+
+cor.test(dta_4_lmms_sel_1_w_impt$bio_mean_hr_dif_no_outl_imptd, dta_4_lmms_sel_1_w_impt$bio_mean_hr_dif)
+mod_lmer$hr_dif_0 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$hr_dif_0 , type = 3)
+anova(mod_lmer$hr_dif_0 , type = 3)
+summary(mod_lmer$hr_dif_0 )
+
+
+# now test direct effects
+mod_lmer$hr_dif_1 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+tas_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$hr_dif_1 , type = 3)
+anova(mod_lmer$hr_dif_1 , type = 3)
+summary(mod_lmer$hr_dif_1 )
+
+# no effects
+# 
+mod_lmer$hr_dif_2 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+aq_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_2 , type = 3)
+anova(mod_lmer$cda_phasmax_2 , type = 3)
+summary(mod_lmer$cda_phasmax_2 )
+# aut and arousal effcet
+anova(mod_lmer$hr_dif_0, mod_lmer$hr_dif_1, mod_lmer$hr_dif_2 )
+# all models are poor compared to NULL
+
+
+
+# now test direct effects
+mod_lmer$hr_dif_3 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+tas_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$hr_dif_3 , type = 3)
+anova(mod_lmer$hr_dif_3 , type = 3)
+summary(mod_lmer$hr_dif_3 )
+
+# still no effects
+# 
+mod_lmer$hr_dif_4 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+aq_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$hr_dif_4 , type = 3)
+anova(mod_lmer$hr_dif_4 , type = 3)
+summary(mod_lmer$hr_dif_4 )
+# no effects of aq or arousal
+anova(mod_lmer$hr_dif_0, mod_lmer$hr_dif_1, mod_lmer$hr_dif_2,mod_lmer$hr_dif_3, mod_lmer$hr_dif_4 )
+# all models perform poorer than the null
+```
+
+Pupil
+
+```{r}
+
+cor.test(dta_4_lmms_sel_1_w_impt$pup_bascor_no_outl, dta_4_lmms_sel_1_w_impt$pup_bascor)
+
+mod_lmer$pup_0 <- lmer(pup_bascor_no_outl_imptd ~ 1+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+
+car::Anova(mod_lmer$pup_0 , type = 3)
+anova(mod_lmer$pup_0 , type = 3)
+summary(mod_lmer$pup_0 )
+
+
+# now test direct effects
+mod_lmer$pup_1 <- lmer(pup_bascor_no_outl_imptd ~ 1+tas_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$pup_1 , type = 3)
+anova(mod_lmer$pup_1 , type = 3)
+summary(mod_lmer$pup_1 )
+
+# efects of arousal and interaction
+# 
+mod_lmer$pup_2 <- lmer(pup_bascor_no_outl_imptd ~ 1+aq_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$pup_2 , type = 3)
+anova(mod_lmer$pup_2 , type = 3)
+summary(mod_lmer$pup_2 )
+
+
+anova(mod_lmer$pup_0, mod_lmer$pup_1, mod_lmer$pup_2 )
+# autism model winds
+
+
+# aq and tas normalised by group
+mod_lmer$pup_3 <- lmer(pup_bascor_no_outl_imptd ~ 1+tas_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$pup_3 , type = 3)
+anova(mod_lmer$pup_3 , type = 3)
+summary(mod_lmer$pup_3 )
+
+# effects of arousal only ;(differs from the other z tas)
+# 
+mod_lmer$pup_4 <- lmer(pup_bascor_no_outl_imptd ~ 1+aq_imptd_z_asid*arousal_0_1_z+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$pup_4 , type = 3)
+anova(mod_lmer$pup_4 , type = 3)
+summary(mod_lmer$pup_4 )
+
+# similar effect of aroudal only
+anova(mod_lmer$pup_0, mod_lmer$pup_1, mod_lmer$pup_2, mod_lmer$pup_3, mod_lmer$pup_4 )
+```
+
+coherence among physiology
+
+```{r}
+dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax_no_outl_imptd_log1p<- log1p(dta_4_lmms_sel_1_w_impt$bio_cda_phasicmax_no_outl_imptd+.109)
+
+mod_lmer$cda_phasmax_from_hr_0 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+bio_mean_hr_dif_no_outl_imptd+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_from_hr_0 , type = 3)
+anova(mod_lmer$cda_phasmax_from_hr_0 , type = 3)
+summary(mod_lmer$cda_phasmax_from_hr_0 )
+
+
+mod_lmer$cda_phasmax_from_hr_1 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+bio_mean_hr_dif_no_outl_imptd+
+                                         
+                                         tas_imptd_z:bio_mean_hr_dif_no_outl_imptd + (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+# car::Anova(mod_lmer$cda_phasmax_from_hr_1 , type = 3)
+anova(mod_lmer$cda_phasmax_from_hr_1 , type = 3)
+summary(mod_lmer$cda_phasmax_from_hr_1 )
+
+
+mod_lmer$cda_phasmax_from_hr_2 <- lmer(log1p(bio_cda_phasicmax_no_outl_imptd+.109) ~ 1+bio_mean_hr_dif_no_outl_imptd+
+                                         
+                                         aq_imptd_z:bio_mean_hr_dif_no_outl_imptd + (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$cda_phasmax_from_hr_2 , type = 3)
+anova(mod_lmer$cda_phasmax_from_hr_2 , type = 3)
+summary(mod_lmer$cda_phasmax_from_hr_1 )
+
+anova(mod_lmer$cda_phasmax_0,mod_lmer$cda_phasmax_from_hr_0,mod_lmer$cda_phasmax_from_hr_1,mod_lmer$cda_phasmax_from_hr_2)
+# the HR model is slightly better
+
+# is the otehr eay around the same
+mod_lmer$hr_from_cda_phasmax_0 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 
+                                         1+bio_cda_phasicmax_no_outl_imptd_log1p+ (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+# car::Anova(mod_lmer$hr_from_cda_phasmax_0 , type = 3)
+anova(mod_lmer$hr_from_cda_phasmax_0 , type = 3)
+summary(mod_lmer$hr_from_cda_phasmax_0 )
+
+
+mod_lmer$hr_from_cda_phasmax_1 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+bio_cda_phasicmax_no_outl_imptd_log1p+
+                                         
+                                         tas_imptd_z:bio_cda_phasicmax_no_outl_imptd_log1p + (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$hr_from_cda_phasmax_1 , type = 3)
+anova(mod_lmer$hr_from_cda_phasmax_1 , type = 3)
+summary(mod_lmer$hr_from_cda_phasmax_1 )
+
+
+mod_lmer$hr_from_cda_phasmax_2 <- lmer(bio_mean_hr_dif_no_outl_imptd ~ 1+bio_cda_phasicmax_no_outl_imptd_log1p+
+                                         
+                                         aq_imptd_z:bio_cda_phasicmax_no_outl_imptd_log1p + (1 | stimiaps2)  + 
+                                 (1 | ssid), REML = FALSE,
+                      data = dta_4_lmms_sel_1_w_impt)
+
+car::Anova(mod_lmer$hr_from_cda_phasmax_2 , type = 3)
+anova(mod_lmer$hr_from_cda_phasmax_2 , type = 3)
+summary(mod_lmer$cda_phasmax_from_hr_1 )
+
+anova(mod_lmer$cda_phasmax_0,mod_lmer$cda_phasmax_from_hr_0,mod_lmer$cda_phasmax_from_hr_1,mod_lmer$cda_phasmax_from_hr_2)
+```
+
+
+```{r}
+colnames(dta_4_lmms_sel_1_w_impt)
+dta_4_lmms_sel_1_w_impt%>%
+  group_by(ssid)%>%
+  select(bio_mean_hr_dif_no_outl_imptd,
+         bio_cda_phasicmax_no_outl_imptd,
+         pup_bascor_no_outl_imptd,
+         arousal_0_1)%>%
+  mapply(cor)
+  
+vars <- c(
+  "bio_mean_hr_dif_no_outl_imptd",
+  "bio_cda_phasicmax_no_outl_imptd",
+  "pup_bascor_no_outl_imptd",
+  "arousal_0_1"
+)
+
+d_cor 
+
+
+dta_4_lmms_sel_1_w_impt %>%
+  group_by(ssid) %>%
+  summarise(
+    cor_mat = list(cor(across(all_of(vars)), use = "pairwise.complete.obs")),
+    .groups = "drop"
+  ) %>%
+  # turn matrix into long format
+  mutate(cor_long = lapply(cor_mat, \(m) {
+    as.data.frame(as.table(m))
+  })) %>%
+  select(-cor_mat) %>%
+  unnest(cor_long) %>%
+  rename(var1 = Var1, var2 = Var2, r = Freq) %>%
+  # keep only unique pairs (upper triangle without diagonal)
+  filter(var1 < var2) %>%
+  # spread into wide format → one column per correlation
+  unite("pair", var1, var2, sep = "_") %>%
+  pivot_wider(
+    names_from = pair,
+    values_from = r
+  )
+# all unique pairs of variables
+pairs <- combn(vars, 2, simplify = FALSE)
+
+ 
+length(unique(dta_4_lmms_sel_1_w_impt$ssid))
+dta_cor<- dta_4_lmms_sel_1_w_impt %>%
+  group_by(ssid) %>%
+  summarise(
+    cor_mat = list(cor(as.matrix(across(all_of(vars))),
+                       use = "pairwise.complete.obs")),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    cor_long = lapply(cor_mat, \(m) as.data.frame(as.table(m)))
+  ) %>%
+  select(-cor_mat) %>%
+  unnest(cor_long) %>%
+  # turn factors into character first
+  mutate(
+    var1 = as.character(Var1),
+    var2 = as.character(Var2)
+  ) %>%
+  rename(r = Freq) %>%
+  select(-Var1, -Var2) %>%
+  # keep only unique pairs (upper triangle, no diagonal)
+  filter(var1 < var2) %>%
+  unite("pair", var1, var2, sep = "_") %>%
+  pivot_wider(
+    names_from  = pair,
+    values_from = r
+  )
+
+
+colnames(dta_cor)<- c("ssid", paste0(colnames(dta_cor[,2:7]), "_rho"))
+
+# colnames(dta_cor)
+
+
+
+dta_cor<- dta_cor %>%
+  mutate(
+    across(
+      ends_with("_rho"),
+      # ~ atanh(.x),          # Fisher z
+      ~ atanh(pmin(pmax(.x, -0.999999), 0.999999)),#Add trimming to avoid atanh() producing Inf:
+      .names = "r2z_{.col}"   # create new columns
+    )
+  )
+
+colnames(dta_4_lmms_sel_1_w_impt)
+
+dta_4_lmms_sel_1_w_impt_sid_agg<- dta_4_lmms_sel_1_w_impt%>%
+  group_by(ssid,asd_sid)%>%
+  summarise_at(c("tas", "aq", "age", "age_imptd", "tas_imptd","aq_imptd", "tas_imptd_z","aq_imptd_z"), mean, na.rm = T)%>%
+  ungroup()
+
+dta_4_lmms_sel_1_w_impt_sid_agg
+
+dta_cor<- left_join(dta_4_lmms_sel_1_w_impt_sid_agg,dta_cor)
+
+
+
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+  subset(ssid!= 606)%>%
+  ggplot(aes(x = tas_imptd_z, y = rho)) +   # or `tas` if you prefer
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+  subset(ssid!= 606)%>%
+  ggplot(aes(x = aq_imptd_z, y = rho)) +   # or `tas` if you prefer
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+
+
+unique(dta_cor$asd_sid)
+
+dta_cor$nt_asd<- if_else(dta_cor$asd_sid == "ASD", "ASD", "NON ASD")
+  # now new z score
+dta_cor<-  dta_cor%>%
+    group_by(nt_asd)%>%
+    mutate(tas_imptd_z_asid = scale(tas_imptd)[,1],
+           aq_imptd_z_asid = scale(aq_imptd)[,1]
+           
+           )
+
+# new vis
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+  subset(ssid!= 606)%>%
+  ggplot(aes(x = tas_imptd_z_asid, y = rho)) +   # or `tas` if you prefer
+  geom_point(aes(colour = nt_asd)) +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+  subset(ssid!= 606)%>%
+  ggplot(aes(x = aq_imptd_z_asid, y = rho)) +   # or `tas` if you prefer
+   geom_point(aes(colour = nt_asd)) +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+
+
+
+
+# okay can we look at only NT
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+ subset(nt_asd != "ASD")%>%
+  ggplot(aes(x = tas_imptd_z_asid, y = rho)) +   # or `tas` if you prefer
+  geom_point(aes(colour = nt_asd)) +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+
+
+dta_cor %>%
+  pivot_longer(
+    cols = starts_with("r2z"),
+    names_to = "pair",
+    values_to = "rho"
+  ) %>%
+  subset(nt_asd != "ASD")%>%
+  ggplot(aes(x = aq_imptd_z_asid, y = rho)) +   # or `tas` if you prefer
+   geom_point(aes(colour = nt_asd)) +
+  geom_smooth(method = "lm", se = FALSE) +
+ 
+  facet_wrap(~ pair) +
+   ggpubr::stat_cor()+
+  theme_minimal()+
+  geom_text(aes(label = ssid))
+```
+
+check the model excluding ASD
+
+
+save.image("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/2025 - autism and alexithymia/dta_oxf_alex_aut_coherence_Dec2025.RData")
