@@ -12,12 +12,32 @@ just for MFA
 
 colnames(dta_4_lmms_sel_1_w_impt)
 
-dta_4_mfa<- dta_4_lmms_sel_1_w_impt[,c(1,3:8,18:21,33:34,36,46:47)]
+dta_4_lmms_sel_1_w_impt$aq
+
+dta_4_mfa<- dta_4_lmms_sel_1_w_impt[,c(1,3:8,18:21,33:34,36,46:47,39:40)]
 
 # pivot to wider
 colnames(dta_4_mfa)
 
-dta_vars_4mfa_2_wide_sel<- dta_4_mfa%>%
+cor.test(dta_4_mfa$tas_imptd_z, dta_4_mfa$aq_imptd_z)
+
+dta_4_mfa1<- dta_4_mfa%>%
+  group_by(ssid)%>%
+  mutate(valence_0_1 = scale(valence_0_1)[,1],
+         arousal_0_1 = scale(arousal_0_1)[,1],
+         
+          pup_bascor_no_outl = scale(pup_bascor_no_outl)[,1],
+          bio_mean_hr_dif_no_outl = scale(log1p(bio_mean_hr_dif_no_outl+.01))[,1],
+            bio_cda_iscr_no_outl = scale(bio_cda_iscr_no_outl)[,1]
+         )
+
+# dta_vars_4mfa_2_wide_sel<- dta_4_mfa%>%
+#  pivot_wider(id_cols = c("ssid"),
+#     names_from = "stimiaps2",
+#     values_from = c("valence_0_1", "arousal_0_1", "pup_bascor_no_outl", "bio_mean_hr_dif_no_outl", "bio_cda_iscr_no_outl"))
+
+
+dta_vars_4mfa_2_wide_sel2<- dta_4_mfa1%>%
  pivot_wider(id_cols = c("ssid"),
     names_from = "stimiaps2",
     values_from = c("valence_0_1", "arousal_0_1", "pup_bascor_no_outl", "bio_mean_hr_dif_no_outl", "bio_cda_iscr_no_outl"))
@@ -27,7 +47,7 @@ colnames(dta_vars_4mfa_2_wide_sel)
 # dta_vars_4mfa_2_wide_sel%>%
 # left_join(dta_4_mfa[,c(1:5,15:16)])
 
-dta_vars_4mfa_2_wide_sel_complet <- missMDA::imputeMFA(dta_vars_4mfa_2_wide_sel[,c(2:251)],
+dta_vars_4mfa_2_wide_sel_complet <- missMDA::imputeMFA(dta_vars_4mfa_2_wide_sel2[,c(2:251)],
                                                ncp=2,
                                                group=c(50,50,50,50,50),
                                         type=c( "s","s","s","s","s"))
@@ -35,6 +55,9 @@ dta_vars_4mfa_2_wide_sel_complet <- missMDA::imputeMFA(dta_vars_4mfa_2_wide_sel[
 
 dta_vars_4mfa_2_wide_sel_complet_obs<- dta_vars_4mfa_2_wide_sel_complet$completeObs
 ```
+
+
+
 
 mfa
 ```{r}
@@ -46,6 +69,8 @@ require(FactoMineR)
 
 mod_mfa<- list()
 colnames(dta_vars_4mfa_2_wide_sel)
+unique(dta_vars_4mfa_2_wide_sel$ssid)
+unique(dta_vars_4mfa_2_wide_sel$ssid)
 
 mod_mfa$mfa_wide<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel_complet_obs,
              # tab.comp=dta_vars_4mfa_2_wide_sel_complet_obs,
@@ -56,6 +81,24 @@ mod_mfa$mfa_wide<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel_complet_obs,
              ncp = 3,
              # num.group.sup=c(1,2),
              graph=TRUE)
+
+
+```
+
+
+```{r}
+
+
+
+# mod_mfa$mfa_wide2<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel_complet2_obs,
+#              # tab.comp=dta_vars_4mfa_2_wide_sel_complet_obs,
+#               group=c(50,50,50,50,50),
+#              # type=c( "c","c","c","c","c"),
+#               type=c("s","s","s","s","s"),
+#              name.group=c( "valence","arousal","pupil","hr","scr"),
+#              ncp = 3,
+#              # num.group.sup=c(1,2),
+#              graph=TRUE)
 
 mod_res$mfa_z_sid
 
@@ -71,10 +114,160 @@ plot.MFA(mod_mfa$mfa_wide, choix="var",
          cex.main=0.8,
          cex.axis=0.8)
 
+plot.MFA(mod_mfa$mfa_wide, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(2,3))
 
 
 
-mod_res$mfa_z_sid$global.pca$eig
+plot.MFA(mod_mfa$mfa_wide, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(1,3))
+
+plot.MFA(mod_mfa$mfa_wide2, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8)
+
+plot.MFA(mod_mfa$mfa_wide2, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(2,3))
+
+
+
+plot.MFA(mod_mfa$mfa_wide2, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(1,3))
+
+
+
+
+
+```
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(mfa_z_sid_coord_1, mfa_z_sid_coord_2))+
+  geom_point()+
+  geom_text(aes(label = ssid))+
+    geom_smooth(method = "lm", se = F)+
+  ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  ggplot(aes(mfa_z_sid_coord_1, mfa_z_sid_coord_3))+
+  geom_point()+
+   geom_text(aes(label = ssid))+
+    geom_smooth(method = "lm", se = F)+
+  ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  subset(ssid!= 336)%>%
+  ggplot(aes(mfa_z_sid_coord_2, mfa_z_sid_coord_3))+
+  geom_point()+
+   geom_text(aes(label = ssid))+
+  geom_smooth(method = "lm", se = F)+
+  ggpubr::stat_cor()
+
+# 610
+# 336
+# 623
+
+
+
+
+
+mod_mfa$mfa_wide_cor_af_ph<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel_complet_obs,
+             # tab.comp=dta_vars_4mfa_2_wide_sel_complet_obs,
+              group=c(100,150),
+             # type=c( "c","c","c","c","c"),
+              type=c("s","s"),
+             name.group=c( "core affect","physiology"),
+             ncp = 3,
+             # num.group.sup=c(1,2),
+             graph=TRUE)
+
+mod_res$mfa_z_sid
+
+plot.MFA(resMFA_justvars)
+
+```{r}
+# correlation circle
+plot.MFA(mod_mfa$mfa_wide, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8)
+
+plot.MFA(mod_mfa$mfa_wide, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(2,3))
+
+
+
+plot.MFA(mod_mfa$mfa_wide, choix="var",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(1,3))
+
+?plot.MFA
+
+plot.MFA(mod_mfa$mfa_wide, choix="ind",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(1,2))
+plot.MFA(mod_mfa$mfa_wide, choix="ind",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(1,3))
+
+
+plot.MFA(mod_mfa$mfa_wide, choix="ind",
+         select='cos2 0.45',
+         habillage='group',
+         title="Correlation circle",
+         cex=1.5,
+         cex.main=0.8,
+         cex.axis=0.8, axes = c(2,3))
+
+
+
+
+
 
 ```
 
@@ -82,249 +275,380 @@ mod_res$mfa_z_sid$global.pca$eig
 ```{r}
 mod_res$mfa_z_sid
 
-fviz_screeplot(mod_res$mfa_z_sid, ncp=5)
-require(factoextra)
+
+# require(factoextra)
 fviz_contrib(mod_mfa$mfa_wide, "quanti.var", axes = 1, top = 10)
-fviz_contrib(mod_mfa$mfa_wide, "quanti.var", axes = 2,top = 10)
+fviz_contrib(mod_mfa$mfa_wide, "quanti.var", axes = 2,top = 10)# coherence?
 fviz_contrib(mod_mfa$mfa_wide, "quanti.var", axes = 3,top = 10)
 
 
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_1<- mod_res$mfa_z_sid$ind$coord[,1]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_2<- mod_res$mfa_z_sid$ind$coord[,2]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_3<- mod_res$mfa_z_sid$ind$coord[,3]
+fviz_contrib(mod_mfa$mfa_wide, "group", axes = 1, top = 10)
+fviz_contrib(mod_mfa$mfa_wide, "group", axes = 2,top = 10)# coherence?
+fviz_contrib(mod_mfa$mfa_wide, "group", axes = 3,top = 10)
+factoextra::fviz_mfa_axes(mod_mfa$mfa_wide)
 
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_1<- mod_res$mfa_z_sid$ind$cos2[,1]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_2<- mod_res$mfa_z_sid$ind$cos2[,2]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_3<- mod_res$mfa_z_sid$ind$cos2[,3]
+factoextra::fviz_mfa_axes(mod_mfa$mfa_wide, axes = c(1,3))
+factoextra::fviz_mfa_group(mod_mfa$mfa_wide)
 
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_1<- mod_res$mfa_z_sid$ind$contrib[,1]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_2<- mod_res$mfa_z_sid$ind$contrib[,2]
-dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_3<- mod_res$mfa_z_sid$ind$contrib[,3]
+factoextra::fviz_mfa_group(mod_mfa$mfa_wide, axes = c(1,3))
+
+
+```
+```{r}
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_1<- mod_mfa$mfa_wide$ind$coord[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_2<- mod_mfa$mfa_wide$ind$coord[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_coord_3<- mod_mfa$mfa_wide$ind$coord[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_1<- mod_mfa$mfa_wide$ind$cos2[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_2<- mod_mfa$mfa_wide$ind$cos2[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_cos2_3<- mod_mfa$mfa_wide$ind$cos2[,3]
+
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_1<- mod_mfa$mfa_wide$ind$contrib[,1]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_2<- mod_mfa$mfa_wide$ind$contrib[,2]
+dta_vars_4mfa_2_wide_sel$mfa_z_sid_contrib_3<- mod_mfa$mfa_wide$ind$contrib[,3]
 ```
 
 
 ```{r}
-
-dta_vars_4mfa_2_wide_sel$asd_sid_2<- if_else(dta_vars_4mfa_2_wide_sel$asd_sid != "ASD", "CONTROL",  "ASD")
-# correlation with dimensiuon 1
 dta_vars_4mfa_2_wide_sel
 
-dta_vars_4mfa_2_wide_sel$aq<- dta_vars_4mfa_2_wide$aq
- 
-predict(model_tas, newdata = dta_vars_4mfa_2_wide_sel[is.na(dta_vars_4mfa_2_wide_sel$tas), ])
-dta_vars_4mfa_2_wide_sel%>%
-  subset(asd_sid != "ALEX")%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_1^2))+
-  geom_point(aes(colour = asd_sid))+
+colnames(dta_4_mfa)
+cor.test(dta_4_mfa$tas_imptd_z,dta_4_mfa$aq_imptd_z)
+dta_4_mfa$tas
 
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
-  # geom_text(aes(label = ssid))
+dta_ssid_agg_quest<- dta_4_mfa%>%
+  group_by(ssid,asd_sid)%>%
+  summarise_at(c("age", "tas","aq","tas_imptd","aq_imptd", "tas_imptd_z", "aq_imptd_z"), mean, na.rm = T)
+
+dta_vars_4mfa_2_wide_sel<- dta_vars_4mfa_2_wide_sel%>%
+left_join(dta_ssid_agg_quest)
 
 
-dta_vars_4mfa_2_wide_sel%>%
-  subset(asd_sid != "ALEX")%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(tas_approx_z,mfa_z_sid_coord_1^2))+
-  geom_point(aes(colour = asd_sid))+
-
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
-  # geom_text(aes(label = ssid))
-
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  # subset(asd_sid != "ALEX")%>%
-  # subset(ssid != 623)%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_contrib_1+.1)))+
-  geom_point(aes(colour = asd_sid_2))+
-
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
-  # geom_text(aes(label = ssid))
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  # subset(asd_sid != "ALEX")%>%
-   subset(ssid != 623)%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_contrib_1+.1)))+
-  geom_point(aes(colour = asd_sid_2))+
-
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
-
-
-
-# dim 2
-dta_vars_4mfa_2_wide_sel%>%
-  # subset(asd_sid != "ALEX")%>%
-  # subset(ssid != 623)%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(aq2_approx_z,(mfa_z_sid_contrib_2+.1)))+
-  geom_point(aes(colour = asd_sid_2))+
-
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
-  # geom_text(aes(label = ssid))
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  subset(asd_sid != "ALEX")%>%
-   subset(ssid != 623)%>%
-    subset(ssid != 356)%>%
-  group_by(asd_sid)%>%
-  mutate(tas_approx_z2 = scale(tas))%>%
-  # ggplot(aes(tas_approx_z2,mfa_z_sid_coord_1))+
-  ggplot(aes(tas_approx_z,(mfa_z_sid_contrib_2)))+
-  geom_point(aes(colour = asd_sid_2))+
-
-  geom_smooth(method = "lm")+
-    ggpubr::stat_cor()+
-    geom_text(aes(label = ssid))
-
+dta_vars_4mfa_2_wide_sel$control_asd<- if_else(dta_vars_4mfa_2_wide_sel$asd_sid == "ASD", "ASD", "CONTROL")
 ```
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_1 ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_contrib_1+.1 )))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_contrib_1+.1 ) ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")
-  facet_grid(~asd_sid_2)
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(tas_approx_z,log1p(mfa_z_sid_cos2_1+.1 )))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(aq2_approx_z,log1p(mfa_z_sid_cos2_1+.1 ) ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(tas_approx_z,mfa_z_sid_coord_2 ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-facet_grid(~asd_sid_2)
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_2 ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(tas_approx_z,mfa_z_sid_coord_3 ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-facet_grid(~asd_sid_2)
-
-
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(aq2_approx_z,mfa_z_sid_coord_3 ))+
-  geom_point()+
-  ggpubr::stat_cor()+
-  geom_smooth(method = "lm")+
-  facet_grid(~asd_sid_2)
-  
 
 
 ```{r}
-cluster
+unique(dta_4_lmms_sel_1_w_impt$ssid)
+dta_vars_4mfa_2_wide_sel
 
-colnames(dta_vars_4mfa_2_wide_sel)
-mod_res$kmeans_res_mfa = kmeans(x = dta_vars_4mfa_2_wide_sel[,357:359], centers = 2)
-
-
-dta_vars_4mfa_2_wide_sel$kmeans_clust<- mod_res$kmeans_res_mfa $cluster
+dta_4_lmms_sel_1_w_impt%>%
+  group_by("ssid")
 
 
-# install.packages("factoextra")
+cor.test(dta_vars_4mfa_2_wide_sel$aq_imptd_z, dta_vars_4mfa_2_wide_sel$tas_imptd_z)
+cor.test(dta_vars_4mfa_2_wide_sel$aq, dta_vars_4mfa_2_wide_sel$tas)
+```
 
+```{r}
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+  group_by(asd_sid)%>%
+  ggplot(aes(aq_imptd_z,mfa_z_sid_coord_1))+
+  geom_point(aes(colour = asd_sid))+
 
-
-library(cluster)
-cluster::clusplot(dta_vars_4mfa_2_wide_sel[,357:359],
-         dta_vars_4mfa_2_wide_sel$kmeans_clust,
-         lines = 2,
-         shade = TRUE,
-         color = TRUE,
-         labels = 1,
-         plotchar = FALSE,
-         span = TRUE
-         # label = 
-         # main = paste('Clusters of customers'),
-         # xlab = 'Annual Income',
-         # ylab = 'Spending Score'
-         )
-
-table(dta_MFA_tas_aq_splits)
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
 
 dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(factor(kmeans_clust), mfa_z_sid_contrib_1))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")
+  # subset(asd_sid != "ALEX")%>%
+  group_by(asd_sid)%>%
+  ggplot(aes(tas_imptd_z,mfa_z_sid_coord_1))+
+  geom_point(aes(colour = asd_sid))+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
 
 
 
-dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(factor(kmeans_clust), tas_approx_z))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-  ggpubr::stat_compare_means()+
-    facet_grid(~asd_sid_2)
+
 
 
 dta_vars_4mfa_2_wide_sel%>%
-  ggplot(aes(factor(kmeans_clust), aq2_approx_z))+
-  geom_jitter(width = .1, alpha = .2)+
-  stat_summary(geom = "pointrange")+
-  ggpubr::stat_compare_means()+
-  facet_grid(~asd_sid_2)
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq,mfa_z_sid_coord_1))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    ggpubr::stat_cor()
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,mfa_z_sid_coord_1))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+  # geom_text(aes(label = ssid))
+
+```
+
+```{r}
+
+dta_vars_4mfa_2_wide_sel
+dta_vars_4mfa_2_wide_sel%>%
+    # subset(ssid != 336)%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq_imptd_z,mfa_z_sid_coord_2))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(ssid != 336)%>%
+
+  ggplot(aes(tas_imptd_z,mfa_z_sid_coord_2))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    # geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq,mfa_z_sid_coord_2))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+
+dta_vars_4mfa_2_wide_sel%>%
+    # subset(ssid != 336)%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,mfa_z_sid_coord_2))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+
+
+
+
+```
+# dim 3
+```{r}
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq_imptd_z,mfa_z_sid_coord_3))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+
+  ggplot(aes(tas_imptd_z,mfa_z_sid_coord_3))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq,mfa_z_sid_coord_3))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,mfa_z_sid_coord_3))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+```
+
+contribution
+```{r}
+dta_vars_4mfa_2_wide_sel%>%
+
+
+
+  ggplot(aes(aq_imptd_z, log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+ 
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+
+  ggplot(aes(tas_imptd_z,log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+
+  ggplot(aes(aq,log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,log1p(mfa_z_sid_contrib_1+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+# dimension 2
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(ssid != "ALEX")%>%
+
+  ggplot(aes(aq_imptd_z,log1p(mfa_z_sid_contrib_2+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+
+  ggplot(aes(tas_imptd_z,log1p(mfa_z_sid_contrib_2+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq,log1p(mfa_z_sid_contrib_2+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(assidsd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,(log1p(mfa_z_sid_contrib_2+.1))))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+# dim 3
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(ssid != "ALEX")%>%
+
+  ggplot(aes(aq_imptd_z,log1p(mfa_z_sid_contrib_3+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+
+
+dta_vars_4mfa_2_wide_sel%>%
+
+
+  ggplot(aes(tas_imptd_z,log1p(mfa_z_sid_contrib_3+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+    geom_text(aes(label = ssid))+
+   # facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
+
+dta_vars_4mfa_2_wide_sel%>%
+  # subset(asd_sid != "ALEX")%>%
+
+  ggplot(aes(aq,log1p(mfa_z_sid_contrib_3+.1)))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+ 
+
+dta_vars_4mfa_2_wide_sel%>%
+
+  # subset(assidsd_sid != "ALEX")%>%
+
+  ggplot(aes(tas,(log1p(mfa_z_sid_contrib_3+.1))))+
+  geom_point()+
+
+  geom_smooth(method = "lm")+
+   facet_grid(~control_asd)+
+    ggpubr::stat_cor()
+
 
 ```
