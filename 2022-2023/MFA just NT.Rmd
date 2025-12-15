@@ -196,7 +196,7 @@ dta_vars_4mfa_2_wide_sel2_nt%>%
 dta_vars_4mfa_2_wide_sel2_nt%>%
 
 
-  ggplot(aes(tas,mfa_z_sid_contrib_3))+
+  ggplot(aes(tas,(log1p(mfa_z_sid_contrib_3+.1))))+
   geom_point()+
   geom_smooth(method = "lm")+
     ggpubr::stat_cor()
