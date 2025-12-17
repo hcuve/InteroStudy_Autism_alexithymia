@@ -1,0 +1,365 @@
+---
+title: "social emophys coherence"
+output: html_document
+date: "2025-12-17"
+---
+
+
+
+```{r}
+
+# load these
+"dta_social_emo.Rds"
+
+"dta_social_emo_wide_mfa.rds"
+
+# note pupil data has not been processed
+
+dta_social_emo <- readRDS("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/2025 - autism and alexithymia/dta_social_emo.Rds")
+dta_social_emo_wide_mfa <- readRDS("~/Library/CloudStorage/GoogleDrive-helioclemente.c@gmail.com/My Drive/Papers 2022/InteroceptionStudy/InteroStudy2020/analysis/DataAnalysisJanuary2020/DataAnalysisJan2020/2022_2023_Analyses/Data/2025 - autism and alexithymia/dta_social_emo_wide_mfa.rds")
+
+
+colnames(dta_social_emo)
+
+# remive older dimensions
+dta_social_emo<- dta_social_emo[,c(1:55,60:109)]
+
+```
+
+
+
+to do
+1. fit individual LMMs across the whole dataset
+valence, arousal, iscr or amp sum, hr diff, pupil
+
+
+SCR
+these are not affected by 606
+
+```{r}
+dta_social_emo$aq28_total_cont
+dta_social_emo%>%
+  group_by(participant)%>%
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+  ggplot(aes(tas20_total_z, aq28_total_cont))+
+  geom_point()+
+  ggpubr::stat_cor()
+
+
+options(scipen = 999)
+dta_social_emo%>%
+  group_by(stim_iaps)%>%
+
+  summarise_if(is.numeric, mean, na.rm = T)%>%
+    subset(int_slider_response<7)%>%
+  ggplot(aes(int_slider_response, val_slider_response))+
+  geom_point()+
+  ggpubr::stat_cor()
+
+
+```
+SCR
+```{r}
+unique(dta_social_emo$participant)
+
+mod_lmer<-list()
+
+mean(dta_social_emo$log_cda_amp_sum)
+sd(dta_social_emo$log_cda_amp_sum)
+require(lmerTest)
+dta_social_emo$int_slider_response_z<- scale(dta_social_emo$int_slider_response)[,1]
+# dta_social_emo$int_slider_response_z<- scale(dta_social_emo$int_slider_response)[,1]
+
+
+mod_lmer$log_cda_amp_sum <- lmer(log_cda_amp_sum ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$log_cda_amp_sum_1 <- lmer(log_cda_amp_sum ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$log_cda_amp_sum_2 <- lmer(log_cda_amp_sum ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+mod_lmer$log_cda_amp_sum_3 <- lmer(log_cda_amp_sum ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+anova(mod_lmer$log_cda_amp_sum_1)
+anova(mod_lmer$log_cda_amp_sum_2)
+anova(mod_lmer$log_cda_amp_sum_3)
+anova(mod_lmer$log_cda_amp_sum,mod_lmer$log_cda_amp_sum_1,mod_lmer$log_cda_amp_sum_2,mod_lmer$log_cda_amp_sum_3 )
+```
+
+Type III Analysis of Variance Table with Satterthwaite's method
+                      Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)  
+int_slider_response_z 41.059  41.059     1 1261.7  4.1694 0.04137 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                    Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)  
+int_slider_response_z               40.658  40.658     1 1265.8  4.1293 0.04235 *
+tas20_total_z                        4.536   4.536     1   90.0  0.4607 0.49903  
+int_slider_response_z:tas20_total_z  7.369   7.369     1 5290.1  0.7484 0.38701  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                      Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)  
+int_slider_response_z                 40.418  40.418     1 1267.7  4.1044 0.04298 *
+aq28_total_cont                       35.965  35.965     1   90.0  3.6522 0.05918 .
+int_slider_response_z:aq28_total_cont  0.114   0.114     1 5284.2  0.0115 0.91443  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Data: dta_social_emo
+Models:
+mod_lmer$log_cda_amp_sum: log_cda_amp_sum ~ 1 + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_amp_sum_1: log_cda_amp_sum ~ 1 + int_slider_response_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_amp_sum_2: log_cda_amp_sum ~ 1 + int_slider_response_z * tas20_total_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_amp_sum_3: log_cda_amp_sum ~ 1 + int_slider_response_z * aq28_total_cont + (1 | stim_iaps) + (1 | participant)
+                           npar   AIC   BIC logLik -2*log(L)  Chisq Df Pr(>Chisq)  
+mod_lmer$log_cda_amp_sum      4 28149 28175 -14070     28141                       
+mod_lmer$log_cda_amp_sum_1    5 28147 28180 -14068     28137 4.1032  1     0.0428 *
+mod_lmer$log_cda_amp_sum_2    7 28150 28196 -14068     28136 1.2092  2     0.5463  
+mod_lmer$log_cda_amp_sum_3    7 28147 28193 -14067     28133 2.3801  0             
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+SCR ISCR
+```{r}
+
+mod_lmer$log_cda_iscr <- lmer(log_cda_iscr ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$log_cda_iscr_1 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$log_cda_iscr_2 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+mod_lmer$log_cda_iscr_3 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+summary(mod_lmer$log_cda_iscr_2)
+summary(mod_lmer$log_cda_iscr_3)
+anova(mod_lmer$log_cda_iscr_3))
+anova(mod_lmer$log_cda_iscr_1)
+anova(mod_lmer$log_cda_iscr_2)
+anova(mod_lmer$log_cda_iscr_3)
+anova(mod_lmer$log_cda_iscr,mod_lmer$log_cda_iscr_1,mod_lmer$log_cda_iscr_2,mod_lmer$log_cda_iscr_3 )
+```
+Type III Analysis of Variance Table with Satterthwaite's method
+                      Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)   
+int_slider_response_z 17.251  17.251     1 1852.1  10.345 0.00132 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                     Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+int_slider_response_z               17.1670 17.1670     1 1856.2 10.2964 0.001356 **
+tas20_total_z                        0.6000  0.6000     1   90.0  0.3599 0.550078   
+int_slider_response_z:tas20_total_z  1.0722  1.0722     1 5275.0  0.6431 0.422638   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                       Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+int_slider_response_z                 17.3801 17.3801     1 1856.8 10.4235 0.001266 **
+aq28_total_cont                        3.4393  3.4393     1   90.0  2.0626 0.154415   
+int_slider_response_z:aq28_total_cont  0.6743  0.6743     1 5271.7  0.4044 0.524847   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Data: dta_social_emo
+Models:
+mod_lmer$log_cda_iscr: log_cda_iscr ~ 1 + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_1: log_cda_iscr ~ 1 + int_slider_response_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_2: log_cda_iscr ~ 1 + int_slider_response_z * tas20_total_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_3: log_cda_iscr ~ 1 + int_slider_response_z * aq28_total_cont + (1 | stim_iaps) + (1 | participant)
+                        npar   AIC   BIC  logLik -2*log(L)   Chisq Df Pr(>Chisq)   
+mod_lmer$log_cda_iscr      4 18649 18675 -9320.5     18641                         
+mod_lmer$log_cda_iscr_1    5 18641 18674 -9315.4     18631 10.2549  1   0.001363 **
+mod_lmer$log_cda_iscr_2    7 18644 18690 -9314.9     18630  1.0031  2   0.605605   
+mod_lmer$log_cda_iscr_3    7 18642 18688 -9314.1     18628  1.4487  0              
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+```{r}
+
+mod_lmer$log_cda_iscr_0.2 <- lmer(log_cda_iscr ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo%>%subset(condition == "control"))
+
+
+mod_lmer$log_cda_iscr_1.2 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                     data = dta_social_emo%>%subset(condition == "control"))
+
+
+
+mod_lmer$log_cda_iscr_2.2 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo%>%subset(condition == "control"))
+
+mod_lmer$log_cda_iscr_3.2 <- lmer(log_cda_iscr ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                       data = dta_social_emo%>%subset(condition == "control"))
+
+
+
+summary(mod_lmer$log_cda_iscr_2.2)
+summary(mod_lmer$log_cda_iscr_3.2)
+
+anova(mod_lmer$log_cda_iscr_1.2)
+anova(mod_lmer$log_cda_iscr_2.2)
+anova(mod_lmer$log_cda_iscr_3.2)
+anova(mod_lmer$log_cda_iscr_0.2,mod_lmer$log_cda_iscr_1.2,mod_lmer$log_cda_iscr_2.2,mod_lmer$log_cda_iscr_3.2 )
+```
+Type III Analysis of Variance Table with Satterthwaite's method
+                      Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)
+int_slider_response_z 3.7929  3.7929     1 1063.2  2.2776 0.1316
+Type III Analysis of Variance Table with Satterthwaite's method
+                                    Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)  
+int_slider_response_z               4.5149  4.5149     1 1109.3  2.7121 0.09987 .
+tas20_total_z                       0.4263  0.4263     1   47.0  0.2561 0.61519  
+int_slider_response_z:tas20_total_z 1.4199  1.4199     1 2741.5  0.8530 0.35580  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                      Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)
+int_slider_response_z                 3.8211  3.8211     1 1078.6  2.2945 0.1301
+aq28_total_cont                       1.9157  1.9157     1   47.0  1.1503 0.2890
+int_slider_response_z:aq28_total_cont 0.0352  0.0352     1 2736.5  0.0212 0.8844
+Data: dta_social_emo %>% subset(condition == "control")
+Models:
+mod_lmer$log_cda_iscr_0.2: log_cda_iscr ~ 1 + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_1.2: log_cda_iscr ~ 1 + int_slider_response_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_2.2: log_cda_iscr ~ 1 + int_slider_response_z * tas20_total_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$log_cda_iscr_3.2: log_cda_iscr ~ 1 + int_slider_response_z * aq28_total_cont + (1 | stim_iaps) + (1 | participant)
+                          npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq)
+mod_lmer$log_cda_iscr_0.2    4 9750.5 9774.3 -4871.3    9742.5                     
+mod_lmer$log_cda_iscr_1.2    5 9750.3 9780.0 -4870.1    9740.3 2.2517  1     0.1335
+mod_lmer$log_cda_iscr_2.2    7 9753.2 9794.8 -4869.6    9739.2 1.1122  2     0.5734
+mod_lmer$log_cda_iscr_3.2    7 9753.1 9794.8 -4869.6    9739.1 0.0450  0  
+
+HR diff
+
+```{r}
+
+mod_lmer$hr_mean_diff <- lmer(hr_mean_diff ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$hr_mean_diff_1 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$hr_mean_diff_2 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+mod_lmer$hr_mean_diff_3 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+anova(mod_lmer$hr_mean_diff_1)
+anova(mod_lmer$hr_mean_diff_2)
+anova(mod_lmer$hr_mean_diff_3)
+anova(mod_lmer$hr_mean_diff,mod_lmer$hr_mean_diff_1,mod_lmer$hr_mean_diff_2,mod_lmer$hr_mean_diff_3 )
+
+```
+
+Type III Analysis of Variance Table with Satterthwaite's method
+                      Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)
+int_slider_response_z 12.686  12.686     1 990.05  0.7223 0.3956
+Type III Analysis of Variance Table with Satterthwaite's method
+                                    Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)  
+int_slider_response_z               12.623  12.623     1  988.3  0.7192 0.39660  
+tas20_total_z                        2.377   2.377     1   89.9  0.1354 0.71371  
+int_slider_response_z:tas20_total_z 79.233  79.233     1 5358.1  4.5146 0.03365 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Type III Analysis of Variance Table with Satterthwaite's method
+                                       Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)
+int_slider_response_z                 12.3088 12.3088     1  994.8  0.7009 0.4027
+aq28_total_cont                        8.8839  8.8839     1   89.9  0.5058 0.4788
+int_slider_response_z:aq28_total_cont  0.0496  0.0496     1 5348.7  0.0028 0.9576
+Data: dta_social_emo
+Models:
+mod_lmer$hr_mean_diff: hr_mean_diff ~ 1 + (1 | stim_iaps) + (1 | participant)
+mod_lmer$hr_mean_diff_1: hr_mean_diff ~ 1 + int_slider_response_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$hr_mean_diff_2: hr_mean_diff ~ 1 + int_slider_response_z * tas20_total_z + (1 | stim_iaps) + (1 | participant)
+mod_lmer$hr_mean_diff_3: hr_mean_diff ~ 1 + int_slider_response_z * aq28_total_cont + (1 | stim_iaps) + (1 | participant)
+                        npar   AIC   BIC logLik -2*log(L)  Chisq Df Pr(>Chisq)  
+mod_lmer$hr_mean_diff      4 31083 31109 -15538     31075                       
+mod_lmer$hr_mean_diff_1    5 31084 31117 -15537     31074 0.6696  1    0.41318  
+mod_lmer$hr_mean_diff_2    7 31084 31130 -15535     31070 4.6369  2    0.09843 .
+mod_lmer$hr_mean_diff_3    7 31088 31134 -15537     31074 0.0000  0  
+
+
+
+```{r}
+
+
+mod_lmer$hr_mean_diff_0.2 <- lmer(hr_mean_diff ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo%>%subset(condition == "control"))
+
+
+mod_lmer$hr_mean_diff_1.2 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo%>%subset(condition == "control"))
+
+
+mod_lmer$hr_mean_diff_2.2 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo%>%subset(condition == "control"))
+mod_lmer$hr_mean_diff_3.2 <- lmer(hr_mean_diff ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                       data = dta_social_emo%>%subset(condition == "control"))
+
+
+anova(mod_lmer$hr_mean_diff_1.2)
+anova(mod_lmer$hr_mean_diff_2.2)
+anova(mod_lmer$hr_mean_diff_3.2)
+anova(mod_lmer$hr_mean_diff_0.2,mod_lmer$hr_mean_diff_1.2,mod_lmer$hr_mean_diff_2.2,mod_lmer$hr_mean_diff_3.2 )
+
+```
+
+```{r}
+mod_lmer$hr_mean_bpm <- lmer(hr_mean_bpm ~ 1+ (1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$hr_mean_bpm_1 <- lmer(hr_mean_bpm ~ 1+ int_slider_response_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+mod_lmer$hr_mean_bpm_2 <- lmer(hr_mean_bpm ~ 1+ int_slider_response_z*tas20_total_z+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+mod_lmer$hr_mean_bpm_3 <- lmer(hr_mean_bpm ~ 1+ int_slider_response_z*aq28_total_cont+(1 | stim_iaps)  + 
+                                 (1 | participant), REML = FALSE,
+                      data = dta_social_emo)
+
+
+anova(mod_lmer$hr_mean_bpm_1)
+anova(mod_lmer$hr_mean_bpm_2)
+anova(mod_lmer$hr_mean_bpm_3)
+anova(mod_lmer$hr_mean_bpm,mod_lmer$hr_mean_bpm_1,mod_lmer$hr_mean_bpm_2,mod_lmer$hr_mean_bpm_3 )
+
+
+```
+
+
+pupil
