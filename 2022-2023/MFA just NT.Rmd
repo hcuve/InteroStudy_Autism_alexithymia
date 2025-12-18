@@ -49,7 +49,7 @@ mod_mfa$mfa_wide_nt<- FactoMineR::MFA(dta_vars_4mfa_2_wide_sel_complet_nt_obs,
              # type=c( "c","c","c","c","c"),
               type=c("s","s","s","s","s"),
              name.group=c( "valence","arousal","pupil","hr","scr"),
-             ncp = 3,
+             ncp =3,
              # num.group.sup=c(1,2),
              graph=TRUE)
 
@@ -69,7 +69,7 @@ fviz_contrib(mod_mfa$mfa_wide_nt, "quanti.var", axes = 3,top = 50)
 fviz_contrib(mod_mfa$mfa_wide_nt, "group", axes = 1, top = 50)
 fviz_contrib(mod_mfa$mfa_wide_nt, "group", axes = 2,top = 50)
 fviz_contrib(mod_mfa$mfa_wide_nt, "group", axes = 3,top = 50)
-
+fviz_contrib(mod_mfa$mfa_wide_nt, "group", axes = 4,top = 50)
 
 
 factoextra::fviz_mfa_group(mod_mfa$mfa_wide_nt)
@@ -114,42 +114,68 @@ left_join(dta_ssid_agg_quest)
 ```{r}
 dta_vars_4mfa_2_wide_sel2_nt%>%
 
+
   ggplot(aes(aq,mfa_z_sid_coord_1))+
   geom_point()+
   geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
+    ggpubr::stat_cor()+
+    geom_text(aes(label = ssid))
+
 dta_vars_4mfa_2_wide_sel2_nt%>%
 
+
   ggplot(aes(aq,mfa_z_sid_coord_2))+
+  
   geom_point()+
   geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
+    ggpubr::stat_cor()+
+    geom_text(aes(label = ssid))
+
+
 dta_vars_4mfa_2_wide_sel2_nt%>%
+  subset(ssid!=368)%>%
 
   ggplot(aes(aq,mfa_z_sid_coord_3))+
   geom_point()+
   geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
+    ggpubr::stat_cor()+
+    geom_text(aes(label = ssid))
 
 
 dta_vars_4mfa_2_wide_sel2_nt%>%
+    subset(ssid!= 351)%>%
+    subset(ssid!= 356)%>%
+   subset(ssid!= 363)%>%
 
   ggplot(aes(tas,mfa_z_sid_coord_1))+
   geom_point()+
   geom_smooth(method = "lm")+
     ggpubr::stat_cor()
-dta_vars_4mfa_2_wide_sel2_nt%>%
 
-  ggplot(aes(tas,mfa_z_sid_coord_2))+
+dta_vars_4mfa_2_wide_sel2_nt%>%
+   #  subset(ssid!= 351)%>%
+   #  subset(ssid!= 356)%>%
+   # subset(ssid!= 363)%>%
+
+  ggplot(aes(tas,abs(mfa_z_sid_coord_2)))+
   geom_point()+
   geom_smooth(method = "lm")+
     ggpubr::stat_cor()
-dta_vars_4mfa_2_wide_sel2_nt%>%
 
-  ggplot(aes(tas,mfa_z_sid_coord_3))+
+dta_vars_4mfa_2_wide_sel2_nt%>%
+  subset(ssid!= 351)%>%
+    subset(ssid!= 356)%>%
+   subset(ssid!= 363)%>%
+  #    subset(ssid!= 331)%>%
+  # subset(ssid!= 357)%>%
+  #  subset(ssid!= 332)%>%
+   # subset(ssid!= 349)%>%
+
+  ggplot(aes(tas,( mfa_z_sid_coord_3)))+
   geom_point()+
   geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
+    ggpubr::stat_cor()+
+  geom_text(aes(label = ssid))
 
 
 ```
@@ -181,25 +207,38 @@ dta_vars_4mfa_2_wide_sel2_nt%>%
 
 
 dta_vars_4mfa_2_wide_sel2_nt%>%
+    subset(ssid!= 351)%>%
+    subset(ssid!= 356)%>%
+   subset(ssid!= 363)%>%
 
   ggplot(aes(tas,mfa_z_sid_contrib_1))+
   geom_point()+
   geom_smooth(method = "lm")+
     ggpubr::stat_cor()
+
 dta_vars_4mfa_2_wide_sel2_nt%>%
-    subset(tas<65)%>%
+      subset(ssid!= 351)%>%
+    subset(ssid!= 356)%>%
+   subset(ssid!= 363)%>%
+
 
   ggplot(aes(tas,log1p(mfa_z_sid_contrib_2+.1)))+
   geom_point()+
   geom_smooth(method = "lm")+
     ggpubr::stat_cor()
+
 dta_vars_4mfa_2_wide_sel2_nt%>%
-
-
-  ggplot(aes(tas,(log1p(mfa_z_sid_contrib_3+.1))))+
+#     subset(ssid!= 351)%>%
+#     subset(ssid!= 356)%>%
+#    subset(ssid!= 363)%>%
+# # 
+#    subset(ssid!= 331)%>%
+#    subset(ssid!= 332)%>%
+  ggplot(aes(tas,(log(mfa_z_sid_contrib_3+.1))))+
   geom_point()+
   geom_smooth(method = "lm")+
-    ggpubr::stat_cor()
+    ggpubr::stat_cor()+
+    geom_text(aes(label = ssid))
 ```
 
 

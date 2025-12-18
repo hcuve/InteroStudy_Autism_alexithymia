@@ -166,10 +166,13 @@ pupil
 ```{r}
 # just NT
 
-mod_lmer$pup_0_nt <- lmer(pup_bascor_no_outl_imptd ~ 1+ (1 | stimiaps2)  + 
+mod_lmer$pup_0_nt <- lmer(pup_bascor_no_outl_imptd ~ 1+ 
+                            # (1 | stimiaps2)  + 
                                  (1 | ssid), REML = FALSE,
                       data = dta_4_lmms_sel_1_w_impt_nt)
-mod_lmer$pup_0_ar_nt <- lmer(pup_bascor_no_outl_imptd ~ 1+arousal_0_1_z+ (1 | stimiaps2)  + 
+
+mod_lmer$pup_0_ar_nt <- lmer(pup_bascor_no_outl_imptd ~ 1+arousal_0_1_z+ 
+                               # (1 | stimiaps2)  + 
                                  (1 | ssid), REML = FALSE,
                       data = dta_4_lmms_sel_1_w_impt_nt)
 
@@ -177,7 +180,8 @@ car::Anova(mod_lmer$pup_0_nt , type = 3)
 anova(mod_lmer$pup_0_nt , type = 3)
 summary(mod_lmer$pup_0_nt )
 
-mod_lmer$pup_5 <- lmer(pup_bascor_no_outl_imptd ~ 1+tas_imptd_z*arousal_0_1_z+ (1 | stimiaps2)  + 
+mod_lmer$pup_5 <- lmer(pup_bascor_no_outl_imptd ~ 1+tas_imptd_z*arousal_0_1_z+ 
+                         # (1 | stimiaps2)  + 
                                  (1 | ssid), REML = FALSE,
                       data = dta_4_lmms_sel_1_w_impt_nt)
 
